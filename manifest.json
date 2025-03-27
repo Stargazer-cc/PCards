@@ -1,0 +1,9 @@
+{
+  "id": "new-cards",
+  "name": "New Cards",
+  "version": "1.0.0",
+  "minAppVersion": "0.15.0",
+  "description": "A plugin to render beautiful content cards for music, books and movies.",
+  "author": "Your Name",
+  "isDesktopOnly": false
+}
