@@ -1,9 +1,10 @@
 {
-  "id": "new-cards",
-  "name": "New Cards",
-  "version": "1.0.0",
+  "id": "Pretty-Cards",
+  "name": " PCards",
+  "version": "1.1.12",
   "minAppVersion": "0.15.0",
-  "description": "A plugin to render beautiful content cards for music, books and movies.",
-  "author": "Your Name",
+  "description": "为笔记内容提供更美观的卡片呈现方式，支持卡片整体快捷插入、全体卡片总览。",
+  "author": "stargazer-cc",
+  "authorUrl": "https://github.com/Stargazer-cc",
   "isDesktopOnly": false
 }

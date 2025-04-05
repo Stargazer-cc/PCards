@@ -1,7 +1,7 @@
 {
-  "name": "new-cards",
-  "version": "1.0.0",
-  "description": "A plugin to render beautiful content cards for music, books and movies.",
+  "name": " PCards ",
+  "version": "1.1.12",
+  "description": "为笔记内容提供更美观的卡片呈现方式，支持卡片整体快捷插入、全体卡片总览。",
   "main": "main.js",
   "scripts": {
     "dev": "node esbuild.config.mjs",
@@ -11,9 +11,10 @@
   "keywords": [
     "obsidian-plugin"
   ],
-  "author": "Your Name",
+  "author": "stargazer-cc",
   "license": "MIT",
   "devDependencies": {
+    "@types/crypto-js": "^4.2.2",
     "@types/node": "^20.10.0",
     "@typescript-eslint/eslint-plugin": "^5.2.0",
     "@typescript-eslint/parser": "^5.2.0",
@@ -22,5 +23,8 @@
     "obsidian": "latest",
     "tslib": "2.3.1",
     "typescript": "^5.3.0"
+  },
+  "dependencies": {
+    "crypto-js": "^4.2.0"
   }
 }

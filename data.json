@@ -1,0 +1,434 @@
+{
+  "gallerySettings": {
+    "columnCount": 3,
+    "hiddenFields": [],
+    "selectedCardType": "all",
+    "sortField": "year",
+    "filterDefinition": {
+      "conjunction": "and",
+      "conditions": []
+    },
+    "sortDefinition": {
+      "criteria": [
+        {
+          "field": "rating",
+          "order": "desc",
+          "enabled": true
+        }
+      ]
+    }
+  },
+  "cardTemplates": {
+    "musicCard": "```music-card\ntitle: \nyear: \nartist: \ndescription: \n```",
+    "bookCard": "```book-card\ntitle: \nyear: \nauthor: \ndescription: \n```",
+    "movieCard": "```movie-card\ntitle: \nyear: \ndirector: \ndescription: \n```"
+  },
+  "textColors": {
+    "title": "#c7ff68",
+    "description": "rgb(245, 216, 179)",
+    "artist": "rgb(211, 171, 120)",
+    "author": "rgb(211, 171, 120)",
+    "director": "rgb(211, 171, 120)",
+    "year": "rgb(245, 216, 179)",
+    "meta": "#fbdfa2"
+  },
+  "views": [
+    {
+      "id": "default",
+      "name": "电影",
+      "settings": {
+        "columnCount": 3,
+        "hiddenFields": [],
+        "selectedCardType": "movie-card",
+        "sortField": "year",
+        "filterDefinition": {
+          "conjunction": "and",
+          "conditions": []
+        },
+        "sortDefinition": {
+          "criteria": [
+            {
+              "field": "year",
+              "order": "asc",
+              "enabled": true
+            }
+          ]
+        }
+      }
+    },
+    {
+      "id": "view-1743613032630",
+      "name": "音乐",
+      "settings": {
+        "columnCount": 3,
+        "hiddenFields": [],
+        "selectedCardType": "all",
+        "sortField": "year",
+        "filterDefinition": {
+          "conjunction": "and",
+          "conditions": []
+        },
+        "sortDefinition": {
+          "criteria": []
+        }
+      }
+    },
+    {
+      "id": "view-1743613214888",
+      "name": "视图 3",
+      "settings": {
+        "columnCount": 3,
+        "hiddenFields": [],
+        "selectedCardType": "all",
+        "sortField": "year"
+      }
+    },
+    {
+      "id": "view-1743613215937",
+      "name": "视图 4",
+      "settings": {
+        "columnCount": 3,
+        "hiddenFields": [],
+        "selectedCardType": "all",
+        "sortField": "year"
+      }
+    },
+    {
+      "id": "view-1743613216741",
+      "name": "视图 5",
+      "settings": {
+        "columnCount": 3,
+        "hiddenFields": [],
+        "selectedCardType": "all",
+        "sortField": "year"
+      }
+    },
+    {
+      "id": "view-1743613531426",
+      "name": "视图 6",
+      "settings": {
+        "columnCount": 3,
+        "hiddenFields": [],
+        "selectedCardType": "all",
+        "sortField": "year"
+      }
+    },
+    {
+      "id": "view-1743613560408",
+      "name": "视图 7",
+      "settings": {
+        "columnCount": 3,
+        "hiddenFields": [],
+        "selectedCardType": "all",
+        "sortField": "year"
+      }
+    },
+    {
+      "id": "view-1743615705625",
+      "name": "音乐",
+      "settings": {
+        "columnCount": 3,
+        "hiddenFields": [],
+        "selectedCardType": "all",
+        "sortField": "year",
+        "filterDefinition": {
+          "conjunction": "and",
+          "conditions": []
+        },
+        "sortDefinition": {
+          "criteria": []
+        }
+      }
+    },
+    {
+      "id": "view-1743615919705",
+      "name": "新视图 9",
+      "settings": {
+        "columnCount": 3,
+        "hiddenFields": [],
+        "selectedCardType": "all",
+        "sortField": "year",
+        "filterDefinition": {
+          "conjunction": "and",
+          "conditions": []
+        },
+        "sortDefinition": {
+          "criteria": []
+        }
+      }
+    },
+    {
+      "id": "view-1743616124992",
+      "name": "新视图 10",
+      "settings": {
+        "columnCount": 3,
+        "hiddenFields": [],
+        "selectedCardType": "all",
+        "sortField": "year",
+        "filterDefinition": {
+          "conjunction": "and",
+          "conditions": []
+        },
+        "sortDefinition": {
+          "criteria": []
+        }
+      }
+    },
+    {
+      "id": "view-1743616206070",
+      "name": "先斤斤计较",
+      "settings": {
+        "columnCount": 3,
+        "hiddenFields": [],
+        "selectedCardType": "all",
+        "sortField": "year",
+        "filterDefinition": {
+          "conjunction": "and",
+          "conditions": []
+        },
+        "sortDefinition": {
+          "criteria": []
+        }
+      }
+    },
+    {
+      "id": "view-1743616236667",
+      "name": "新视图 12",
+      "settings": {
+        "columnCount": 3,
+        "hiddenFields": [],
+        "selectedCardType": "all",
+        "sortField": "year",
+        "filterDefinition": {
+          "conjunction": "and",
+          "conditions": []
+        },
+        "sortDefinition": {
+          "criteria": []
+        }
+      }
+    },
+    {
+      "id": "view-1743616335026",
+      "name": "新视图 13",
+      "settings": {
+        "columnCount": 3,
+        "hiddenFields": [],
+        "selectedCardType": "all",
+        "sortField": "year",
+        "filterDefinition": {
+          "conjunction": "and",
+          "conditions": []
+        },
+        "sortDefinition": {
+          "criteria": []
+        }
+      }
+    },
+    {
+      "id": "view-1743616345040",
+      "name": "新视图 14",
+      "settings": {
+        "columnCount": 3,
+        "hiddenFields": [],
+        "selectedCardType": "all",
+        "sortField": "year",
+        "filterDefinition": {
+          "conjunction": "and",
+          "conditions": []
+        },
+        "sortDefinition": {
+          "criteria": []
+        }
+      }
+    },
+    {
+      "id": "view-1743616360533",
+      "name": "新视图 15",
+      "settings": {
+        "columnCount": 3,
+        "hiddenFields": [],
+        "selectedCardType": "all",
+        "sortField": "year",
+        "filterDefinition": {
+          "conjunction": "and",
+          "conditions": []
+        },
+        "sortDefinition": {
+          "criteria": []
+        }
+      }
+    },
+    {
+      "id": "view-1743616364462",
+      "name": "新视图 16",
+      "settings": {
+        "columnCount": 3,
+        "hiddenFields": [],
+        "selectedCardType": "all",
+        "sortField": "year",
+        "filterDefinition": {
+          "conjunction": "and",
+          "conditions": []
+        },
+        "sortDefinition": {
+          "criteria": []
+        }
+      }
+    },
+    {
+      "id": "view-1743616548284",
+      "name": "新视图 17",
+      "settings": {
+        "columnCount": 3,
+        "hiddenFields": [],
+        "selectedCardType": "all",
+        "sortField": "year",
+        "filterDefinition": {
+          "conjunction": "and",
+          "conditions": []
+        },
+        "sortDefinition": {
+          "criteria": []
+        }
+      }
+    },
+    {
+      "id": "view-1743616551315",
+      "name": "新视图 18",
+      "settings": {
+        "columnCount": 3,
+        "hiddenFields": [],
+        "selectedCardType": "all",
+        "sortField": "year",
+        "filterDefinition": {
+          "conjunction": "and",
+          "conditions": []
+        },
+        "sortDefinition": {
+          "criteria": []
+        }
+      }
+    },
+    {
+      "id": "view-1743616578393",
+      "name": "新视图 19",
+      "settings": {
+        "columnCount": 3,
+        "hiddenFields": [],
+        "selectedCardType": "all",
+        "sortField": "year",
+        "filterDefinition": {
+          "conjunction": "and",
+          "conditions": []
+        },
+        "sortDefinition": {
+          "criteria": []
+        }
+      }
+    },
+    {
+      "id": "view-1743616582589",
+      "name": "新视图 20",
+      "settings": {
+        "columnCount": 3,
+        "hiddenFields": [],
+        "selectedCardType": "all",
+        "sortField": "year",
+        "filterDefinition": {
+          "conjunction": "and",
+          "conditions": []
+        },
+        "sortDefinition": {
+          "criteria": []
+        }
+      }
+    },
+    {
+      "id": "view-1743616596014",
+      "name": "新视图 21",
+      "settings": {
+        "columnCount": 3,
+        "hiddenFields": [],
+        "selectedCardType": "all",
+        "sortField": "year",
+        "filterDefinition": {
+          "conjunction": "and",
+          "conditions": []
+        },
+        "sortDefinition": {
+          "criteria": []
+        }
+      }
+    },
+    {
+      "id": "view-1743616659447",
+      "name": "新视图 22",
+      "settings": {
+        "columnCount": 3,
+        "hiddenFields": [],
+        "selectedCardType": "all",
+        "sortField": "year",
+        "filterDefinition": {
+          "conjunction": "and",
+          "conditions": []
+        },
+        "sortDefinition": {
+          "criteria": []
+        }
+      }
+    },
+    {
+      "id": "view-1743616708452",
+      "name": "新视图 23",
+      "settings": {
+        "columnCount": 3,
+        "hiddenFields": [],
+        "selectedCardType": "all",
+        "sortField": "year",
+        "filterDefinition": {
+          "conjunction": "and",
+          "conditions": []
+        },
+        "sortDefinition": {
+          "criteria": []
+        }
+      }
+    },
+    {
+      "id": "view-1743616930602",
+      "name": "新视图 24",
+      "settings": {
+        "columnCount": 3,
+        "hiddenFields": [],
+        "selectedCardType": "all",
+        "sortField": "year",
+        "filterDefinition": {
+          "conjunction": "and",
+          "conditions": []
+        },
+        "sortDefinition": {
+          "criteria": []
+        }
+      }
+    },
+    {
+      "id": "view-1743616970796",
+      "name": "新视图 25",
+      "settings": {
+        "columnCount": 3,
+        "hiddenFields": [],
+        "selectedCardType": "all",
+        "sortField": "year",
+        "filterDefinition": {
+          "conjunction": "and",
+          "conditions": []
+        },
+        "sortDefinition": {
+          "criteria": []
+        }
+      }
+    }
+  ],
+  "activeViewId": "view-1743613560408"
+}

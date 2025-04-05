@@ -1,53 +1,40 @@
-# New Cards Plugin
+# PCards
 
-This plugin adds beautiful content cards for music, books and movies in your Obsidian notes.
+一个为Obsidian设计的卡片式内容展示插件，目前支持音乐、书籍和电影三种类型的卡片。
 
-## Features
+## 功能特点
 
-- Render beautiful content cards through codeblocks
-- Support three types of cards:
-  - Music cards
-  - Book cards
-  - Movie cards
+- 支持三种卡片类型：音乐、书籍、电影
+- 美观的卡片式布局
+- 支持封面图片显示
+- 支持标签系统
+- 支持自定义元数据
+- 支持URL链接（支持外部链接和Obsidian内部链接）
 
-## Usage
+## 使用方法
 
-Create content cards using codeblocks with the following syntax:
+1. 插入卡片：在Obsidian中使用插件菜单插入音乐、书籍或电影卡片。
+2. 管理卡片：通过插件界面管理已插入的卡片，支持编辑和删除。
 
-### Music Card
+## 主要特性
 
-```music-card
-title: Song Name
-artist: Artist Name
-year: 2024
-description: A brief description
-```
+- 评分显示：卡片支持显示评分信息。
+- 卡片筛选：根据标签或评分筛选卡片。
+- 排序功能：支持按评分或日期排序卡片。
 
-### Book Card
+## 使用示例
 
-```book-card
-title: Book Title
-author: Author Name
-year: 2024
-description: A brief description
-```
+- 插入一本书籍卡片并显示封面和评分。
+- 通过标签筛选出所有音乐卡片。
 
-### Movie Card
+## 常见问题解答
 
-```movie-card
-title: Movie Title
-director: Director Name
-year: 2024
-description: A brief description
-```
+- 如何解决卡片无法显示的问题？确保所有必填字段已填写。
+- 如何使用自定义元数据？使用`meta.`前缀定义元数据。
 
-## Installation
+## 注意事项
 
-1. Open Settings in Obsidian
-2. Go to Community Plugins and disable Safe Mode
-3. Click Browse and search for "New Cards"
-4. Install and enable the plugin
-
-## License
-
-MIT
+1. 所有必填字段都必须填写，否则卡片可能无法正常显示。
+2. 标签之间使用空格分隔。
+3. 自定义元数据使用`meta.`前缀。
+4. 图片链接支持外部链接和Obsidian内部链接。
