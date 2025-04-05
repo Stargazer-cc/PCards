@@ -26,14 +26,13 @@
 - 插入一本书籍卡片并显示封面和评分。
 - 通过标签筛选出所有音乐卡片。
 
-## 常见问题解答
-
-- 如何解决卡片无法显示的问题？确保所有必填字段已填写。
-- 如何使用自定义元数据？使用`meta.`前缀定义元数据。
-
 ## 注意事项
 
 1. 所有必填字段都必须填写，否则卡片可能无法正常显示。
 2. 标签之间使用空格分隔。
 3. 自定义元数据使用`meta.`前缀。
 4. 图片链接支持外部链接和Obsidian内部链接。
+
+## 感谢
+- [obsidian-markdown-media-card](https://github.com/zhouhua/obsidian-markdown-media-card) 我在使用过后有了把分散的卡片串联起来的想法。
+- [obsidian-content-cards](https://github.com/liqms/obsidian-content-cards) 为卡片样式的设计提供了参考。
