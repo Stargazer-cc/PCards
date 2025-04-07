@@ -64,9 +64,17 @@ export class CardUtils {
     return encoded.padStart(8, '0');
   }
 
+  static normalizeContent(content: string): string {
+    return content
+      .toLowerCase() // 统一转换为小写
+      .replace(/\s+/g, '') // 去除所有空白字符（包括空格、制表符、换行符等）
+      .replace(/[^\w\u4e00-\u9fa5]/g, ''); // 只保留字母、数字、下划线和中文字符
+  }
+
   static generateCID(content: string): string {
-    const trimmedContent = content.replace(/\n+$/, '');
-    const hash = SHA256(trimmedContent).toString();
+    // 仅在计算哈希值时对内容进行标准化处理
+    const normalizedContent = this.normalizeContent(content);
+    const hash = SHA256(normalizedContent).toString();
     return 'CID-' + this.base62Encode(hash.substring(0, 16));
   }
 
@@ -177,13 +185,18 @@ export class CardUtils {
     } else {
       // 内容未变化，更新现有CID的位置
       if (!index[cid]) {
-        index[cid] = {
-          content: content,
-          locations: [location],
-          lastUpdated: new Date().toISOString()
-        };
+        // 只有当位置信息有效时才创建新的索引
+        if (location.startLine > 0 && location.endLine > 0) {
+          index[cid] = {
+            content: content,
+            locations: [location],
+            lastUpdated: new Date().toISOString()
+          };
+        }
       } else {
-        if (!index[cid].locations.some(loc => loc.path === location.path && loc.startLine === location.startLine && loc.endLine === location.endLine)) {
+        // 只有当位置信息有效且不重复时才添加
+        if (location.startLine > 0 && location.endLine > 0 && 
+            !index[cid].locations.some(loc => loc.path === location.path && loc.startLine === location.startLine && loc.endLine === location.endLine)) {
           index[cid].locations.push(location);
         }
         index[cid].lastUpdated = new Date().toISOString();

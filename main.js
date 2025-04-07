@@ -6634,9 +6634,12 @@ var CardUtils = class {
     }
     return encoded.padStart(8, "0");
   }
+  static normalizeContent(content) {
+    return content.toLowerCase().replace(/\s+/g, "").replace(/[^\w\u4e00-\u9fa5]/g, "");
+  }
   static generateCID(content) {
-    const trimmedContent = content.replace(/\n+$/, "");
-    const hash = (0, import_crypto_js.SHA256)(trimmedContent).toString();
+    const normalizedContent = this.normalizeContent(content);
+    const hash = (0, import_crypto_js.SHA256)(normalizedContent).toString();
     return "CID-" + this.base62Encode(hash.substring(0, 16));
   }
   static async loadCardIndex(vault) {
@@ -6722,13 +6725,15 @@ var CardUtils = class {
       }
     } else {
       if (!index[cid]) {
-        index[cid] = {
-          content,
-          locations: [location],
-          lastUpdated: (/* @__PURE__ */ new Date()).toISOString()
-        };
+        if (location.startLine > 0 && location.endLine > 0) {
+          index[cid] = {
+            content,
+            locations: [location],
+            lastUpdated: (/* @__PURE__ */ new Date()).toISOString()
+          };
+        }
       } else {
-        if (!index[cid].locations.some((loc) => loc.path === location.path && loc.startLine === location.startLine && loc.endLine === location.endLine)) {
+        if (location.startLine > 0 && location.endLine > 0 && !index[cid].locations.some((loc) => loc.path === location.path && loc.startLine === location.startLine && loc.endLine === location.endLine)) {
           index[cid].locations.push(location);
         }
         index[cid].lastUpdated = (/* @__PURE__ */ new Date()).toISOString();
