@@ -1,5 +1,240 @@
+/* 快速记录页面容器样式 */
+.quick-note-container {
+  padding: 20px;
+  height: 100%;
+  overflow-y: auto;
+  /* 使用主题背景色 */
+  background: var(--titlebar-background-focused); /* 改为次要背景色以融入主题 */
+  color: var(--text-normal); /* 使用主题文本颜色 */
+}
+
+
+.quick-note-content {
+  max-width: 450px;
+  margin: 0 auto;
+  padding: 24px;
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+}
+
+.quick-note-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 20px;
+  padding-bottom: 10px;
+  border-bottom: 1px solid var(--background-modifier-border);
+  color: var(--text-muted); /* 标题使用柔和的颜色 */
+}
+
+.quick-note-type-selector {
+  display: flex;
+  gap: 10px;
+  margin-bottom: 20px;
+  justify-content: center;
+}
+
+.type-button {
+  padding: 8px 16px;
+  border: 1px solid var(--background-modifier-border);
+  border-radius: 6px;
+  /* 按钮背景使用次要背景色 */
+  background: var(--background-secondary);
+  color: var(--text-muted); /* 未激活按钮使用柔和颜色 */
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.type-button:hover {
+  background: var(--background-modifier-hover);
+  color: var(--text-normal);
+}
+
+.type-button.active {
+  background: var(--interactive-accent);
+  color: var(--text-on-accent);
+  border-color: var(--interactive-accent);
+}
+
+.quick-note-form {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.form-group {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.form-group-inline {
+  flex-direction: row;
+  align-items: center;
+  justify-content: flex-start;
+}
+
+.form-group-inline label {
+  min-width: 30px;
+}
+
+.form-group-inline .input-short {
+  width: 120px;
+}
+
+.form-group label {
+  font-size: 15px;
+  color: var(--text-muted);
+}
+
+.form-group input,
+.form-group textarea {
+  padding: 10px 14px;
+  border: 1px solid var(--background-modifier-border);
+  border-radius: 6px;
+  /* 输入框使用主要背景色，保持清晰 */
+  background: var(--background-primary);
+  color: var(--text-normal);
+  font-size: 14px;
+  line-height: 1.5;
+  width: 100%;
+  box-sizing: border-box;
+}
+
+.form-group input:focus,
+.form-group textarea:focus {
+  border-color: var(--interactive-accent);
+  box-shadow: 0 0 0 1px var(--interactive-accent);
+}
+
+.form-group textarea {
+  min-height: 120px;
+  max-height: 300px;
+  resize: vertical;
+}
+
+.quick-note-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 12px;
+  margin-top: 20px;
+}
+
+.quick-note-button {
+  padding: 8px 16px;
+  border: none;
+  border-radius: 4px;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.quick-note-button.primary {
+  background: var(--interactive-accent);
+  color: var(--text-on-accent);
+}
+
+.quick-note-button.primary:hover {
+  background: var(--interactive-accent-hover);
+}
+
+/* === Add Bird Button Animation Styles === */
+
+.save-button-container.quick-note-button.primary {
+  /* Reset some default button styles */
+  padding: 0;
+  border: 2px solid #000; /* Use a fixed border color for the effect */
+  border-radius: 22px; /* Reduced */
+  background-color: #f4cf47; /* Use a fixed background color */
+  color: #000; /* Use a fixed text color */
+  width: 150px; /* Reduced */
+  height: 35px; /* Reduced */
+  position: relative;
+  display: flex; /* Ensure flex properties for wrapper */
+  justify-content: center;
+  align-items: center;
+  box-sizing: border-box;
+  cursor: pointer;
+  /* Remove default hover effect if it conflicts */
+  /* background: var(--interactive-accent); */ 
+}
+
+.save-button-container.quick-note-button.primary .buttonWrapper {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  box-sizing: border-box;
+  border-radius: 22px; /* Reduced - Match parent's border-radius */
+  width: 100%;
+  height: 100%;
+  overflow: hidden;
+  position: relative;
+}
+
+.save-button-container.quick-note-button.primary .buttonWrapper span {
+  font-size: 15px; /* Reduced */
+  letter-spacing: 2px;
+  color: #000; /* Match border color */
+  z-index: 2;
+  transition: all 0.3s ease;
+}
+
+.save-button-container.quick-note-button.primary .buttonWrapper::before,
+.save-button-container.quick-note-button.primary .buttonWrapper::after {
+  content: "";
+  position: absolute;
+  bottom: 0;
+  width: 67px; /* Reduced */
+  height: 22px; /* Reduced */
+  background-color: #f4e19c; /* Lighter shade for effect */
+  /* Note: Clip-path might need scaling adjustment if distortion occurs */
+  clip-path: path(
+    "M13.77,37.35L.25,16.6c-.87-1.33,.69-2.91,2-2.02l12.67,8.59c.81,.55,1.91,.14,2.18-.81l2.62-9.33c.39-1.4,2.34-1.42,2.76-.02l3.6,11.99c.33,1.11,1.74,1.4,2.47,.52L49.38,.52c.87-1.04,2.53-.42,2.53,.95V23.7c0,1.13,1.2,1.83,2.16,1.26l12.75-7.51c.85-.5,1.94,0,2.13,.98l1.5,7.6c.2,1.03,1.37,1.51,2.22,.92l17.74-12.3c1.09-.75,2.52,.25,2.21,1.55l-2.44,10.2c-.26,1.09,.74,2.06,1.8,1.75l30.8-9.04c1.37-.4,2.42,1.26,1.49,2.36l-9.07,10.66c-.83,.98-.1,2.49,1.17,2.42l12.12-.68c1.6-.09,2.12,2.15,.65,2.8l-2.73,1.21c-.18,.08-.38,.12-.58,.12H14.97c-.48,0-.93-.25-1.2-.65Z"
+  );
+  z-index: 0;
+  transition: all 0.5s ease;
+}
+
+.save-button-container.quick-note-button.primary .buttonWrapper::before {
+  left: 0;
+}
+
+.save-button-container.quick-note-button.primary .buttonWrapper::after {
+  right: 0;
+  transform: rotateY(180deg);
+}
+
+/* Hover Effects */
+.save-button-container.quick-note-button.primary:hover .buttonWrapper span {
+  letter-spacing: 3px; /* Reduced */
+}
+
+.save-button-container.quick-note-button.primary:hover .buttonWrapper::before {
+  transform: translateX(-9px); /* Adjusted */
+}
+
+.save-button-container.quick-note-button.primary:hover .buttonWrapper::after {
+  transform: translateX(9px) rotateY(180deg); /* Adjusted */
+}
+
+.save-button-container.quick-note-button.primary:hover::before { /* Arrow move */
+  right: 10px; /* Adjusted */
+}
+
+.quick-note-button.secondary {
+  /* 次要按钮使用更柔和的背景 */
+  background: var(--background-modifier-border);
+  color: var(--text-muted);
+}
+
+.quick-note-button.secondary:hover {
+  background: var(--background-modifier-hover);
+  color: var(--text-normal);
+}
+
 /* 卡片画廊主容器样式 */
 .cards-gallery-container {
+    position: relative;
     /* 设置内边距和容器高度 */
     padding: 20px;
     height: 100%;
@@ -39,7 +274,6 @@
     color: var(--text-normal);
     cursor: pointer;
 }
-
 /* 模态框基础样式 */
 .gallery-modal {
     /* 默认隐藏模态框 */
@@ -382,6 +616,133 @@
   width: 500px;
 }
 
+/* 想法卡片样式 */
+.new-cards-container.idea-card, .new-cards-container.quote-card {
+  background: linear-gradient(135deg, #f9f9f9, #f0faff);
+  border-radius: 14px;
+  box-shadow: 0 3px 8px rgba(0, 0, 0, 0.06);
+  padding: 36px 48px;
+  font-family: "Segoe UI", sans-serif;
+  position: relative;
+  overflow: visible;
+  max-width: 700px;
+  min-width: 400px;
+  width: fit-content;
+  margin-top: 0;
+  margin-bottom: 30px;
+  margin-left: 0;
+  margin-right: 12px;
+  white-space: pre-wrap;
+  word-break: break-word;
+  display: flex;
+  flex-direction: column;
+  transition: all 0.3s ease;
+}
+
+.new-cards-container.quote-card {
+  background: linear-gradient(135deg, #dddada, #d9dadb);
+}
+.idea-meta .card-tags-container .tag,
+.quote-meta .card-tags-container .tag {
+  background: transparent !important;
+  color: #969292 !important;
+  font-weight: 500;
+  border: none;
+  box-shadow: none;
+}
+
+/* 为带有url的想法卡片添加hover效果 */
+.new-cards-container.idea-card[data-has-url="true"], .new-cards-container.quote-card[data-has-url="true"] {
+  cursor: pointer;
+}
+
+.new-cards-container.idea-card[data-has-url="true"]:hover, .new-cards-container.quote-card[data-has-url="true"]:hover {
+  background: linear-gradient(135deg, #f0f0f0, #e8f6ff);
+  box-shadow: 0 5px 15px rgba(0, 0, 0, 0.1);
+  transform: translateY(-2px);
+}
+
+.new-cards-container.idea-card::before {
+  content: '💡';
+  position: absolute;
+  top: 0px;
+  left: 15px;
+  font-size: 45px;
+  transform: rotate(-10deg);
+}
+
+.new-cards-container.quote-card::before {
+  content: '”';
+  position: absolute;
+  top: 0px;
+  left: 25px;
+  font-size: 70px;
+  color: #e74c3c;
+  font-family: Georgia, serif;
+  font-weight: bold;
+  transform: rotate(10deg);
+}
+
+.new-cards-container.idea-card .idea-content, .new-cards-container.quote-card .quote-content {
+  font-size: 16px;
+  font-weight: 550;
+  line-height: 1.6;
+  color: #222;
+  padding-left: 24px;
+  padding-top: 20px;  
+}
+
+.new-cards-container.idea-card .idea-meta, .new-cards-container.quote-card .quote-meta {
+  content: attr(data-footer);
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  font-size: 13px;
+  color: #777;
+  margin-top: 24px;
+  padding-left: 24px;
+}
+
+.new-cards-container.idea-card .idea-source{
+  color: #1e90ff;
+  font-weight: bold;
+}  
+
+.new-cards-container.quote-card .quote-source{
+  color: #e74c3c;
+  font-weight: bold;
+}
+
+.new-cards-container.idea-card .idea-source,
+.new-cards-container.idea-card .idea-date,
+.new-cards-container.quote-card .quote-source,
+.new-cards-container.quote-card .quote-date{
+  margin: 0;
+  position: relative;
+  display: flex;
+  align-items: center;
+}
+
+.new-cards-container.idea-card .idea-date,
+.new-cards-container.quote-card .quote-date
+{
+  font-weight: 400;
+  color: #b2b1b1;
+  
+}
+
+.new-cards-container.idea-card .idea-source::after,
+.new-cards-container.idea-card .idea-date::after,
+.new-cards-container.quote-card .quote-source::after,
+.new-cards-container.quote-card .quote-date::after {
+  content: '|';
+  margin-left: 10px;
+  color: #b2b1b1;
+  top: -1.5px;
+  position: relative;
+  font-weight: 400;
+}
+
 /* 评分徽章容器样式 */
 .new-cards-container .rating {
   position: absolute;
@@ -502,11 +863,79 @@
   cursor: pointer;
 }
 
-/* 隐藏时间轴内卡片的CID */
-.block-language-timeline .block-language-movie-card .card-id,
-.block-language-timeline .block-language-music-card .card-id,
-.block-language-timeline .block-language-book-card .card-id {
-  display: none;
+/* 反链容器样式 */
+.card-backlinks-container {
+    position: absolute;
+    bottom: 10px;
+    right: 10px;
+    z-index: 10;
+}
+
+/* 反链图标样式 */
+.card-backlinks-icon {
+    width: 24px;
+    height: 24px;
+    background-color: var(--background-secondary);
+    border-radius: 50%;
+    cursor: pointer;
+    display: flex;
+    opacity: 0;
+    transform: translateY(20px);
+    transition: all 0.3s ease;
+}
+
+.new-cards-container:hover .card-backlinks-icon {
+    opacity: 1;
+    transform: translateY(0);
+    align-items: center;
+    justify-content: center;
+}
+
+/* 反链下拉菜单样式 */
+.card-backlinks-dropdown {
+    display: none;
+    position: absolute;
+    bottom: 100%;
+    right: 0;
+    background: var(--background-primary);
+    border: 1px solid var(--background-modifier-border);
+    border-radius: 4px;
+    min-width: 150px;
+    max-height: 200px;
+    overflow-y: auto;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+}
+
+.card-backlinks-dropdown.show {
+    display: block;
+}
+
+/* 反链项目样式 */
+.backlink-item {
+    padding: 4px 12px;
+    cursor: pointer;
+    color: var(--text-normal);
+    font-size: 13px;
+}
+
+.backlink-item:hover {
+    background-color: var(--background-modifier-hover);
+}
+
+/* 反链分类标题样式 */
+.backlink-section-title {
+    padding: 4px 12px;
+    font-size: 0.85em;
+    font-weight: bold;
+    color: var(--text-muted);
+    border-bottom: 1px solid var(--background-modifier-border);
+    background: antiquewhite;
+}
+
+/* 如果不是第一个标题，添加上边距 */
+.backlink-section-title:not(:first-child) {
+    margin-top: 8px;
+    padding-top: 6px;
 }
 
 /* 鼠标悬停时显示卡片ID */
@@ -731,8 +1160,253 @@
   padding: 8px;
 }
 
-/* 电影卡片特定样式 */
 .movie-card .cover-container svg {
   /* 为电影卡片的SVG图标设置较小内边距，使图标更加紧凑 */
   padding: 6px;
 }
+
+/* === Bird Animation Keyframes === */
+
+@keyframes wakeup {
+  0% {
+    height: 28px;
+    border-radius: 70px 70px 40px 40px / 48px 48px 30px 30px; /* --border-radius2 */
+  }
+  100% {
+    height: 40px;
+    border-radius: 40px 40px 40px 40px / 48px 48px 30px 30px; /* --border-radius3 */
+  }
+}
+
+@keyframes eye {
+  0% {
+    top: -6px;
+    width: 6px;
+    height: 6px;
+  }
+  30% {
+    top: -6px;
+    width: 6px;
+    height: 6px;
+  }
+  32% {
+    top: -4px;
+    width: 8px;
+    height: 2px;
+  }
+  34% {
+    top: -6px;
+    width: 6px;
+    height: 6px;
+  }
+  70% {
+    top: -6px;
+    width: 6px;
+    height: 6px;
+  }
+  72% {
+    top: -4px;
+    width: 8px;
+    height: 2px;
+  }
+  74% {
+    top: -6px;
+    width: 6px;
+    height: 6px;
+  }
+  76% {
+    top: -4px;
+    width: 8px;
+    height: 2px;
+  }
+  78% {
+    top: -6px;
+    width: 6px;
+    height: 6px;
+  }
+  100% {
+    top: -6px;
+    width: 6px;
+    height: 6px;
+  }
+}
+
+@keyframes eye2 {
+  0% {
+    top: -6px;
+    width: 6px;
+    height: 6px;
+  }
+  10% {
+    transform: translateX(0);
+  }
+  12% {
+    transform: translateX(3px);
+  }
+  20% {
+    top: -6px;
+    width: 6px;
+    height: 6px;
+  }
+  22% {
+    top: -4px;
+    width: 8px;
+    height: 2px;
+  }
+  24% {
+    top: -6px;
+    width: 6px;
+    height: 6px;
+  }
+  25% {
+    transform: translateX(3px);
+  }
+  27% {
+    transform: translateX(0);
+  }
+  74% {
+    top: -6px;
+    width: 6px;
+    height: 6px;
+    transform: translateX(0);
+  }
+  76% {
+    top: -4px;
+    width: 8px;
+    height: 2px;
+    transform: translateX(3px);
+  }
+  78% {
+    top: -6px;
+    width: 6px;
+    height: 6px;
+  }
+  80% {
+    top: -4px;
+    width: 8px;
+    height: 2px;
+  }
+  82% {
+    top: -6px;
+    width: 6px;
+    height: 6px;
+  }
+  85% {
+    transform: translateX(3px);
+  }
+  87% {
+    transform: translateX(0);
+  }
+  100% {
+    top: -6px;
+    width: 6px;
+    height: 6px;
+    transform: translateX(0);
+  }
+}
+
+@keyframes sleep {
+  0% {
+    height: 30px;
+    border-radius: 60px 60px 40px 40px / 48px 48px 30px 30px; /* --border-radius1 */
+  }
+  100% {
+    height: 26px;
+    border-radius: 70px 70px 40px 40px / 48px 48px 30px 30px; /* --border-radius2 */
+  }
+}
+
+/* Add styles for bird hover effect */
+.save-button-container.quick-note-button.primary:hover .birdBox .wakeup {
+  animation: wakeup 0.2s ease forwards;
+}
+
+.save-button-container.quick-note-button.primary:hover .birdBox .wakeup .birdFace::before,
+.save-button-container.quick-note-button.primary:hover .birdBox .wakeup .birdFace::after {
+  width: 6px;
+  height: 6px;
+  animation: eye 5s linear infinite;
+}
+
+.save-button-container.quick-note-button.primary:hover .birdBox .wakeup:nth-child(2) .birdFace::before,
+.save-button-container.quick-note-button.primary:hover .birdBox .wakeup:nth-child(2) .birdFace::after {
+  animation: eye2 5s linear infinite;
+}
+
+/* Add default bird animation */
+.save-button-container .bird {
+  /* Existing bird styles... */
+  animation: sleep 1s ease infinite alternate;
+}
+
+/* Add bird face styles */
+.save-button-container .bird .birdFace {
+  position: absolute;
+  top: 15px;
+  width: 12px;
+  height: 6px;
+  background-color: #ff8108;
+  border-radius: 50% 50% 50% 50% / 78% 78% 22% 22%;
+}
+
+.save-button-container .bird .birdFace::before,
+.save-button-container .bird .birdFace::after {
+  content: "";
+  position: absolute;
+  top: -4px;
+  width: 8px;
+  height: 2px;
+  border-radius: 4px;
+  background: #000;
+}
+
+.save-button-container .bird .birdFace::before {
+  left: -5px;
+}
+
+.save-button-container .bird .birdFace::after {
+  right: -5px;
+}
+
+/* Add bird hair style */
+.save-button-container .bird::before {
+  content: "";
+  position: absolute;
+  top: -12px;
+  left: 16px;
+  width: 12px;
+  height: 12px;
+  background: #ff8108;
+  clip-path: path(
+    "M10.23,3.32c-3.54,.63-5.72,2.51-7.02,4.23-.33-1.58-.34-3.54,.93-5.12,.52-.65,.41-1.59-.24-2.11C3.24-.19,2.29-.08,1.77,.57c-3.82,4.77-.31,11.11-.13,11.42,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0-.01-.02,2.49,.04,2.52,0,.1-.14,1.54-4.82,6.59-5.71,.82-.14,1.37-.92,1.22-1.74s-.94-1.36-1.75-1.21Z"
+  );
+}
+
+/* Add bird box styles if they were commented out or missing */
+.save-button-container .birdBox {
+  position: absolute;
+  top: -54px;
+  left: 0;
+  right: 0;
+  margin: 0 auto;
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-end;
+  width: 136px;
+  height: 56px;
+  pointer-events: none; /* Ensure birds don't interfere with button clicks */
+}
+
+.save-button-container .bird {
+  width: 42px;
+  height: 28px;
+  box-sizing: border-box;
+  display: flex;
+  justify-content: center;
+  border: solid 2px #000;
+  background-color: #f4cf47;
+  border-radius: 60px 60px 40px 40px / 48px 48px 30px 30px; /* --border-radius1 */
+  position: relative;
+  animation: sleep 1s ease infinite alternate;
+}
+

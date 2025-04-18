@@ -6591,9 +6591,9 @@ __export(main_exports, {
   default: () => NewCardsPlugin
 });
 module.exports = __toCommonJS(main_exports);
-var import_obsidian3 = require("obsidian");
+var import_obsidian4 = require("obsidian");
 
-// utils.ts
+// src/utils.ts
 var import_crypto_js = __toESM(require_crypto_js());
 var import_obsidian = require("obsidian");
 var CardUtils = class {
@@ -6761,7 +6761,7 @@ var CardUtils = class {
 };
 CardUtils.base62Chars = "0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz";
 
-// views/CardsGalleryView.ts
+// src/CardsGalleryView.ts
 var import_obsidian2 = require("obsidian");
 var VIEW_TYPE_CARDS_GALLERY = "cards-gallery-view";
 var CardsGalleryView = class extends import_obsidian2.ItemView {
@@ -6806,6 +6806,7 @@ var CardsGalleryView = class extends import_obsidian2.ItemView {
     this.container = this.containerEl.children[1];
     this.container.empty();
     this.container.addClass("cards-gallery-container");
+    this.container.setAttribute("data-hidden-fields", Array.from(this.hiddenFields).join(" "));
     const controlsContainer = this.container.createDiv({ cls: "gallery-controls" });
     const types = [
       { id: "all", text: "\u5168\u90E8\u7C7B\u578B" },
@@ -7224,11 +7225,62 @@ var CardsGalleryView = class extends import_obsidian2.ItemView {
           await this.plugin.renderMovieCard(card.data, cardContainer, card.cid);
           break;
       }
+      const newCardsContainer = cardContainer.querySelector(".new-cards-container");
+      if (newCardsContainer) {
+        const backlinksContainer = newCardsContainer.createDiv({ cls: "card-backlinks-container" });
+        const backlinksIcon = backlinksContainer.createDiv({ cls: "card-backlinks-icon" });
+        backlinksIcon.innerHTML = '<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"></path><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"></path></svg>';
+        const backlinksDropdown = backlinksContainer.createDiv({ cls: "card-backlinks-dropdown" });
+        const cardIndex = await CardUtils.loadCardIndex(this.plugin.app.vault);
+        const cardInfo = cardIndex[card.cid];
+        const resolvedLinks = this.plugin.app.metadataCache.resolvedLinks;
+        if (cardInfo && cardInfo.locations && cardInfo.locations.length > 0) {
+          const locations = [...cardInfo.locations].sort((a, b) => a.path.localeCompare(b.path));
+          const locationTitle = backlinksDropdown.createDiv({ cls: "backlink-section-title" });
+          locationTitle.textContent = "\u5361\u7247\u6240\u5728\u7B14\u8BB0";
+          const addedPaths = /* @__PURE__ */ new Set();
+          for (const location of locations) {
+            if (addedPaths.has(location.path)) continue;
+            addedPaths.add(location.path);
+            const sourceFile = this.plugin.app.vault.getAbstractFileByPath(location.path);
+            if (sourceFile instanceof import_obsidian2.TFile) {
+              const noteLink = backlinksDropdown.createDiv({ cls: "backlink-item" });
+              const displayName = sourceFile.basename.replace(/\.md$/, "");
+              noteLink.textContent = displayName;
+              noteLink.addEventListener("click", () => {
+                this.plugin.app.workspace.openLinkText(location.path, "", true);
+              });
+            }
+          }
+        }
+        backlinksIcon.addEventListener("click", (e) => {
+          e.stopPropagation();
+          document.querySelectorAll(".card-backlinks-dropdown.show").forEach((dropdown) => {
+            if (dropdown !== backlinksDropdown) {
+              dropdown.classList.remove("show");
+            }
+          });
+          backlinksDropdown.classList.toggle("show");
+        });
+        if (!this.container.hasAttribute("data-backlinks-handler")) {
+          this.container.setAttribute("data-backlinks-handler", "true");
+          this.container.addEventListener("click", (e) => {
+            const target = e.target;
+            const clickedBacklinksIcon = target.closest(".card-backlinks-icon");
+            if (!clickedBacklinksIcon) {
+              document.querySelectorAll(".card-backlinks-dropdown.show").forEach((dropdown) => {
+                dropdown.classList.remove("show");
+              });
+            }
+          });
+        }
+      }
     }
   }
   async setState(state) {
     if (state && state.viewId) {
       this.loadSettings();
+      this.container?.setAttribute("data-hidden-fields", Array.from(this.hiddenFields).join(" "));
       await this.onOpen();
     }
   }
@@ -7238,8 +7290,284 @@ var CardsGalleryView = class extends import_obsidian2.ItemView {
   }
 };
 
+// src/QuickNoteView.ts
+var import_obsidian3 = require("obsidian");
+var VIEW_TYPE_QUICK_NOTE = "quick-note-view";
+var QuickNoteView = class extends import_obsidian3.ItemView {
+  constructor(leaf, plugin) {
+    super(leaf);
+    this.type = "idea";
+    this.plugin = plugin;
+  }
+  getViewType() {
+    return VIEW_TYPE_QUICK_NOTE;
+  }
+  getDisplayText() {
+    return "\u5FEB\u901F\u8BB0\u5F55";
+  }
+  getIcon() {
+    return "bulb";
+  }
+  async onOpen() {
+    this.container = this.containerEl.children[1];
+    this.container.empty();
+    this.container.addClass("quick-note-container");
+    const contentEl = this.container.createDiv({ cls: "quick-note-content" });
+    const typeSelector = contentEl.createDiv({ cls: "quick-note-type-selector" });
+    const buttons = [
+      { type: "idea", text: "\u60F3\u6CD5" },
+      { type: "quote", text: "\u6458\u5F55" },
+      { type: "movie", text: "\u7535\u5F71" },
+      { type: "book", text: "\u4E66\u7C4D" },
+      { type: "music", text: "\u97F3\u4E50" }
+    ];
+    const typeButtons = buttons.map(({ type, text }) => {
+      const btn = typeSelector.createEl("button", {
+        cls: `type-button ${type === this.type ? "active" : ""}`,
+        text
+      });
+      btn.onclick = () => this.switchType(type, btn, typeButtons.filter((b) => b !== btn));
+      return btn;
+    });
+    const form = contentEl.createEl("form", { cls: "quick-note-form" });
+    this.buildFormFields(form, this.type);
+    this.addSaveButton(form);
+    form.onsubmit = async (e) => {
+      e.preventDefault();
+      await this.saveNote();
+    };
+  }
+  switchType(newType, activeBtn, inactiveButtons) {
+    this.type = newType;
+    activeBtn.classList.add("active");
+    inactiveButtons.forEach((btn) => btn.classList.remove("active"));
+    const form = this.container.querySelector(".quick-note-form");
+    if (form) {
+      form.empty();
+      this.buildFormFields(form, newType);
+      this.addSaveButton(form);
+    }
+  }
+  // 新增方法：根据类型构建表单字段
+  buildFormFields(form, type) {
+    const now = /* @__PURE__ */ new Date();
+    const year = now.getFullYear();
+    const month = (now.getMonth() + 1).toString().padStart(2, "0");
+    const day = now.getDate().toString().padStart(2, "0");
+    const hours = now.getHours().toString().padStart(2, "0");
+    const minutes = now.getMinutes().toString().padStart(2, "0");
+    const seconds = now.getSeconds().toString().padStart(2, "0");
+    const currentDateTime = `${year}-${month}-${day} ${hours}:${minutes}:${seconds}`;
+    const currentDate = `${year}-${month}-${day}`;
+    switch (type) {
+      case "idea":
+        this.createFormGroup(form, "\u60F3\u6CD5", "content", true);
+        this.createFormGroup(form, "\u6807\u7B7E", "tags");
+        this.createFormGroup(form, "URL", "url");
+        this.createFormGroup(form, "\u611F\u4E8E", "source");
+        this.createFormGroup(form, "\u65E5\u671F", "date", false, "text", "YYYY-MM-DD HH:mm:ss", currentDateTime);
+        break;
+      case "quote":
+        this.createFormGroup(form, "\u6458\u5F55", "content", true);
+        this.createFormGroup(form, "\u6765\u6E90", "source");
+        this.createFormGroup(form, "\u6807\u7B7E", "tags");
+        this.createFormGroup(form, "URL", "url");
+        this.createFormGroup(form, "\u65E5\u671F", "date", false, "text", "YYYY-MM-DD HH:mm:ss", currentDateTime);
+        break;
+      case "movie":
+        this.createFormGroup(form, "\u5F71\u8BC4", "description", true);
+        this.createFormGroup(form, "\u540D\u79F0", "title");
+        this.createFormGroup(form, "\u5BFC\u6F14", "director");
+        this.createFormGroup(form, "\u8BC4\u5206", "rating", false, "number");
+        this.createFormGroup(form, "\u5C01\u9762", "cover");
+        this.createFormGroup(form, "URL", "url");
+        this.createFormGroup(form, "\u6807\u7B7E", "tags");
+        this.createFormGroup(form, "\u65E5\u671F", "year", false, "text", "YYYY-MM-DD");
+        break;
+      case "book":
+        this.createFormGroup(form, "\u4E66\u8BC4", "description", true);
+        this.createFormGroup(form, "\u4E66\u540D", "title");
+        this.createFormGroup(form, "\u4F5C\u8005", "author");
+        this.createFormGroup(form, "\u8BC4\u5206", "rating", false, "number");
+        this.createFormGroup(form, "\u5C01\u9762", "cover");
+        this.createFormGroup(form, "URL", "url");
+        this.createFormGroup(form, "\u6807\u7B7E", "tags");
+        this.createFormGroup(form, "\u65E5\u671F", "year", false, "text", "YYYY-MM-DD");
+        break;
+      case "music":
+        this.createFormGroup(form, "\u4E50\u8BC4", "description", true);
+        this.createFormGroup(form, "\u6B4C\u540D", "title");
+        this.createFormGroup(form, "\u6B4C\u624B", "artist");
+        this.createFormGroup(form, "\u8BC4\u5206", "rating", false, "number");
+        this.createFormGroup(form, "\u5C01\u9762", "cover");
+        this.createFormGroup(form, "URL", "url");
+        this.createFormGroup(form, "\u6807\u7B7E", "tags");
+        this.createFormGroup(form, "\u5E74\u4EFD", "year", false, "text", "YYYY-MM-DD");
+        break;
+    }
+  }
+  // 新增方法：添加保存按钮及其逻辑
+  addSaveButton(form) {
+    const actions = form.createDiv({ cls: "quick-note-actions" });
+    const saveButton = actions.createEl("button", {
+      cls: "quick-note-button primary save-button-container"
+    });
+    const buttonWrapper = saveButton.createDiv({ cls: "buttonWrapper" });
+    buttonWrapper.createSpan({ text: "\u4FDD\u5B58" });
+    const birdBox = saveButton.createDiv({ cls: "birdBox" });
+    for (let i = 0; i < 3; i++) {
+      const bird = birdBox.createDiv({ cls: "bird" });
+      bird.createDiv({ cls: "birdFace" });
+    }
+    saveButton.addEventListener("click", async (e) => {
+      e.preventDefault();
+      await this.saveNote();
+    });
+    saveButton.addEventListener("mouseenter", () => {
+      const birds = birdBox.querySelectorAll(".bird");
+      birds.forEach((bird) => bird.classList.add("wakeup"));
+    });
+    saveButton.addEventListener("mouseleave", () => {
+      const birds = birdBox.querySelectorAll(".bird");
+      birds.forEach((bird) => bird.classList.remove("wakeup"));
+    });
+  }
+  createFormGroup(parent, labelText, inputId, isTextarea = false, inputType = "text", placeholder, defaultValue) {
+    const isLongField = ["content", "description"].includes(inputId);
+    const group = parent.createDiv({ cls: `form-group${!isLongField ? " form-group-inline" : ""}` });
+    group.createEl("label", { text: labelText, attr: { for: inputId } });
+    if (isTextarea) {
+      const textarea = group.createEl("textarea", { attr: { id: inputId, name: inputId, placeholder: placeholder || "" } });
+      if (defaultValue) textarea.value = defaultValue;
+    } else {
+      const input = group.createEl("input", { attr: { id: inputId, name: inputId, type: inputType, placeholder: placeholder || "" } });
+      if (defaultValue) input.value = defaultValue;
+    }
+  }
+  async saveNote() {
+    const content = this.container.querySelector("#content, #description")?.value;
+    if (!content) return;
+    let identifierLine = "";
+    const tags = this.container.querySelector("#tags")?.value || "#\u6807\u7B7E";
+    if (["idea", "quote"].includes(this.type)) {
+      const dateValue = this.container.querySelector("#date")?.value || "";
+      identifierLine = `${dateValue.split(" ")[0]} ${tags}`;
+    } else {
+      const yearValue = this.container.querySelector("#year")?.value || (/* @__PURE__ */ new Date()).getFullYear().toString();
+      identifierLine = `${yearValue} ${tags}`;
+    }
+    let cardContent = `${identifierLine}
+\`\`\`${this.type}-card
+`;
+    switch (this.type) {
+      case "idea":
+        cardContent += `idea: ${content}
+`;
+        cardContent += `source: ${this.container.querySelector("#source")?.value || ""}
+`;
+        cardContent += `tags: ${this.container.querySelector("#tags")?.value || ""}
+`;
+        cardContent += `url: ${this.container.querySelector("#url")?.value || ""}
+`;
+        cardContent += `date: ${this.container.querySelector("#date")?.value || ""}
+`;
+        break;
+      case "quote":
+        cardContent += `quote: ${content}
+`;
+        cardContent += `source: ${this.container.querySelector("#source")?.value || ""}
+`;
+        cardContent += `author: ${this.container.querySelector("#author")?.value || ""}
+`;
+        cardContent += `tags: ${this.container.querySelector("#tags")?.value || ""}
+`;
+        cardContent += `url: ${this.container.querySelector("#url")?.value || ""}
+`;
+        cardContent += `date: ${this.container.querySelector("#date")?.value || ""}
+`;
+        break;
+      case "movie":
+        cardContent += `description: ${content}
+`;
+        cardContent += `title: ${this.container.querySelector("#title")?.value || ""}
+`;
+        cardContent += `director: ${this.container.querySelector("#director")?.value || ""}
+`;
+        cardContent += `rating: ${this.container.querySelector("#rating")?.value || ""}
+`;
+        cardContent += `cover: ${this.container.querySelector("#cover")?.value || ""}
+`;
+        cardContent += `url: ${this.container.querySelector("#url")?.value || ""}
+`;
+        cardContent += `tags: ${this.container.querySelector("#tags")?.value || ""}
+`;
+        cardContent += `year: ${this.container.querySelector("#year")?.value || ""}
+`;
+        break;
+      case "book":
+        cardContent += `description: ${content}
+`;
+        cardContent += `title: ${this.container.querySelector("#title")?.value || ""}
+`;
+        cardContent += `author: ${this.container.querySelector("#author")?.value || ""}
+`;
+        cardContent += `rating: ${this.container.querySelector("#rating")?.value || ""}
+`;
+        cardContent += `cover: ${this.container.querySelector("#cover")?.value || ""}
+`;
+        cardContent += `url: ${this.container.querySelector("#url")?.value || ""}
+`;
+        cardContent += `tags: ${this.container.querySelector("#tags")?.value || ""}
+`;
+        cardContent += `year: ${this.container.querySelector("#year")?.value || ""}
+`;
+        break;
+      case "music":
+        cardContent += `description: ${content}
+`;
+        cardContent += `title: ${this.container.querySelector("#title")?.value || ""}
+`;
+        cardContent += `artist: ${this.container.querySelector("#artist")?.value || ""}
+`;
+        cardContent += `rating: ${this.container.querySelector("#rating")?.value || ""}
+`;
+        cardContent += `cover: ${this.container.querySelector("#cover")?.value || ""}
+`;
+        cardContent += `url: ${this.container.querySelector("#url")?.value || ""}
+`;
+        cardContent += `tags: ${this.container.querySelector("#tags")?.value || ""}
+`;
+        cardContent += `year: ${this.container.querySelector("#year")?.value || ""}
+`;
+        break;
+    }
+    cardContent += "```";
+    const fileNameMap = {
+      "idea": "\u60F3\u6CD5.md",
+      "quote": "\u6458\u5F55.md",
+      "movie": "\u7535\u5F71.md",
+      "book": "\u4E66\u7C4D.md",
+      "music": "\u97F3\u4E50.md"
+    };
+    const targetFileName = fileNameMap[this.type];
+    let targetFile = this.app.vault.getAbstractFileByPath(targetFileName);
+    if (!targetFile) {
+      targetFile = await this.app.vault.create(targetFileName, "");
+    }
+    if (targetFile instanceof import_obsidian3.TFile) {
+      const currentContent = await this.app.vault.read(targetFile);
+      await this.app.vault.modify(targetFile, currentContent + "\n" + cardContent);
+    }
+    const formInputs = this.container.querySelectorAll("input, textarea");
+    formInputs.forEach((input) => {
+      input.value = "";
+    });
+  }
+};
+
 // main.ts
-(0, import_obsidian3.addIcon)("layout-grid", `<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="7" height="7"></rect><rect x="14" y="3" width="7" height="7"></rect><rect x="14" y="14" width="7" height="7"></rect><rect x="3" y="14" width="7" height="7"></rect></svg>`);
+(0, import_obsidian4.addIcon)("layout-grid", `<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="7" height="7"></rect><rect x="14" y="3" width="7" height="7"></rect><rect x="14" y="14" width="7" height="7"></rect><rect x="3" y="14" width="7" height="7"></rect></svg>`);
+(0, import_obsidian4.addIcon)("bulb", `<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-lightbulb"><path d="M15 14c.2-1 .7-1.7 1.5-2.5 1-.9 1.5-2.2 1.5-3.5A6 6 0 0 0 6 8c0 1 .2 2.2 1.5 3.5.7.7 1.3 1.5 1.5 2.5"></path><path d="M9 18h6"></path><path d="M10 22h4"></path></svg>`);
 var DEFAULT_SETTINGS = {
   gallerySettings: {
     columnCount: 3,
@@ -7250,7 +7578,9 @@ var DEFAULT_SETTINGS = {
   cardTemplates: {
     musicCard: "```music-card\ntitle: \nyear: \nartist: \ndescription: \nrating: \n```",
     bookCard: "```book-card\ntitle: \nyear: \nauthor: \ndescription: \nrating: \n```",
-    movieCard: "```movie-card\ntitle: \nyear: \ndirector: \ndescription: \nrating: \n```"
+    movieCard: "```movie-card\ntitle: \nyear: \ndirector: \ndescription: \nrating: \n```",
+    ideaCard: "```idea-card\nidea: \nsource: \ndate: \ntags: \nurl: \n```",
+    quoteCard: "```quote-card\nquote: \nsource: \ndate: \ntags: \nurl: \n```"
   },
   textColors: {
     title: "rgb(91, 136, 241)",
@@ -7262,7 +7592,7 @@ var DEFAULT_SETTINGS = {
     meta: "rgb(245, 216, 179)"
   }
 };
-var CIDInputModal = class extends import_obsidian3.Modal {
+var CIDInputModal = class extends import_obsidian4.Modal {
   constructor(app, onSubmit) {
     super(app);
     this.onSubmit = onSubmit;
@@ -7270,7 +7600,7 @@ var CIDInputModal = class extends import_obsidian3.Modal {
   onOpen() {
     const { contentEl } = this;
     contentEl.createEl("h3", { text: "\u8F93\u5165\u5361\u7247ID" });
-    new import_obsidian3.Setting(contentEl).setName("CID").addText(
+    new import_obsidian4.Setting(contentEl).setName("CID").addText(
       (text) => text.onChange((value) => {
         text.inputEl.onkeydown = (e) => {
           if (e.key === "Enter") {
@@ -7286,7 +7616,7 @@ var CIDInputModal = class extends import_obsidian3.Modal {
     contentEl.empty();
   }
 };
-var NewCardsSettingTab = class extends import_obsidian3.PluginSettingTab {
+var NewCardsSettingTab = class extends import_obsidian4.PluginSettingTab {
   constructor(app, plugin) {
     super(app, plugin);
     this.plugin = plugin;
@@ -7295,44 +7625,62 @@ var NewCardsSettingTab = class extends import_obsidian3.PluginSettingTab {
     const { containerEl } = this;
     containerEl.empty();
     containerEl.createEl("h3", { text: "\u6587\u5B57\u989C\u8272\u8BBE\u7F6E" });
-    new import_obsidian3.Setting(containerEl).setName("\u6807\u9898\u989C\u8272").addColorPicker((color) => color.setValue(this.plugin.settings.textColors.title).onChange(async (value) => {
+    new import_obsidian4.Setting(containerEl).setName("\u6807\u9898\u989C\u8272").addColorPicker((color) => color.setValue(this.plugin.settings.textColors.title).onChange(async (value) => {
       this.plugin.settings.textColors.title = value;
       await this.plugin.saveSettings();
     }));
-    new import_obsidian3.Setting(containerEl).setName("\u63CF\u8FF0\u6587\u5B57\u989C\u8272").addColorPicker((color) => color.setValue(this.plugin.settings.textColors.description).onChange(async (value) => {
+    new import_obsidian4.Setting(containerEl).setName("\u63CF\u8FF0\u6587\u5B57\u989C\u8272").addColorPicker((color) => color.setValue(this.plugin.settings.textColors.description).onChange(async (value) => {
       this.plugin.settings.textColors.description = value;
       await this.plugin.saveSettings();
     }));
-    new import_obsidian3.Setting(containerEl).setName("\u4F5C\u8005/\u827A\u672F\u5BB6/\u5BFC\u6F14\u989C\u8272").addColorPicker((color) => color.setValue(this.plugin.settings.textColors.author).onChange(async (value) => {
+    new import_obsidian4.Setting(containerEl).setName("\u4F5C\u8005/\u827A\u672F\u5BB6/\u5BFC\u6F14\u989C\u8272").addColorPicker((color) => color.setValue(this.plugin.settings.textColors.author).onChange(async (value) => {
       this.plugin.settings.textColors.author = value;
       this.plugin.settings.textColors.artist = value;
       this.plugin.settings.textColors.director = value;
       await this.plugin.saveSettings();
     }));
-    new import_obsidian3.Setting(containerEl).setName("\u5E74\u4EFD\u989C\u8272").addColorPicker((color) => color.setValue(this.plugin.settings.textColors.year).onChange(async (value) => {
+    new import_obsidian4.Setting(containerEl).setName("\u5E74\u4EFD\u989C\u8272").addColorPicker((color) => color.setValue(this.plugin.settings.textColors.year).onChange(async (value) => {
       this.plugin.settings.textColors.year = value;
       await this.plugin.saveSettings();
     }));
-    new import_obsidian3.Setting(containerEl).setName("\u5143\u6570\u636E\u989C\u8272").addColorPicker((color) => color.setValue(this.plugin.settings.textColors.meta).onChange(async (value) => {
+    new import_obsidian4.Setting(containerEl).setName("\u5143\u6570\u636E\u989C\u8272").addColorPicker((color) => color.setValue(this.plugin.settings.textColors.meta).onChange(async (value) => {
       this.plugin.settings.textColors.meta = value;
       await this.plugin.saveSettings();
     }));
-    containerEl.createEl("h3", { text: "\u5361\u7247\u6A21\u677F\u8BBE\u7F6E\uFF08\u52A1\u5FC5\u4FDD\u8BC1\u4EE3\u7801\u5DE6\u5BF9\u9F50\uFF09" });
-    new import_obsidian3.Setting(containerEl).setName("\u97F3\u4E50\u5361\u7247\u6A21\u677F").setDesc("\u8BBE\u7F6E\u97F3\u4E50\u5361\u7247\u7684\u9ED8\u8BA4\u6A21\u677F").addTextArea((text) => text.setPlaceholder("\u8F93\u5165\u97F3\u4E50\u5361\u7247\u6A21\u677F").setValue(this.plugin.settings.cardTemplates.musicCard).onChange(async (value) => {
+    containerEl.createEl("h3", { text: "\u5361\u7247\u6A21\u677F\u8BBE\u7F6E" });
+    new import_obsidian4.Setting(containerEl).setName("\u97F3\u4E50\u5361\u7247\u6A21\u677F").setDesc("\u8BBE\u7F6E\u97F3\u4E50\u5361\u7247\u7684\u9ED8\u8BA4\u6A21\u677F").addTextArea((text) => text.setPlaceholder("\u8F93\u5165\u97F3\u4E50\u5361\u7247\u6A21\u677F").setValue(this.plugin.settings.cardTemplates.musicCard).onChange(async (value) => {
       this.plugin.settings.cardTemplates.musicCard = value;
       await this.plugin.saveSettings();
     }).inputEl.style.cssText = "height: 150px; width: 100%; min-width: 400px;");
-    new import_obsidian3.Setting(containerEl).setName("\u4E66\u7C4D\u5361\u7247\u6A21\u677F").setDesc("\u8BBE\u7F6E\u4E66\u7C4D\u5361\u7247\u7684\u9ED8\u8BA4\u6A21\u677F").addTextArea((text) => text.setPlaceholder("\u8F93\u5165\u4E66\u7C4D\u5361\u7247\u6A21\u677F").setValue(this.plugin.settings.cardTemplates.bookCard).onChange(async (value) => {
+    new import_obsidian4.Setting(containerEl).setName("\u4E66\u7C4D\u5361\u7247\u6A21\u677F").setDesc("\u8BBE\u7F6E\u4E66\u7C4D\u5361\u7247\u7684\u9ED8\u8BA4\u6A21\u677F").addTextArea((text) => text.setPlaceholder("\u8F93\u5165\u4E66\u7C4D\u5361\u7247\u6A21\u677F").setValue(this.plugin.settings.cardTemplates.bookCard).onChange(async (value) => {
       this.plugin.settings.cardTemplates.bookCard = value;
       await this.plugin.saveSettings();
     }).inputEl.style.cssText = "height: 150px; width: 100%; min-width: 400px;");
-    new import_obsidian3.Setting(containerEl).setName("\u7535\u5F71\u5361\u7247\u6A21\u677F").setDesc("\u8BBE\u7F6E\u7535\u5F71\u5361\u7247\u7684\u9ED8\u8BA4\u6A21\u677F").addTextArea((text) => text.setPlaceholder("\u8F93\u5165\u7535\u5F71\u5361\u7247\u6A21\u677F").setValue(this.plugin.settings.cardTemplates.movieCard).onChange(async (value) => {
+    new import_obsidian4.Setting(containerEl).setName("\u7535\u5F71\u5361\u7247\u6A21\u677F").setDesc("\u8BBE\u7F6E\u7535\u5F71\u5361\u7247\u7684\u9ED8\u8BA4\u6A21\u677F").addTextArea((text) => text.setPlaceholder("\u8F93\u5165\u7535\u5F71\u5361\u7247\u6A21\u677F").setValue(this.plugin.settings.cardTemplates.movieCard).onChange(async (value) => {
       this.plugin.settings.cardTemplates.movieCard = value;
       await this.plugin.saveSettings();
     }).inputEl.style.cssText = "height: 150px; width: 100%; min-width: 400px;");
   }
 };
-var NewCardsPlugin = class extends import_obsidian3.Plugin {
+var NewCardsPlugin = class extends import_obsidian4.Plugin {
+  async activateQuickNoteView() {
+    const { workspace } = this.app;
+    const existing = workspace.getLeavesOfType(VIEW_TYPE_QUICK_NOTE);
+    if (existing.length) {
+      workspace.revealLeaf(existing[0]);
+      await existing[0].view.setState({
+        type: VIEW_TYPE_QUICK_NOTE,
+        active: true
+      }, { history: true });
+    } else {
+      const leaf = workspace.getLeaf("tab");
+      await leaf.setViewState({
+        type: VIEW_TYPE_QUICK_NOTE,
+        active: true
+      });
+      workspace.revealLeaf(leaf);
+    }
+  }
   isInCodeBlock(editor, line) {
     const content = editor.getValue();
     return content.includes("```timeline");
@@ -7357,7 +7705,7 @@ var NewCardsPlugin = class extends import_obsidian3.Plugin {
     if (ratingValue >= 7 && ratingValue <= 10) {
       ratingContainer.setAttribute("data-score", "excellent");
       const badge = ratingContainer.createDiv({ cls: "rating-badge" });
-      badge.innerHTML = `<svg t="1743841440004" class="icon" viewBox="0 0 1332 1024" version="1.1" xmlns="http://www.w3.org/2000/svg" p-id="5351" width="200" height="200"><path d="M754.999373 984.409613s-40.018391-7.918077-58.42257-18.618181c-18.618182-10.700104-120.483177-56.28255-189.39185-12.840126 0 0-28.462278 24.182236-57.35256 27.178266 0 0 36.808359 13.482132 74.900731 2.782027 0 0 32.528318-9.20209 50.932498-22.47022 0 0 40.660397-17.976176 78.538767 0.214002 37.87837 18.190178 33.170324 23.326228 64.842633 28.248276 31.672309 5.13605 35.952351-4.494044 35.952351-4.494044zM509.324974 912.076907s-16.692163-47.722466-74.472727-62.060606c0 0 9.20209 41.730408 56.068547 57.780564 0 0-93.732915 1.498015-130.11327 54.784535-0.214002 0 75.75674 29.960293 148.51745-50.504493z" fill="#B68A11" p-id="5352"></path><path d="M413.66604 896.454754s-3.638036-50.504493-55.640544-79.608777c0 0-2.140021 42.800418 38.734379 70.406688 0 0-90.950888-23.326228-139.957367 18.618181 0.214002 0 65.484639 49.006479 156.863532-9.416092z" fill="#B68A11" p-id="5353"></path><path d="M312.229049 767.411494s27.820272 47.294462-2.782027 98.440962c0 0-93.304911 28.67628-153.011494-39.590387 0 0 75.114734-24.824242 148.089446 35.096343 0.214002 0-22.042215-53.928527 7.704075-93.946918z" fill="#B68A11" p-id="5354"></path><path d="M252.308464 796.301776s-16.692163-53.28652 11.770115-84.102821c0 0 26.964263 48.792476-9.630094 91.16489 0 0-101.436991 19.902194-139.957367-49.862487 0 0.428004 61.632602-19.902194 137.817346 42.800418z" fill="#B68A11" p-id="5355"></path><path d="M202.873981 729.961129s-9.844096-47.936468 19.046186-78.966772c0 0 23.754232 43.656426-15.194148 87.954859 0 0-106.787043-2.354023-128.401254-60.990595-0.214002 0.214002 81.748798-3.852038 124.549216 52.002508z" fill="#B68A11" p-id="5356"></path><path d="M189.177847 585.081714s13.482132 52.644514-24.182236 81.106792c0 0-87.740857 2.354023-115.77513-67.410659 0 0 75.114734 2.140021 112.993103 60.990596 0 0-2.140021-51.360502 26.964263-74.686729z" fill="#B68A11" p-id="5357"></path><path d="M161.143574 519.811076s12.412121 43.442424-26.536259 73.616719c0 0-84.316823-4.494044-105.931035-70.406687 0 0 66.340648 2.782027 101.650993 64.842633 0-0.214002-2.782027-38.94838 30.816301-68.052665z" fill="#B68A11" p-id="5358"></path><path d="M151.085475 456.466458s6.206061 35.096343-33.81233 69.336677c0 0-82.176803-22.470219-92.876907-78.324765 0 0 70.192685 14.980146 91.806897 73.616719 0.214002-0.214002-2.568025-36.808359 34.88234-64.628631z" fill="#B68A11" p-id="5359"></path><path d="M147.875444 398.899896s2.354023 39.162382-40.232393 57.780564c0 0-79.394775-35.952351-76.184744-85.600836 0 0 48.15047 4.494044 76.184744 80.464786 0.214002 0 9.20209-38.306374 40.232393-52.644514z" fill="#B68A11" p-id="5360"></path><path d="M154.723511 340.049321s-6.206061 35.310345-46.010449 50.932497c0 0-66.982654-43.442424-61.632602-91.806896 0 0 54.142529 24.824242 61.846604 85.814838 0 0 7.918077-24.396238 45.796447-44.940439zM166.493626 281.198746s-4.06604 33.384326-46.224451 44.512435c0 0-55.854545-25.680251-52.644515-91.592895 0 0 48.578474 24.61024 53.286521 86.242843-0.214002 0 16.906165-37.236364 45.582445-39.162383zM185.753814 225.986207s-26.750261 2.354023-47.722466 33.170324c0 0-4.06604-65.270637-44.726437-85.386834 0 0-14.552142 49.006479 43.01442 92.876907 0.214002 0 36.594357-6.848067 49.434483-40.660397z" fill="#B68A11" p-id="5361"></path><path d="M205.442006 176.551724S189.605852 208.438036 157.71954 209.722048c0 0-47.722466-41.730408-35.310345-89.880878 0 0 36.166353 26.322257 36.594358 83.032811 0.214002 0 15.622153-24.61024 46.438453-26.322257zM230.052247 128.615256s-9.20209 28.67628-50.076489 29.532288c0 0-38.520376-47.08046-20.972205-89.880877 0 0 29.104284 23.54023 24.182236 81.9628 0-0.214002 20.330199-22.898224 46.866458-21.614211zM258.514525 85.814838s-14.980146 26.536259-47.936469 23.326228c0 0-37.664368-49.006479-15.194148-86.670847 0 0 27.392268 26.536259 17.334169 80.464786 0 0 19.688192-19.47419 45.796448-17.120167z" fill="#B68A11" p-id="5362"></path><path d="M279.914734 53.500522s-13.910136 25.894253-49.648485 21.186207c0 0-5.564054-39.804389 19.47419-52.21651 0 0 7.276071 20.544201-7.490073 41.302404-0.214002 0 11.984117-12.412121 37.664368-10.272101z" fill="#B68A11" p-id="5363"></path><path d="M291.256844 24.824242s-3.424033 24.182236-29.318286 22.042216c0 0 1.498015-20.116196 29.318286-22.042216z" fill="#B68A11" p-id="5364"></path><path d="M556.405434 984.409613s40.018391-7.918077 58.42257-18.618181 120.483177-56.28255 189.39185-12.840126c0 0 28.462278 24.182236 57.35256 27.178266 0 0-36.808359 13.482132-74.900732 2.782027 0 0-32.528318-9.20209-50.932497-22.47022 0 0-40.660397-17.976176-78.538767 0.214002-37.87837 18.190178-33.170324 23.326228-64.842633 28.248276C560.685475 994.039707 556.405434 984.409613 556.405434 984.409613zM802.079833 912.076907s16.692163-47.722466 74.472727-62.060606c0 0-9.20209 41.730408-56.068547 57.780564 0 0 93.732915 1.498015 130.11327 54.784535 0.214002 0-75.75674 29.960293-148.51745-50.504493z" fill="#B68A11" p-id="5365"></path><path d="M897.738767 896.454754s3.638036-50.504493 55.640543-79.608777c0 0 2.140021 42.800418-38.734378 70.406688 0 0 90.950888-23.326228 139.957367 18.618181-0.214002 0-65.484639 49.006479-156.863532-9.416092z" fill="#B68A11" p-id="5366"></path><path d="M999.175758 767.411494s-27.820272 47.294462 2.782027 98.440962c0 0 93.304911 28.67628 153.011494-39.590387 0 0-75.114734-24.824242-148.303448 35.096343 0 0 22.256217-53.928527-7.490073-93.946918z" fill="#B68A11" p-id="5367"></path><path d="M1059.096343 796.301776s16.692163-53.28652-11.770115-84.102821c0 0-26.964263 48.792476 9.630094 91.16489 0 0 101.436991 19.902194 139.957367-49.862487 0 0.428004-61.632602-19.902194-137.817346 42.800418z" fill="#B68A11" p-id="5368"></path><path d="M1108.530825 729.961129s9.844096-47.936468-19.046186-78.966772c0 0-23.754232 43.656426 15.194149 87.954859 0 0 106.787043-2.354023 128.401254-60.990595 0.214002 0.214002-81.748798-3.852038-124.549217 52.002508z" fill="#B68A11" p-id="5369"></path><path d="M1122.226959 585.081714s-13.482132 52.644514 24.182236 81.106792c0 0 87.740857 2.354023 115.775131-67.410659 0 0-75.114734 2.140021-112.993103 60.990596 0 0 2.140021-51.360502-26.964264-74.686729z" fill="#B68A11" p-id="5370"></path><path d="M1150.261233 519.811076s-12.412121 43.442424 26.536259 73.616719c0 0 84.316823-4.494044 105.931035-70.406687 0 0-66.340648 2.782027-101.650993 64.842633 0-0.214002 2.568025-38.94838-30.816301-68.052665z" fill="#B68A11" p-id="5371"></path><path d="M1160.105329 456.466458s-6.206061 35.096343 33.81233 69.336677c0 0 82.176803-22.470219 92.876907-78.324765 0 0-70.192685 14.980146-91.806896 73.616719 0-0.214002 2.568025-36.808359-34.882341-64.628631z" fill="#B68A11" p-id="5372"></path><path d="M1163.315361 398.899896s-2.354023 39.162382 40.232392 57.780564c0 0 79.394775-35.952351 76.184744-85.600836 0 0-48.15047 4.494044-76.184744 80.464786 0 0-9.20209-38.306374-40.232392-52.644514z" fill="#B68A11" p-id="5373"></path><path d="M1156.681296 340.049321s6.206061 35.310345 46.010449 50.932497c0 0 66.982654-43.442424 61.632602-91.806896 0 0-54.142529 24.824242-61.846604 85.814838 0 0-8.132079-24.396238-45.796447-44.940439zM1144.911181 281.198746s4.06604 33.384326 46.224451 44.512435c0 0 55.854545-25.680251 52.644514-91.592895 0 0-48.578474 24.61024-53.28652 86.242843 0.214002 0-16.906165-37.236364-45.582445-39.162383zM1125.650993 225.986207s26.750261 2.354023 47.722466 33.170324c0 0 4.06604-65.270637 44.726437-85.386834 0 0 14.552142 49.006479-43.014421 92.876907-0.214002 0-36.594357-6.848067-49.434482-40.660397z" fill="#B68A11" p-id="5374"></path><path d="M1105.9628 176.551724s15.836155 31.886311 47.722466 33.170324c0 0 47.722466-41.730408 35.310345-89.880878 0 0-36.166353 26.322257-36.594357 83.032811-0.214002 0-15.836155-24.61024-46.438454-26.322257zM1081.35256 128.615256s9.20209 28.67628 50.076489 29.532288c0 0 38.520376-47.08046 20.972205-89.880877 0 0-29.104284 23.54023-24.182236 81.9628-0.214002-0.214002-20.544201-22.898224-46.866458-21.614211zM1052.890282 85.814838s14.980146 26.536259 47.936468 23.326228c0 0 37.664368-49.006479 15.194149-86.670847 0 0-27.392268 26.536259-17.33417 80.464786 0 0-19.902194-19.47419-45.796447-17.120167z" fill="#B68A11" p-id="5375"></path><path d="M1031.490073 53.500522s13.910136 25.894253 49.862487 21.186207c0 0 5.564054-39.804389-19.47419-52.21651 0 0-7.276071 20.544201 7.490073 41.302404-0.214002 0-12.198119-12.412121-37.87837-10.272101z" fill="#B68A11" p-id="5376"></path><path d="M1019.93396 24.824242s3.424033 24.182236 29.532289 22.042216c0 0-1.712017-20.116196-29.532289-22.042216z" fill="#B68A11" p-id="5377"></path></svg>`;
+      badge.innerHTML = `<svg t="1744038348712" class="icon" viewBox="0 0 1024 1024" version="1.1" xmlns="http://www.w3.org/2000/svg" p-id="2606" data-darkreader-inline-fill="" width="200" height="200"><path d="M510.742357 92.463901c230.651171 0 418.307108 187.654914 418.307107 418.307108s-187.654914 418.307108-418.307107 418.307108-418.307108-187.654914-418.307108-418.307108 187.655937-418.307108 418.307108-418.307108m0-29.879517c-247.518327 0-448.185602 200.667276-448.185602 448.185602s200.667276 448.185602 448.185602 448.185602c247.532653 0 448.185602-200.667276 448.185602-448.185602S758.27501 62.584384 510.742357 62.584384z" fill="" p-id="2607"></path></svg>`;
       badge.createSpan({ text: rating });
     } else {
       ratingContainer.setAttribute("data-score", "good");
@@ -7368,6 +7716,24 @@ var NewCardsPlugin = class extends import_obsidian3.Plugin {
   async onload() {
     await this.loadSettings();
     this.addSettingTab(new NewCardsSettingTab(this.app, this));
+    this.registerView(
+      VIEW_TYPE_QUICK_NOTE,
+      (leaf) => new QuickNoteView(leaf, this)
+    );
+    this.addRibbonIcon("carrot", "\u5FEB\u901F\u8BB0\u5F55", () => {
+      this.activateQuickNoteView();
+    });
+    this.addCommand({
+      id: "open-quick-note",
+      name: "\u6253\u5F00\u5FEB\u901F\u8BB0\u5F55",
+      callback: () => {
+        this.activateQuickNoteView();
+      },
+      hotkeys: [{
+        modifiers: ["Mod", "Shift"],
+        key: "n"
+      }]
+    });
     this.applyTextColors();
     this.registerEvent(
       this.app.workspace.on("css-change", () => {
@@ -7376,54 +7742,106 @@ var NewCardsPlugin = class extends import_obsidian3.Plugin {
     );
     this.registerEvent(
       this.app.workspace.on("file-open", async (file) => {
-        if (file instanceof import_obsidian3.TFile) {
-          const content = await this.app.vault.read(file);
-          const lines = content.split("\n");
-          let currentLine = 0;
-          const blockStack = [];
-          while (currentLine < lines.length) {
-            const line = lines[currentLine].trim();
-            if (line.startsWith("```")) {
-              const cardTypes = ["music-card", "book-card", "movie-card"];
-              const isCardStart = cardTypes.some((type) => line === "```" + type);
-              if (isCardStart) {
-                const blockType = line.substring(3);
-                blockStack.push({
-                  type: blockType,
-                  startLine: currentLine,
-                  content: []
-                });
-              } else if (line === "```") {
-                if (blockStack.length > 0) {
-                  const currentBlock = blockStack.pop();
-                  const fullContent = "```" + currentBlock.type + "\n" + currentBlock.content.join("\n") + "\n```";
-                  const existingCID = await CardUtils.findCIDByContent(this.app.vault, fullContent);
-                  const cid = existingCID || CardUtils.generateCID(fullContent);
-                  const newCID = await CardUtils.updateCardIndex(this.app.vault, cid, fullContent, {
-                    path: file.path,
-                    startLine: currentBlock.startLine,
-                    endLine: currentLine
-                  });
-                  if (newCID !== cid) {
-                    console.log(`Card content merged with existing card: ${newCID}`);
-                  }
-                }
+        if (!(file instanceof import_obsidian4.TFile)) return;
+        const excludedNames = ["\u60F3\u6CD5", "\u6458\u5F55", "\u7535\u5F71", "\u97F3\u4E50", "\u4E66\u7C4D"];
+        const baseName = file.basename;
+        if (!excludedNames.includes(baseName)) {
+          const content2 = await this.app.vault.read(file);
+          const lines2 = content2.split("\n");
+          const tagTypes = ["music-card", "book-card", "movie-card", "quote-card", "idea-card"];
+          const foundTags = /* @__PURE__ */ new Set();
+          const codeBlockRegex = /^```(music-card|book-card|movie-card|quote-card|idea-card)$/;
+          let inBlock = false;
+          let blockLines = [];
+          for (let line of lines2) {
+            const trimmed = line.trim();
+            if (!inBlock) {
+              const match = trimmed.match(codeBlockRegex);
+              if (match) {
+                inBlock = true;
+                blockLines = [];
               }
-            } else if (blockStack.length > 0) {
-              blockStack[blockStack.length - 1].content.push(lines[currentLine]);
+            } else if (trimmed === "```") {
+              const tagLine = blockLines.find(
+                (l) => l.trim().toLowerCase().startsWith("tags:") || l.trim().toLowerCase().startsWith("tag:")
+              );
+              if (tagLine) {
+                const tagField = tagLine.split(":").slice(1).join(":").trim();
+                const matches = tagField.match(/#[^\s#，,]+/g);
+                matches?.forEach((tag) => foundTags.add(tag.replace(/^#/, "")));
+              }
+              inBlock = false;
+              blockLines = [];
+            } else {
+              blockLines.push(line);
             }
-            currentLine++;
           }
-          while (blockStack.length > 0) {
-            const unclosedBlock = blockStack.pop();
-            const fullContent = "```" + unclosedBlock.type + "\n" + unclosedBlock.content.join("\n") + "\n```";
-            const cid = await CardUtils.findCIDByContent(this.app.vault, fullContent) || CardUtils.generateCID(fullContent);
-            await CardUtils.updateCardIndex(this.app.vault, cid, fullContent, {
-              path: file.path,
-              startLine: unclosedBlock.startLine,
-              endLine: lines.length - 1
+          const metadata = this.app.metadataCache.getFileCache(file);
+          const frontmatter = metadata?.frontmatter;
+          const hasFrontmatter = content2.startsWith("---\n");
+          const rawTags = frontmatter?.tags;
+          const existingTags = new Set((rawTags ?? []).map((t) => t.trim()));
+          const allTags = /* @__PURE__ */ new Set([...existingTags, ...foundTags]);
+          if (!hasFrontmatter) {
+            const tagsStr = Array.from(allTags).join("\n  - ");
+            const newContent = `---
+tags:
+  - ${tagsStr}
+---
+${content2.trimStart()}`;
+            await this.app.vault.modify(file, newContent);
+          } else {
+            await this.app.fileManager.processFrontMatter(file, (fm) => {
+              fm.tags = Array.from(allTags);
             });
           }
+        }
+        const content = await this.app.vault.read(file);
+        const lines = content.split("\n");
+        let currentLine = 0;
+        const blockStack = [];
+        while (currentLine < lines.length) {
+          const line = lines[currentLine].trim();
+          if (line.startsWith("```")) {
+            const cardTypes = ["music-card", "book-card", "movie-card"];
+            const isCardStart = cardTypes.some((type) => line === "```" + type);
+            if (isCardStart) {
+              const blockType = line.substring(3);
+              blockStack.push({
+                type: blockType,
+                startLine: currentLine,
+                content: []
+              });
+            } else if (line === "```") {
+              if (blockStack.length > 0) {
+                const currentBlock = blockStack.pop();
+                const fullContent = "```" + currentBlock.type + "\n" + currentBlock.content.join("\n") + "\n```";
+                const existingCID = await CardUtils.findCIDByContent(this.app.vault, fullContent);
+                const cid = existingCID || CardUtils.generateCID(fullContent);
+                const newCID = await CardUtils.updateCardIndex(this.app.vault, cid, fullContent, {
+                  path: file.path,
+                  startLine: currentBlock.startLine,
+                  endLine: currentLine
+                });
+                if (newCID !== cid) {
+                  console.log(`Card content merged with existing card: ${newCID}`);
+                }
+              }
+            }
+          } else if (blockStack.length > 0) {
+            blockStack[blockStack.length - 1].content.push(lines[currentLine]);
+          }
+          currentLine++;
+        }
+        while (blockStack.length > 0) {
+          const unclosedBlock = blockStack.pop();
+          const fullContent = "```" + unclosedBlock.type + "\n" + unclosedBlock.content.join("\n") + "\n```";
+          const cid = await CardUtils.findCIDByContent(this.app.vault, fullContent) || CardUtils.generateCID(fullContent);
+          await CardUtils.updateCardIndex(this.app.vault, cid, fullContent, {
+            path: file.path,
+            startLine: unclosedBlock.startLine,
+            endLine: lines.length - 1
+          });
         }
       })
     );
@@ -7451,7 +7869,7 @@ var NewCardsPlugin = class extends import_obsidian3.Plugin {
     });
     this.registerEvent(
       this.app.vault.on("modify", async (file) => {
-        if (file instanceof import_obsidian3.TFile) {
+        if (file instanceof import_obsidian4.TFile) {
           const content = await this.app.vault.read(file);
           const oldCards = await this.getCardsFromFile({ path: file.path, startLine: 0, endLine: 0 });
           const newCards = this.extractCardsFromContent(content);
@@ -7477,7 +7895,7 @@ var NewCardsPlugin = class extends import_obsidian3.Plugin {
           let inCardBlock = false;
           let cardContent = "";
           let cardStartLine = 0;
-          const cardTypes = ["music-card", "book-card", "movie-card"];
+          const cardTypes = ["music-card", "book-card", "movie-card", "quote-card", "idea-card"];
           const blockStack = [];
           while (currentLine < lines.length) {
             const line = lines[currentLine].trim();
@@ -7520,7 +7938,7 @@ var NewCardsPlugin = class extends import_obsidian3.Plugin {
     this.app.workspace.on("editor-menu", (menu, editor) => {
       menu.addItem((item) => {
         item.setTitle("\u63D2\u5165\u5361\u7247").setIcon("arrow-down-from-line").onClick(() => {
-          const submenu = new import_obsidian3.Menu();
+          const submenu = new import_obsidian4.Menu();
           submenu.addItem((subItem) => {
             subItem.setTitle("\u901A\u8FC7ID\u6DFB\u52A0").setIcon("search").onClick(async () => {
               const cursor = editor.getCursor("to");
@@ -7531,19 +7949,27 @@ var NewCardsPlugin = class extends import_obsidian3.Plugin {
                 const content = await CardUtils.getCardContentByCID(this.app.vault, cid);
                 if (content && cursor) {
                   const isInCodeBlock = this.isInCodeBlock(editor, cursor.line);
+                  let insertText = "";
                   if (isInCodeBlock) {
                     const lines = content.split("\n");
                     const firstLine = "   " + lines[0];
                     const otherLines = lines.slice(1).map((line) => "    " + line);
-                    editor.replaceRange([firstLine, ...otherLines].join("\n") + "\n", cursor);
+                    insertText = [firstLine, ...otherLines].join("\n") + "\n";
                   } else {
-                    editor.replaceRange(content + "\n", cursor);
+                    insertText = content + "\n";
                   }
+                  editor.replaceRange(insertText, cursor);
+                  const insertLines = insertText.split("\n").length;
+                  editor.setCursor({ line: cursor.line + insertLines, ch: 0 });
                   const currentFile = this.app.workspace.getActiveFile();
                   if (currentFile) {
                     const startLine = cursor.line;
                     const endLine = startLine + content.split("\n").length - 1;
-                    await CardUtils.updateCardIndex(this.app.vault, cid, content, { path: currentFile.path, startLine, endLine });
+                    await CardUtils.updateCardIndex(this.app.vault, cid, content, {
+                      path: currentFile.path,
+                      startLine,
+                      endLine
+                    });
                   }
                 }
               });
@@ -7558,13 +7984,15 @@ var NewCardsPlugin = class extends import_obsidian3.Plugin {
               console.log("\u662F\u5426\u5728\u4EE3\u7801\u5757\u4E2D:", isInBlock);
               const line = editor.getLine(cursor.line);
               const isInCodeBlock = this.isInCodeBlock(editor, cursor.line);
+              const template = this.settings.cardTemplates.musicCard;
+              const contentToInsert = "\n" + template + "\n";
               if (isInCodeBlock) {
-                const lines = this.settings.cardTemplates.musicCard.split("\n");
+                const lines = contentToInsert.split("\n");
                 const firstLine = "   " + lines[0];
                 const otherLines = lines.slice(1).map((line2) => "    " + line2);
                 editor.replaceRange("\n" + [firstLine, ...otherLines].join("\n") + "\n", cursor);
               } else {
-                editor.replaceRange(this.settings.cardTemplates.musicCard + "\n", cursor);
+                editor.replaceRange(contentToInsert, cursor);
               }
             });
           });
@@ -7576,13 +8004,15 @@ var NewCardsPlugin = class extends import_obsidian3.Plugin {
               console.log("\u662F\u5426\u5728\u4EE3\u7801\u5757\u4E2D:", isInBlock);
               const line = editor.getLine(cursor.line);
               const isInCodeBlock = this.isInCodeBlock(editor, cursor.line);
+              const template = this.settings.cardTemplates.bookCard;
+              const contentToInsert = "\n" + template + "\n";
               if (isInCodeBlock) {
-                const lines = this.settings.cardTemplates.bookCard.split("\n");
+                const lines = contentToInsert.split("\n");
                 const firstLine = "   " + lines[0];
                 const otherLines = lines.slice(1).map((line2) => "    " + line2);
                 editor.replaceRange("\n" + [firstLine, ...otherLines].join("\n") + "\n", cursor);
               } else {
-                editor.replaceRange(this.settings.cardTemplates.bookCard + "\n", cursor);
+                editor.replaceRange(contentToInsert, cursor);
               }
             });
           });
@@ -7594,13 +8024,15 @@ var NewCardsPlugin = class extends import_obsidian3.Plugin {
               console.log("\u662F\u5426\u5728\u4EE3\u7801\u5757\u4E2D:", isInBlock);
               const line = editor.getLine(cursor.line);
               const isInCodeBlock = this.isInCodeBlock(editor, cursor.line);
+              const template = this.settings.cardTemplates.movieCard;
+              const contentToInsert = "\n" + template + "\n";
               if (isInCodeBlock) {
-                const lines = this.settings.cardTemplates.movieCard.split("\n");
+                const lines = contentToInsert.split("\n");
                 const firstLine = "   " + lines[0];
                 const otherLines = lines.slice(1).map((line2) => "    " + line2);
                 editor.replaceRange("\n" + [firstLine, ...otherLines].join("\n") + "\n", cursor);
               } else {
-                editor.replaceRange(this.settings.cardTemplates.movieCard + "\n", cursor);
+                editor.replaceRange(contentToInsert, cursor);
               }
             });
           });
@@ -7644,6 +8076,30 @@ var NewCardsPlugin = class extends import_obsidian3.Plugin {
       }
       this.renderMovieCard(data, el, cid);
     });
+    this.registerMarkdownCodeBlockProcessor("quote-card", async (source, el, ctx) => {
+      const data = this.parseYaml(source);
+      const fullContent = "```quote-card\n" + source + "\n```";
+      let cid = await CardUtils.findCIDByContent(this.app.vault, fullContent) || CardUtils.generateCID(fullContent);
+      if (ctx.sourcePath) {
+        const sectionInfo = ctx.getSectionInfo(el);
+        const startLine = sectionInfo ? sectionInfo.lineStart : 0;
+        const endLine = sectionInfo ? sectionInfo.lineEnd : 0;
+        cid = await CardUtils.updateCardIndex(this.app.vault, cid, fullContent, { path: ctx.sourcePath, startLine, endLine });
+      }
+      this.renderQuoteCard(data, el, cid);
+    });
+    this.registerMarkdownCodeBlockProcessor("idea-card", async (source, el, ctx) => {
+      const data = this.parseYaml(source);
+      const fullContent = "```idea-card\n" + source + "\n```";
+      let cid = await CardUtils.findCIDByContent(this.app.vault, fullContent) || CardUtils.generateCID(fullContent);
+      if (ctx.sourcePath) {
+        const sectionInfo = ctx.getSectionInfo(el);
+        const startLine = sectionInfo ? sectionInfo.lineStart : 0;
+        const endLine = sectionInfo ? sectionInfo.lineEnd : 0;
+        cid = await CardUtils.updateCardIndex(this.app.vault, cid, fullContent, { path: ctx.sourcePath, startLine, endLine });
+      }
+      this.renderIdeaCard(data, el, cid);
+    });
   }
   parseYaml(source) {
     const lines = source.split("\n");
@@ -7674,6 +8130,114 @@ var NewCardsPlugin = class extends import_obsidian3.Plugin {
       data.meta = meta;
     }
     return data;
+  }
+  renderQuoteCard(data, el, cid) {
+    const container = el.createDiv({ cls: "new-cards-container quote-card" });
+    if (data.url) {
+      container.addClass("clickable");
+      container.addEventListener("click", (e) => {
+        const isTagClick = e.target.closest(".card-tags-container");
+        const isCidClick = e.target.closest(".card-id");
+        if (!isTagClick && !isCidClick) {
+          if (data.url && (data.url.startsWith("http://") || data.url.startsWith("https://"))) {
+            window.open(data.url);
+          } else if (data.url && data.url.startsWith("obsidian://")) {
+            const url = new URL(data.url);
+            const vault = decodeURIComponent(url.searchParams.get("vault") || "");
+            const file = decodeURIComponent(url.searchParams.get("file") || "");
+            this.app.workspace.openLinkText(file, vault, true);
+          } else {
+            const targetFile = this.app.metadataCache.getFirstLinkpathDest(data.url || "", "");
+            if (targetFile) {
+              this.app.workspace.getLeaf().openFile(targetFile);
+            }
+          }
+        }
+      });
+    }
+    const cidEl = container.createDiv({ cls: "card-id", text: cid });
+    cidEl.addEventListener("click", (e) => {
+      e.stopPropagation();
+      navigator.clipboard.writeText(cid);
+    });
+    const contentContainer = container.createDiv({ cls: "quote-content" });
+    contentContainer.createEl("div", { text: data.quote });
+    const metaContainer = container.createDiv({ cls: "quote-meta" });
+    if (data.source) {
+      metaContainer.createEl("div", {
+        cls: "quote-source",
+        text: data.source
+      });
+    }
+    if (data.date) {
+      metaContainer.createEl("div", {
+        cls: "quote-date",
+        text: data.date
+      });
+    }
+    if (data.tags && data.tags.length > 0) {
+      const tagsContainer = metaContainer.createDiv({ cls: "card-tags-container" });
+      data.tags.forEach((tag) => {
+        tagsContainer.createEl("a", {
+          text: tag,
+          cls: "tag"
+        });
+      });
+    }
+  }
+  renderIdeaCard(data, el, cid) {
+    const container = el.createDiv({ cls: "new-cards-container idea-card" });
+    if (data.url) {
+      container.addClass("clickable");
+      container.addEventListener("click", (e) => {
+        const isTagClick = e.target.closest(".card-tags-container");
+        const isCidClick = e.target.closest(".card-id");
+        if (!isTagClick && !isCidClick) {
+          if (data.url && (data.url.startsWith("http://") || data.url.startsWith("https://"))) {
+            window.open(data.url);
+          } else if (data.url && data.url.startsWith("obsidian://")) {
+            const url = new URL(data.url);
+            const vault = decodeURIComponent(url.searchParams.get("vault") || "");
+            const file = decodeURIComponent(url.searchParams.get("file") || "");
+            this.app.workspace.openLinkText(file, vault, true);
+          } else {
+            const targetFile = this.app.metadataCache.getFirstLinkpathDest(data.url || "", "");
+            if (targetFile) {
+              this.app.workspace.getLeaf().openFile(targetFile);
+            }
+          }
+        }
+      });
+    }
+    const cidEl = container.createDiv({ cls: "card-id", text: cid });
+    cidEl.addEventListener("click", (e) => {
+      e.stopPropagation();
+      navigator.clipboard.writeText(cid);
+    });
+    const contentContainer = container.createDiv({ cls: "idea-content" });
+    contentContainer.createEl("div", { text: data.idea });
+    const metaContainer = container.createDiv({ cls: "idea-meta" });
+    if (data.source) {
+      metaContainer.createEl("div", {
+        cls: "idea-source",
+        text: `\u6709\u611F\u4E8E:${data.source}`
+      });
+    }
+    if (data.date) {
+      metaContainer.createEl("div", {
+        cls: "idea-date",
+        text: data.date
+      });
+    }
+    if (data.tags && data.tags.length > 0) {
+      const tagsContainer = metaContainer.createDiv({ cls: "card-tags-container" });
+      data.tags.forEach((tag) => {
+        tagsContainer.createEl("a", {
+          text: tag,
+          cls: "tag"
+        });
+      });
+    }
   }
   renderMusicCard(data, el, cid) {
     const container = el.createDiv({ cls: "new-cards-container music-card" });
@@ -7732,9 +8296,6 @@ var NewCardsPlugin = class extends import_obsidian3.Plugin {
     if (data.year) {
       infoContainer.createEl("div", { text: data.year, cls: "year" });
     }
-    if (data.description) {
-      infoContainer.createEl("div", { text: data.description, cls: "card-info-description" });
-    }
     if (data.rating) {
       const ratingContainer = infoContainer.createDiv({ cls: "rating" });
       const ratingScore = parseFloat(data.rating);
@@ -7743,7 +8304,7 @@ var NewCardsPlugin = class extends import_obsidian3.Plugin {
         const ratingBadge = ratingContainer.createDiv({ cls: "rating-badge" });
         ratingBadge.createDiv({ cls: "rating-score", text: data.rating });
         ratingBadge.innerHTML += `
-         <svg t="1743841440004" class="icon" viewBox="0 0 1332 1024" version="1.1" xmlns="http://www.w3.org/2000/svg" p-id="5351" width="200" height="200"><path d="M754.999373 984.409613s-40.018391-7.918077-58.42257-18.618181c-18.618182-10.700104-120.483177-56.28255-189.39185-12.840126 0 0-28.462278 24.182236-57.35256 27.178266 0 0 36.808359 13.482132 74.900731 2.782027 0 0 32.528318-9.20209 50.932498-22.47022 0 0 40.660397-17.976176 78.538767 0.214002 37.87837 18.190178 33.170324 23.326228 64.842633 28.248276 31.672309 5.13605 35.952351-4.494044 35.952351-4.494044zM509.324974 912.076907s-16.692163-47.722466-74.472727-62.060606c0 0 9.20209 41.730408 56.068547 57.780564 0 0-93.732915 1.498015-130.11327 54.784535-0.214002 0 75.75674 29.960293 148.51745-50.504493z" fill="#B68A11" p-id="5352"></path><path d="M413.66604 896.454754s-3.638036-50.504493-55.640544-79.608777c0 0-2.140021 42.800418 38.734379 70.406688 0 0-90.950888-23.326228-139.957367 18.618181 0.214002 0 65.484639 49.006479 156.863532-9.416092z" fill="#B68A11" p-id="5353"></path><path d="M312.229049 767.411494s27.820272 47.294462-2.782027 98.440962c0 0-93.304911 28.67628-153.011494-39.590387 0 0 75.114734-24.824242 148.089446 35.096343 0.214002 0-22.042215-53.928527 7.704075-93.946918z" fill="#B68A11" p-id="5354"></path><path d="M252.308464 796.301776s-16.692163-53.28652 11.770115-84.102821c0 0 26.964263 48.792476-9.630094 91.16489 0 0-101.436991 19.902194-139.957367-49.862487 0 0.428004 61.632602-19.902194 137.817346 42.800418z" fill="#B68A11" p-id="5355"></path><path d="M202.873981 729.961129s-9.844096-47.936468 19.046186-78.966772c0 0 23.754232 43.656426-15.194148 87.954859 0 0-106.787043-2.354023-128.401254-60.990595-0.214002 0.214002 81.748798-3.852038 124.549216 52.002508z" fill="#B68A11" p-id="5356"></path><path d="M189.177847 585.081714s13.482132 52.644514-24.182236 81.106792c0 0-87.740857 2.354023-115.77513-67.410659 0 0 75.114734 2.140021 112.993103 60.990596 0 0-2.140021-51.360502 26.964263-74.686729z" fill="#B68A11" p-id="5357"></path><path d="M161.143574 519.811076s12.412121 43.442424-26.536259 73.616719c0 0-84.316823-4.494044-105.931035-70.406687 0 0 66.340648 2.782027 101.650993 64.842633 0-0.214002-2.782027-38.94838 30.816301-68.052665z" fill="#B68A11" p-id="5358"></path><path d="M151.085475 456.466458s6.206061 35.096343-33.81233 69.336677c0 0-82.176803-22.470219-92.876907-78.324765 0 0 70.192685 14.980146 91.806897 73.616719 0.214002-0.214002-2.568025-36.808359 34.88234-64.628631z" fill="#B68A11" p-id="5359"></path><path d="M147.875444 398.899896s2.354023 39.162382-40.232393 57.780564c0 0-79.394775-35.952351-76.184744-85.600836 0 0 48.15047 4.494044 76.184744 80.464786 0.214002 0 9.20209-38.306374 40.232393-52.644514z" fill="#B68A11" p-id="5360"></path><path d="M154.723511 340.049321s-6.206061 35.310345-46.010449 50.932497c0 0-66.982654-43.442424-61.632602-91.806896 0 0 54.142529 24.824242 61.846604 85.814838 0 0 7.918077-24.396238 45.796447-44.940439zM166.493626 281.198746s-4.06604 33.384326-46.224451 44.512435c0 0-55.854545-25.680251-52.644515-91.592895 0 0 48.578474 24.61024 53.286521 86.242843-0.214002 0 16.906165-37.236364 45.582445-39.162383zM185.753814 225.986207s-26.750261 2.354023-47.722466 33.170324c0 0-4.06604-65.270637-44.726437-85.386834 0 0-14.552142 49.006479 43.01442 92.876907 0.214002 0 36.594357-6.848067 49.434483-40.660397z" fill="#B68A11" p-id="5361"></path><path d="M205.442006 176.551724S189.605852 208.438036 157.71954 209.722048c0 0-47.722466-41.730408-35.310345-89.880878 0 0 36.166353 26.322257 36.594358 83.032811 0.214002 0 15.622153-24.61024 46.438453-26.322257zM230.052247 128.615256s-9.20209 28.67628-50.076489 29.532288c0 0-38.520376-47.08046-20.972205-89.880877 0 0 29.104284 23.54023 24.182236 81.9628 0-0.214002 20.330199-22.898224 46.866458-21.614211zM258.514525 85.814838s-14.980146 26.536259-47.936469 23.326228c0 0-37.664368-49.006479-15.194148-86.670847 0 0 27.392268 26.536259 17.334169 80.464786 0 0 19.688192-19.47419 45.796448-17.120167z" fill="#B68A11" p-id="5362"></path><path d="M279.914734 53.500522s-13.910136 25.894253-49.648485 21.186207c0 0-5.564054-39.804389 19.47419-52.21651 0 0 7.276071 20.544201-7.490073 41.302404-0.214002 0 11.984117-12.412121 37.664368-10.272101z" fill="#B68A11" p-id="5363"></path><path d="M291.256844 24.824242s-3.424033 24.182236-29.318286 22.042216c0 0 1.498015-20.116196 29.318286-22.042216z" fill="#B68A11" p-id="5364"></path><path d="M556.405434 984.409613s40.018391-7.918077 58.42257-18.618181 120.483177-56.28255 189.39185-12.840126c0 0 28.462278 24.182236 57.35256 27.178266 0 0-36.808359 13.482132-74.900732 2.782027 0 0-32.528318-9.20209-50.932497-22.47022 0 0-40.660397-17.976176-78.538767 0.214002-37.87837 18.190178-33.170324 23.326228-64.842633 28.248276C560.685475 994.039707 556.405434 984.409613 556.405434 984.409613zM802.079833 912.076907s16.692163-47.722466 74.472727-62.060606c0 0-9.20209 41.730408-56.068547 57.780564 0 0 93.732915 1.498015 130.11327 54.784535 0.214002 0-75.75674 29.960293-148.51745-50.504493z" fill="#B68A11" p-id="5365"></path><path d="M897.738767 896.454754s3.638036-50.504493 55.640543-79.608777c0 0 2.140021 42.800418-38.734378 70.406688 0 0 90.950888-23.326228 139.957367 18.618181-0.214002 0-65.484639 49.006479-156.863532-9.416092z" fill="#B68A11" p-id="5366"></path><path d="M999.175758 767.411494s-27.820272 47.294462 2.782027 98.440962c0 0 93.304911 28.67628 153.011494-39.590387 0 0-75.114734-24.824242-148.303448 35.096343 0 0 22.256217-53.928527-7.490073-93.946918z" fill="#B68A11" p-id="5367"></path><path d="M1059.096343 796.301776s16.692163-53.28652-11.770115-84.102821c0 0-26.964263 48.792476 9.630094 91.16489 0 0 101.436991 19.902194 139.957367-49.862487 0 0.428004-61.632602-19.902194-137.817346 42.800418z" fill="#B68A11" p-id="5368"></path><path d="M1108.530825 729.961129s9.844096-47.936468-19.046186-78.966772c0 0-23.754232 43.656426 15.194149 87.954859 0 0 106.787043-2.354023 128.401254-60.990595 0.214002 0.214002-81.748798-3.852038-124.549217 52.002508z" fill="#B68A11" p-id="5369"></path><path d="M1122.226959 585.081714s-13.482132 52.644514 24.182236 81.106792c0 0 87.740857 2.354023 115.775131-67.410659 0 0-75.114734 2.140021-112.993103 60.990596 0 0 2.140021-51.360502-26.964264-74.686729z" fill="#B68A11" p-id="5370"></path><path d="M1150.261233 519.811076s-12.412121 43.442424 26.536259 73.616719c0 0 84.316823-4.494044 105.931035-70.406687 0 0-66.340648 2.782027-101.650993 64.842633 0-0.214002 2.568025-38.94838-30.816301-68.052665z" fill="#B68A11" p-id="5371"></path><path d="M1160.105329 456.466458s-6.206061 35.096343 33.81233 69.336677c0 0 82.176803-22.470219 92.876907-78.324765 0 0-70.192685 14.980146-91.806896 73.616719 0-0.214002 2.568025-36.808359-34.882341-64.628631z" fill="#B68A11" p-id="5372"></path><path d="M1163.315361 398.899896s-2.354023 39.162382 40.232392 57.780564c0 0 79.394775-35.952351 76.184744-85.600836 0 0-48.15047 4.494044-76.184744 80.464786 0 0-9.20209-38.306374-40.232392-52.644514z" fill="#B68A11" p-id="5373"></path><path d="M1156.681296 340.049321s6.206061 35.310345 46.010449 50.932497c0 0 66.982654-43.442424 61.632602-91.806896 0 0-54.142529 24.824242-61.846604 85.814838 0 0-8.132079-24.396238-45.796447-44.940439zM1144.911181 281.198746s4.06604 33.384326 46.224451 44.512435c0 0 55.854545-25.680251 52.644514-91.592895 0 0-48.578474 24.61024-53.28652 86.242843 0.214002 0-16.906165-37.236364-45.582445-39.162383zM1125.650993 225.986207s26.750261 2.354023 47.722466 33.170324c0 0 4.06604-65.270637 44.726437-85.386834 0 0 14.552142 49.006479-43.014421 92.876907-0.214002 0-36.594357-6.848067-49.434482-40.660397z" fill="#B68A11" p-id="5374"></path><path d="M1105.9628 176.551724s15.836155 31.886311 47.722466 33.170324c0 0 47.722466-41.730408 35.310345-89.880878 0 0-36.166353 26.322257-36.594357 83.032811-0.214002 0-15.836155-24.61024-46.438454-26.322257zM1081.35256 128.615256s9.20209 28.67628 50.076489 29.532288c0 0 38.520376-47.08046 20.972205-89.880877 0 0-29.104284 23.54023-24.182236 81.9628-0.214002-0.214002-20.544201-22.898224-46.866458-21.614211zM1052.890282 85.814838s14.980146 26.536259 47.936468 23.326228c0 0 37.664368-49.006479 15.194149-86.670847 0 0-27.392268 26.536259-17.33417 80.464786 0 0-19.902194-19.47419-45.796447-17.120167z" fill="#B68A11" p-id="5375"></path><path d="M1031.490073 53.500522s13.910136 25.894253 49.862487 21.186207c0 0 5.564054-39.804389-19.47419-52.21651 0 0-7.276071 20.544201 7.490073 41.302404-0.214002 0-12.198119-12.412121-37.87837-10.272101z" fill="#B68A11" p-id="5376"></path><path d="M1019.93396 24.824242s3.424033 24.182236 29.532289 22.042216c0 0-1.712017-20.116196-29.532289-22.042216z" fill="#B68A11" p-id="5377"></path></svg>
+         <svg t="1744038348712" class="icon" viewBox="0 0 1024 1024" version="1.1" xmlns="http://www.w3.org/2000/svg" p-id="2606" data-darkreader-inline-fill="" width="200" height="200"><path d="M510.742357 92.463901c230.651171 0 418.307108 187.654914 418.307107 418.307108s-187.654914 418.307108-418.307107 418.307108-418.307108-187.654914-418.307108-418.307108 187.655937-418.307108 418.307108-418.307108m0-29.879517c-247.518327 0-448.185602 200.667276-448.185602 448.185602s200.667276 448.185602 448.185602 448.185602c247.532653 0 448.185602-200.667276 448.185602-448.185602S758.27501 62.584384 510.742357 62.584384z" fill="" p-id="2607"></path></svg>
         `;
       } else if (ratingScore >= 5) {
         ratingContainer.setAttribute("data-score", "good");
@@ -7762,6 +8323,9 @@ var NewCardsPlugin = class extends import_obsidian3.Plugin {
           text: `${key}: ${value}`
         });
       });
+    }
+    if (data.description) {
+      infoContainer.createEl("div", { text: data.description, cls: "card-info-description" });
     }
     if (data.tags && data.tags.length > 0) {
       const tagsContainer = infoContainer.createDiv({ cls: "card-tags-container" });
@@ -7834,7 +8398,7 @@ var NewCardsPlugin = class extends import_obsidian3.Plugin {
         const ratingBadge = ratingContainer.createDiv({ cls: "rating-badge" });
         ratingBadge.createDiv({ cls: "rating-score", text: data.rating });
         ratingBadge.innerHTML += `
-          <svg t="1743841440004" class="icon" viewBox="0 0 1332 1024" version="1.1" xmlns="http://www.w3.org/2000/svg" p-id="5351" width="200" height="200"><path d="M754.999373 984.409613s-40.018391-7.918077-58.42257-18.618181c-18.618182-10.700104-120.483177-56.28255-189.39185-12.840126 0 0-28.462278 24.182236-57.35256 27.178266 0 0 36.808359 13.482132 74.900731 2.782027 0 0 32.528318-9.20209 50.932498-22.47022 0 0 40.660397-17.976176 78.538767 0.214002 37.87837 18.190178 33.170324 23.326228 64.842633 28.248276 31.672309 5.13605 35.952351-4.494044 35.952351-4.494044zM509.324974 912.076907s-16.692163-47.722466-74.472727-62.060606c0 0 9.20209 41.730408 56.068547 57.780564 0 0-93.732915 1.498015-130.11327 54.784535-0.214002 0 75.75674 29.960293 148.51745-50.504493z" fill="#B68A11" p-id="5352"></path><path d="M413.66604 896.454754s-3.638036-50.504493-55.640544-79.608777c0 0-2.140021 42.800418 38.734379 70.406688 0 0-90.950888-23.326228-139.957367 18.618181 0.214002 0 65.484639 49.006479 156.863532-9.416092z" fill="#B68A11" p-id="5353"></path><path d="M312.229049 767.411494s27.820272 47.294462-2.782027 98.440962c0 0-93.304911 28.67628-153.011494-39.590387 0 0 75.114734-24.824242 148.089446 35.096343 0.214002 0-22.042215-53.928527 7.704075-93.946918z" fill="#B68A11" p-id="5354"></path><path d="M252.308464 796.301776s-16.692163-53.28652 11.770115-84.102821c0 0 26.964263 48.792476-9.630094 91.16489 0 0-101.436991 19.902194-139.957367-49.862487 0 0.428004 61.632602-19.902194 137.817346 42.800418z" fill="#B68A11" p-id="5355"></path><path d="M202.873981 729.961129s-9.844096-47.936468 19.046186-78.966772c0 0 23.754232 43.656426-15.194148 87.954859 0 0-106.787043-2.354023-128.401254-60.990595-0.214002 0.214002 81.748798-3.852038 124.549216 52.002508z" fill="#B68A11" p-id="5356"></path><path d="M189.177847 585.081714s13.482132 52.644514-24.182236 81.106792c0 0-87.740857 2.354023-115.77513-67.410659 0 0 75.114734 2.140021 112.993103 60.990596 0 0-2.140021-51.360502 26.964263-74.686729z" fill="#B68A11" p-id="5357"></path><path d="M161.143574 519.811076s12.412121 43.442424-26.536259 73.616719c0 0-84.316823-4.494044-105.931035-70.406687 0 0 66.340648 2.782027 101.650993 64.842633 0-0.214002-2.782027-38.94838 30.816301-68.052665z" fill="#B68A11" p-id="5358"></path><path d="M151.085475 456.466458s6.206061 35.096343-33.81233 69.336677c0 0-82.176803-22.470219-92.876907-78.324765 0 0 70.192685 14.980146 91.806897 73.616719 0.214002-0.214002-2.568025-36.808359 34.88234-64.628631z" fill="#B68A11" p-id="5359"></path><path d="M147.875444 398.899896s2.354023 39.162382-40.232393 57.780564c0 0-79.394775-35.952351-76.184744-85.600836 0 0 48.15047 4.494044 76.184744 80.464786 0.214002 0 9.20209-38.306374 40.232393-52.644514z" fill="#B68A11" p-id="5360"></path><path d="M154.723511 340.049321s-6.206061 35.310345-46.010449 50.932497c0 0-66.982654-43.442424-61.632602-91.806896 0 0 54.142529 24.824242 61.846604 85.814838 0 0 7.918077-24.396238 45.796447-44.940439zM166.493626 281.198746s-4.06604 33.384326-46.224451 44.512435c0 0-55.854545-25.680251-52.644515-91.592895 0 0 48.578474 24.61024 53.286521 86.242843-0.214002 0 16.906165-37.236364 45.582445-39.162383zM185.753814 225.986207s-26.750261 2.354023-47.722466 33.170324c0 0-4.06604-65.270637-44.726437-85.386834 0 0-14.552142 49.006479 43.01442 92.876907 0.214002 0 36.594357-6.848067 49.434483-40.660397z" fill="#B68A11" p-id="5361"></path><path d="M205.442006 176.551724S189.605852 208.438036 157.71954 209.722048c0 0-47.722466-41.730408-35.310345-89.880878 0 0 36.166353 26.322257 36.594358 83.032811 0.214002 0 15.622153-24.61024 46.438453-26.322257zM230.052247 128.615256s-9.20209 28.67628-50.076489 29.532288c0 0-38.520376-47.08046-20.972205-89.880877 0 0 29.104284 23.54023 24.182236 81.9628 0-0.214002 20.330199-22.898224 46.866458-21.614211zM258.514525 85.814838s-14.980146 26.536259-47.936469 23.326228c0 0-37.664368-49.006479-15.194148-86.670847 0 0 27.392268 26.536259 17.334169 80.464786 0 0 19.688192-19.47419 45.796448-17.120167z" fill="#B68A11" p-id="5362"></path><path d="M279.914734 53.500522s-13.910136 25.894253-49.648485 21.186207c0 0-5.564054-39.804389 19.47419-52.21651 0 0 7.276071 20.544201-7.490073 41.302404-0.214002 0 11.984117-12.412121 37.664368-10.272101z" fill="#B68A11" p-id="5363"></path><path d="M291.256844 24.824242s-3.424033 24.182236-29.318286 22.042216c0 0 1.498015-20.116196 29.318286-22.042216z" fill="#B68A11" p-id="5364"></path><path d="M556.405434 984.409613s40.018391-7.918077 58.42257-18.618181 120.483177-56.28255 189.39185-12.840126c0 0 28.462278 24.182236 57.35256 27.178266 0 0-36.808359 13.482132-74.900732 2.782027 0 0-32.528318-9.20209-50.932497-22.47022 0 0-40.660397-17.976176-78.538767 0.214002-37.87837 18.190178-33.170324 23.326228-64.842633 28.248276C560.685475 994.039707 556.405434 984.409613 556.405434 984.409613zM802.079833 912.076907s16.692163-47.722466 74.472727-62.060606c0 0-9.20209 41.730408-56.068547 57.780564 0 0 93.732915 1.498015 130.11327 54.784535 0.214002 0-75.75674 29.960293-148.51745-50.504493z" fill="#B68A11" p-id="5365"></path><path d="M897.738767 896.454754s3.638036-50.504493 55.640543-79.608777c0 0 2.140021 42.800418-38.734378 70.406688 0 0 90.950888-23.326228 139.957367 18.618181-0.214002 0-65.484639 49.006479-156.863532-9.416092z" fill="#B68A11" p-id="5366"></path><path d="M999.175758 767.411494s-27.820272 47.294462 2.782027 98.440962c0 0 93.304911 28.67628 153.011494-39.590387 0 0-75.114734-24.824242-148.303448 35.096343 0 0 22.256217-53.928527-7.490073-93.946918z" fill="#B68A11" p-id="5367"></path><path d="M1059.096343 796.301776s16.692163-53.28652-11.770115-84.102821c0 0-26.964263 48.792476 9.630094 91.16489 0 0 101.436991 19.902194 139.957367-49.862487 0 0.428004-61.632602-19.902194-137.817346 42.800418z" fill="#B68A11" p-id="5368"></path><path d="M1108.530825 729.961129s9.844096-47.936468-19.046186-78.966772c0 0-23.754232 43.656426 15.194149 87.954859 0 0 106.787043-2.354023 128.401254-60.990595 0.214002 0.214002-81.748798-3.852038-124.549217 52.002508z" fill="#B68A11" p-id="5369"></path><path d="M1122.226959 585.081714s-13.482132 52.644514 24.182236 81.106792c0 0 87.740857 2.354023 115.775131-67.410659 0 0-75.114734 2.140021-112.993103 60.990596 0 0 2.140021-51.360502-26.964264-74.686729z" fill="#B68A11" p-id="5370"></path><path d="M1150.261233 519.811076s-12.412121 43.442424 26.536259 73.616719c0 0 84.316823-4.494044 105.931035-70.406687 0 0-66.340648 2.782027-101.650993 64.842633 0-0.214002 2.568025-38.94838-30.816301-68.052665z" fill="#B68A11" p-id="5371"></path><path d="M1160.105329 456.466458s-6.206061 35.096343 33.81233 69.336677c0 0 82.176803-22.470219 92.876907-78.324765 0 0-70.192685 14.980146-91.806896 73.616719 0-0.214002 2.568025-36.808359-34.882341-64.628631z" fill="#B68A11" p-id="5372"></path><path d="M1163.315361 398.899896s-2.354023 39.162382 40.232392 57.780564c0 0 79.394775-35.952351 76.184744-85.600836 0 0-48.15047 4.494044-76.184744 80.464786 0 0-9.20209-38.306374-40.232392-52.644514z" fill="#B68A11" p-id="5373"></path><path d="M1156.681296 340.049321s6.206061 35.310345 46.010449 50.932497c0 0 66.982654-43.442424 61.632602-91.806896 0 0-54.142529 24.824242-61.846604 85.814838 0 0-8.132079-24.396238-45.796447-44.940439zM1144.911181 281.198746s4.06604 33.384326 46.224451 44.512435c0 0 55.854545-25.680251 52.644514-91.592895 0 0-48.578474 24.61024-53.28652 86.242843 0.214002 0-16.906165-37.236364-45.582445-39.162383zM1125.650993 225.986207s26.750261 2.354023 47.722466 33.170324c0 0 4.06604-65.270637 44.726437-85.386834 0 0 14.552142 49.006479-43.014421 92.876907-0.214002 0-36.594357-6.848067-49.434482-40.660397z" fill="#B68A11" p-id="5374"></path><path d="M1105.9628 176.551724s15.836155 31.886311 47.722466 33.170324c0 0 47.722466-41.730408 35.310345-89.880878 0 0-36.166353 26.322257-36.594357 83.032811-0.214002 0-15.836155-24.61024-46.438454-26.322257zM1081.35256 128.615256s9.20209 28.67628 50.076489 29.532288c0 0 38.520376-47.08046 20.972205-89.880877 0 0-29.104284 23.54023-24.182236 81.9628-0.214002-0.214002-20.544201-22.898224-46.866458-21.614211zM1052.890282 85.814838s14.980146 26.536259 47.936468 23.326228c0 0 37.664368-49.006479 15.194149-86.670847 0 0-27.392268 26.536259-17.33417 80.464786 0 0-19.902194-19.47419-45.796447-17.120167z" fill="#B68A11" p-id="5375"></path><path d="M1031.490073 53.500522s13.910136 25.894253 49.862487 21.186207c0 0 5.564054-39.804389-19.47419-52.21651 0 0-7.276071 20.544201 7.490073 41.302404-0.214002 0-12.198119-12.412121-37.87837-10.272101z" fill="#B68A11" p-id="5376"></path><path d="M1019.93396 24.824242s3.424033 24.182236 29.532289 22.042216c0 0-1.712017-20.116196-29.532289-22.042216z" fill="#B68A11" p-id="5377"></path></svg>
+          <svg t="1744038348712" class="icon" viewBox="0 0 1024 1024" version="1.1" xmlns="http://www.w3.org/2000/svg" p-id="2606" data-darkreader-inline-fill="" width="200" height="200"><path d="M510.742357 92.463901c230.651171 0 418.307108 187.654914 418.307107 418.307108s-187.654914 418.307108-418.307107 418.307108-418.307108-187.654914-418.307108-418.307108 187.655937-418.307108 418.307108-418.307108m0-29.879517c-247.518327 0-448.185602 200.667276-448.185602 448.185602s200.667276 448.185602 448.185602 448.185602c247.532653 0 448.185602-200.667276 448.185602-448.185602S758.27501 62.584384 510.742357 62.584384z" fill="" p-id="2607"></path></svg>
         `;
       } else if (ratingScore >= 5) {
         ratingContainer.setAttribute("data-score", "good");
@@ -7932,7 +8496,7 @@ var NewCardsPlugin = class extends import_obsidian3.Plugin {
         const ratingBadge = ratingContainer.createDiv({ cls: "rating-badge" });
         ratingBadge.createDiv({ cls: "rating-score", text: data.rating });
         ratingBadge.innerHTML += `
-          <svg t="1743841440004" class="icon" viewBox="0 0 1332 1024" version="1.1" xmlns="http://www.w3.org/2000/svg" p-id="5351" width="200" height="200"><path d="M754.999373 984.409613s-40.018391-7.918077-58.42257-18.618181c-18.618182-10.700104-120.483177-56.28255-189.39185-12.840126 0 0-28.462278 24.182236-57.35256 27.178266 0 0 36.808359 13.482132 74.900731 2.782027 0 0 32.528318-9.20209 50.932498-22.47022 0 0 40.660397-17.976176 78.538767 0.214002 37.87837 18.190178 33.170324 23.326228 64.842633 28.248276 31.672309 5.13605 35.952351-4.494044 35.952351-4.494044zM509.324974 912.076907s-16.692163-47.722466-74.472727-62.060606c0 0 9.20209 41.730408 56.068547 57.780564 0 0-93.732915 1.498015-130.11327 54.784535-0.214002 0 75.75674 29.960293 148.51745-50.504493z" fill="#B68A11" p-id="5352"></path><path d="M413.66604 896.454754s-3.638036-50.504493-55.640544-79.608777c0 0-2.140021 42.800418 38.734379 70.406688 0 0-90.950888-23.326228-139.957367 18.618181 0.214002 0 65.484639 49.006479 156.863532-9.416092z" fill="#B68A11" p-id="5353"></path><path d="M312.229049 767.411494s27.820272 47.294462-2.782027 98.440962c0 0-93.304911 28.67628-153.011494-39.590387 0 0 75.114734-24.824242 148.089446 35.096343 0.214002 0-22.042215-53.928527 7.704075-93.946918z" fill="#B68A11" p-id="5354"></path><path d="M252.308464 796.301776s-16.692163-53.28652 11.770115-84.102821c0 0 26.964263 48.792476-9.630094 91.16489 0 0-101.436991 19.902194-139.957367-49.862487 0 0.428004 61.632602-19.902194 137.817346 42.800418z" fill="#B68A11" p-id="5355"></path><path d="M202.873981 729.961129s-9.844096-47.936468 19.046186-78.966772c0 0 23.754232 43.656426-15.194148 87.954859 0 0-106.787043-2.354023-128.401254-60.990595-0.214002 0.214002 81.748798-3.852038 124.549216 52.002508z" fill="#B68A11" p-id="5356"></path><path d="M189.177847 585.081714s13.482132 52.644514-24.182236 81.106792c0 0-87.740857 2.354023-115.77513-67.410659 0 0 75.114734 2.140021 112.993103 60.990596 0 0-2.140021-51.360502 26.964263-74.686729z" fill="#B68A11" p-id="5357"></path><path d="M161.143574 519.811076s12.412121 43.442424-26.536259 73.616719c0 0-84.316823-4.494044-105.931035-70.406687 0 0 66.340648 2.782027 101.650993 64.842633 0-0.214002-2.782027-38.94838 30.816301-68.052665z" fill="#B68A11" p-id="5358"></path><path d="M151.085475 456.466458s6.206061 35.096343-33.81233 69.336677c0 0-82.176803-22.470219-92.876907-78.324765 0 0 70.192685 14.980146 91.806897 73.616719 0.214002-0.214002-2.568025-36.808359 34.88234-64.628631z" fill="#B68A11" p-id="5359"></path><path d="M147.875444 398.899896s2.354023 39.162382-40.232393 57.780564c0 0-79.394775-35.952351-76.184744-85.600836 0 0 48.15047 4.494044 76.184744 80.464786 0.214002 0 9.20209-38.306374 40.232393-52.644514z" fill="#B68A11" p-id="5360"></path><path d="M154.723511 340.049321s-6.206061 35.310345-46.010449 50.932497c0 0-66.982654-43.442424-61.632602-91.806896 0 0 54.142529 24.824242 61.846604 85.814838 0 0 7.918077-24.396238 45.796447-44.940439zM166.493626 281.198746s-4.06604 33.384326-46.224451 44.512435c0 0-55.854545-25.680251-52.644515-91.592895 0 0 48.578474 24.61024 53.286521 86.242843-0.214002 0 16.906165-37.236364 45.582445-39.162383zM185.753814 225.986207s-26.750261 2.354023-47.722466 33.170324c0 0-4.06604-65.270637-44.726437-85.386834 0 0-14.552142 49.006479 43.01442 92.876907 0.214002 0 36.594357-6.848067 49.434483-40.660397z" fill="#B68A11" p-id="5361"></path><path d="M205.442006 176.551724S189.605852 208.438036 157.71954 209.722048c0 0-47.722466-41.730408-35.310345-89.880878 0 0 36.166353 26.322257 36.594358 83.032811 0.214002 0 15.622153-24.61024 46.438453-26.322257zM230.052247 128.615256s-9.20209 28.67628-50.076489 29.532288c0 0-38.520376-47.08046-20.972205-89.880877 0 0 29.104284 23.54023 24.182236 81.9628 0-0.214002 20.330199-22.898224 46.866458-21.614211zM258.514525 85.814838s-14.980146 26.536259-47.936469 23.326228c0 0-37.664368-49.006479-15.194148-86.670847 0 0 27.392268 26.536259 17.334169 80.464786 0 0 19.688192-19.47419 45.796448-17.120167z" fill="#B68A11" p-id="5362"></path><path d="M279.914734 53.500522s-13.910136 25.894253-49.648485 21.186207c0 0-5.564054-39.804389 19.47419-52.21651 0 0 7.276071 20.544201-7.490073 41.302404-0.214002 0 11.984117-12.412121 37.664368-10.272101z" fill="#B68A11" p-id="5363"></path><path d="M291.256844 24.824242s-3.424033 24.182236-29.318286 22.042216c0 0 1.498015-20.116196 29.318286-22.042216z" fill="#B68A11" p-id="5364"></path><path d="M556.405434 984.409613s40.018391-7.918077 58.42257-18.618181 120.483177-56.28255 189.39185-12.840126c0 0 28.462278 24.182236 57.35256 27.178266 0 0-36.808359 13.482132-74.900732 2.782027 0 0-32.528318-9.20209-50.932497-22.47022 0 0-40.660397-17.976176-78.538767 0.214002-37.87837 18.190178-33.170324 23.326228-64.842633 28.248276C560.685475 994.039707 556.405434 984.409613 556.405434 984.409613zM802.079833 912.076907s16.692163-47.722466 74.472727-62.060606c0 0-9.20209 41.730408-56.068547 57.780564 0 0 93.732915 1.498015 130.11327 54.784535 0.214002 0-75.75674 29.960293-148.51745-50.504493z" fill="#B68A11" p-id="5365"></path><path d="M897.738767 896.454754s3.638036-50.504493 55.640543-79.608777c0 0 2.140021 42.800418-38.734378 70.406688 0 0 90.950888-23.326228 139.957367 18.618181-0.214002 0-65.484639 49.006479-156.863532-9.416092z" fill="#B68A11" p-id="5366"></path><path d="M999.175758 767.411494s-27.820272 47.294462 2.782027 98.440962c0 0 93.304911 28.67628 153.011494-39.590387 0 0-75.114734-24.824242-148.303448 35.096343 0 0 22.256217-53.928527-7.490073-93.946918z" fill="#B68A11" p-id="5367"></path><path d="M1059.096343 796.301776s16.692163-53.28652-11.770115-84.102821c0 0-26.964263 48.792476 9.630094 91.16489 0 0 101.436991 19.902194 139.957367-49.862487 0 0.428004-61.632602-19.902194-137.817346 42.800418z" fill="#B68A11" p-id="5368"></path><path d="M1108.530825 729.961129s9.844096-47.936468-19.046186-78.966772c0 0-23.754232 43.656426 15.194149 87.954859 0 0 106.787043-2.354023 128.401254-60.990595 0.214002 0.214002-81.748798-3.852038-124.549217 52.002508z" fill="#B68A11" p-id="5369"></path><path d="M1122.226959 585.081714s-13.482132 52.644514 24.182236 81.106792c0 0 87.740857 2.354023 115.775131-67.410659 0 0-75.114734 2.140021-112.993103 60.990596 0 0 2.140021-51.360502-26.964264-74.686729z" fill="#B68A11" p-id="5370"></path><path d="M1150.261233 519.811076s-12.412121 43.442424 26.536259 73.616719c0 0 84.316823-4.494044 105.931035-70.406687 0 0-66.340648 2.782027-101.650993 64.842633 0-0.214002 2.568025-38.94838-30.816301-68.052665z" fill="#B68A11" p-id="5371"></path><path d="M1160.105329 456.466458s-6.206061 35.096343 33.81233 69.336677c0 0 82.176803-22.470219 92.876907-78.324765 0 0-70.192685 14.980146-91.806896 73.616719 0-0.214002 2.568025-36.808359-34.882341-64.628631z" fill="#B68A11" p-id="5372"></path><path d="M1163.315361 398.899896s-2.354023 39.162382 40.232392 57.780564c0 0 79.394775-35.952351 76.184744-85.600836 0 0-48.15047 4.494044-76.184744 80.464786 0 0-9.20209-38.306374-40.232392-52.644514z" fill="#B68A11" p-id="5373"></path><path d="M1156.681296 340.049321s6.206061 35.310345 46.010449 50.932497c0 0 66.982654-43.442424 61.632602-91.806896 0 0-54.142529 24.824242-61.846604 85.814838 0 0-8.132079-24.396238-45.796447-44.940439zM1144.911181 281.198746s4.06604 33.384326 46.224451 44.512435c0 0 55.854545-25.680251 52.644514-91.592895 0 0-48.578474 24.61024-53.28652 86.242843 0.214002 0-16.906165-37.236364-45.582445-39.162383zM1125.650993 225.986207s26.750261 2.354023 47.722466 33.170324c0 0 4.06604-65.270637 44.726437-85.386834 0 0 14.552142 49.006479-43.014421 92.876907-0.214002 0-36.594357-6.848067-49.434482-40.660397z" fill="#B68A11" p-id="5374"></path><path d="M1105.9628 176.551724s15.836155 31.886311 47.722466 33.170324c0 0 47.722466-41.730408 35.310345-89.880878 0 0-36.166353 26.322257-36.594357 83.032811-0.214002 0-15.836155-24.61024-46.438454-26.322257zM1081.35256 128.615256s9.20209 28.67628 50.076489 29.532288c0 0 38.520376-47.08046 20.972205-89.880877 0 0-29.104284 23.54023-24.182236 81.9628-0.214002-0.214002-20.544201-22.898224-46.866458-21.614211zM1052.890282 85.814838s14.980146 26.536259 47.936468 23.326228c0 0 37.664368-49.006479 15.194149-86.670847 0 0-27.392268 26.536259-17.33417 80.464786 0 0-19.902194-19.47419-45.796447-17.120167z" fill="#B68A11" p-id="5375"></path><path d="M1031.490073 53.500522s13.910136 25.894253 49.862487 21.186207c0 0 5.564054-39.804389-19.47419-52.21651 0 0-7.276071 20.544201 7.490073 41.302404-0.214002 0-12.198119-12.412121-37.87837-10.272101z" fill="#B68A11" p-id="5376"></path><path d="M1019.93396 24.824242s3.424033 24.182236 29.532289 22.042216c0 0-1.712017-20.116196-29.532289-22.042216z" fill="#B68A11" p-id="5377"></path></svg>
+          <svg t="1744038348712" class="icon" viewBox="0 0 1024 1024" version="1.1" xmlns="http://www.w3.org/2000/svg" p-id="2606" data-darkreader-inline-fill="" width="200" height="200"><path d="M510.742357 92.463901c230.651171 0 418.307108 187.654914 418.307107 418.307108s-187.654914 418.307108-418.307107 418.307108-418.307108-187.654914-418.307108-418.307108 187.655937-418.307108 418.307108-418.307108m0-29.879517c-247.518327 0-448.185602 200.667276-448.185602 448.185602s200.667276 448.185602 448.185602 448.185602c247.532653 0 448.185602-200.667276 448.185602-448.185602S758.27501 62.584384 510.742357 62.584384z" fill="" p-id="2607"></path></svg>
         `;
       } else if (ratingScore >= 5) {
         ratingContainer.setAttribute("data-score", "good");
@@ -7996,7 +8560,7 @@ var NewCardsPlugin = class extends import_obsidian3.Plugin {
       let filename = internalLinkMatch[1].trim();
       const vault = this.app.vault;
       const file = vault.getAbstractFileByPath(filename) || vault.getFiles().find((f) => f.name === filename);
-      if (file && file instanceof import_obsidian3.TFile) {
+      if (file && file instanceof import_obsidian4.TFile) {
         const resourcePath = vault.getResourcePath(file);
         return resourcePath;
       }
