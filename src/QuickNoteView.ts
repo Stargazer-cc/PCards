@@ -124,7 +124,7 @@ export class QuickNoteView extends ItemView {
                 this.createFormGroup(form, 'URL', 'url');
                 this.createFormGroup(form, '标签', 'tags');
                 // For movie, book, music, keep using only date as default if needed, or adjust as required.
-                this.createFormGroup(form, '日期', 'year', false, 'text', 'YYYY-MM-DD');
+                this.createFormGroup(form, '年份', 'year', false, 'text', 'YYYY-MM-DD');
                 break;
             case 'book':
                 this.createFormGroup(form, '书评', 'description', true);
@@ -134,7 +134,7 @@ export class QuickNoteView extends ItemView {
                 this.createFormGroup(form, '封面', 'cover');
                 this.createFormGroup(form, 'URL', 'url');
                 this.createFormGroup(form, '标签', 'tags');
-                this.createFormGroup(form, '日期', 'year', false, 'text', 'YYYY-MM-DD');
+                this.createFormGroup(form, '年份', 'year', false, 'text', 'YYYY-MM-DD');
                 break;
             case 'music':
                 this.createFormGroup(form, '乐评', 'description', true);
