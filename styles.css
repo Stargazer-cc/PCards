@@ -41,7 +41,7 @@
   border-radius: 6px;
   /* 按钮背景使用次要背景色 */
   background: var(--background-secondary);
-  color: var(--text-muted); /* 未激活按钮使用柔和颜色 */
+  color: var(--text-muted); 
   cursor: pointer;
   transition: all 0.2s ease;
 }
@@ -138,25 +138,32 @@
   background: var(--interactive-accent-hover);
 }
 
-/* === Add Bird Button Animation Styles === */
+.quick-note-button.secondary {
+  background: var(--background-modifier-border);
+  color: var(--text-muted);
+}
+
+.quick-note-button.secondary:hover {
+  background: var(--background-modifier-hover);
+  color: var(--text-normal);
+}
+
+/* === 小鸟按钮动画样式---按钮部分 === */
 
 .save-button-container.quick-note-button.primary {
-  /* Reset some default button styles */
   padding: 0;
-  border: 2px solid #000; /* Use a fixed border color for the effect */
-  border-radius: 22px; /* Reduced */
-  background-color: #f4cf47; /* Use a fixed background color */
-  color: #000; /* Use a fixed text color */
-  width: 150px; /* Reduced */
-  height: 35px; /* Reduced */
+  border: 2px solid #000; 
+  border-radius: 22px; 
+  background-color: #f4cf47; 
+  color: #000; 
+  width: 150px; 
+  height: 35px; 
   position: relative;
-  display: flex; /* Ensure flex properties for wrapper */
+  display: flex; 
   justify-content: center;
   align-items: center;
   box-sizing: border-box;
   cursor: pointer;
-  /* Remove default hover effect if it conflicts */
-  /* background: var(--interactive-accent); */ 
 }
 
 .save-button-container.quick-note-button.primary .buttonWrapper {
@@ -164,7 +171,7 @@
   justify-content: center;
   align-items: center;
   box-sizing: border-box;
-  border-radius: 22px; /* Reduced - Match parent's border-radius */
+  border-radius: 22px;
   width: 100%;
   height: 100%;
   overflow: hidden;
@@ -172,9 +179,9 @@
 }
 
 .save-button-container.quick-note-button.primary .buttonWrapper span {
-  font-size: 15px; /* Reduced */
+  font-size: 15px;
   letter-spacing: 2px;
-  color: #000; /* Match border color */
+  color: #000; 
   z-index: 2;
   transition: all 0.3s ease;
 }
@@ -184,10 +191,9 @@
   content: "";
   position: absolute;
   bottom: 0;
-  width: 67px; /* Reduced */
-  height: 22px; /* Reduced */
-  background-color: #f4e19c; /* Lighter shade for effect */
-  /* Note: Clip-path might need scaling adjustment if distortion occurs */
+  width: 67px; 
+  height: 22px; 
+  background-color: #f4e19c; 
   clip-path: path(
     "M13.77,37.35L.25,16.6c-.87-1.33,.69-2.91,2-2.02l12.67,8.59c.81,.55,1.91,.14,2.18-.81l2.62-9.33c.39-1.4,2.34-1.42,2.76-.02l3.6,11.99c.33,1.11,1.74,1.4,2.47,.52L49.38,.52c.87-1.04,2.53-.42,2.53,.95V23.7c0,1.13,1.2,1.83,2.16,1.26l12.75-7.51c.85-.5,1.94,0,2.13,.98l1.5,7.6c.2,1.03,1.37,1.51,2.22,.92l17.74-12.3c1.09-.75,2.52,.25,2.21,1.55l-2.44,10.2c-.26,1.09,.74,2.06,1.8,1.75l30.8-9.04c1.37-.4,2.42,1.26,1.49,2.36l-9.07,10.66c-.83,.98-.1,2.49,1.17,2.42l12.12-.68c1.6-.09,2.12,2.15,.65,2.8l-2.73,1.21c-.18,.08-.38,.12-.58,.12H14.97c-.48,0-.93-.25-1.2-.65Z"
   );
@@ -204,38 +210,26 @@
   transform: rotateY(180deg);
 }
 
-/* Hover Effects */
+
 .save-button-container.quick-note-button.primary:hover .buttonWrapper span {
-  letter-spacing: 3px; /* Reduced */
+  letter-spacing: 3px; 
 }
 
 .save-button-container.quick-note-button.primary:hover .buttonWrapper::before {
-  transform: translateX(-9px); /* Adjusted */
+  transform: translateX(-9px);
 }
 
 .save-button-container.quick-note-button.primary:hover .buttonWrapper::after {
-  transform: translateX(9px) rotateY(180deg); /* Adjusted */
+  transform: translateX(9px) rotateY(180deg);
 }
 
-.save-button-container.quick-note-button.primary:hover::before { /* Arrow move */
-  right: 10px; /* Adjusted */
-}
-
-.quick-note-button.secondary {
-  /* 次要按钮使用更柔和的背景 */
-  background: var(--background-modifier-border);
-  color: var(--text-muted);
-}
-
-.quick-note-button.secondary:hover {
-  background: var(--background-modifier-hover);
-  color: var(--text-normal);
+.save-button-container.quick-note-button.primary:hover::before { 
+  right: 10px; 
 }
 
 /* 卡片画廊主容器样式 */
 .cards-gallery-container {
     position: relative;
-    /* 设置内边距和容器高度 */
     padding: 20px;
     height: 100%;
     /* 允许内容垂直滚动 */
@@ -244,7 +238,6 @@
 
 /* 画廊控制按钮组样式 */
 .gallery-controls {
-    /* 使用flex布局，设置按钮间距和下边距 */
     display: flex;
     gap: 10px;
     margin-bottom: 20px;
@@ -255,7 +248,6 @@
 .gallery-fields-control,
 .gallery-filter-control,
 .gallery-sort-control {
-    /* 设置相对定位，用于下拉菜单的定位基准 */
     position: relative;
 }
 
@@ -265,7 +257,6 @@
 .gallery-filter-toggle,
 .gallery-sort-toggle,
 .gallery-column-toggle {
-    /* 按钮内边距和边框样式 */
     padding: 6px 12px;
     border: 1px solid var(--background-modifier-border);
     border-radius: 4px;
@@ -276,23 +267,18 @@
 }
 /* 模态框基础样式 */
 .gallery-modal {
-    /* 默认隐藏模态框 */
     display: none;
-    /* 固定定位，覆盖整个视口 */
     position: fixed;
     top: 0;
     left: 0;
     width: 100%;
     height: 100%;
-    /* 半透明黑色背景 */
     background: rgba(0, 0, 0, 0.5);
-    /* 确保模态框在其他元素之上 */
     z-index: 1000;
 }
 
 /* 显示模态框时的样式 */
 .gallery-modal.show {
-    /* 使用flex布局居中内容 */
     display: flex;
     justify-content: center;
     align-items: center;
@@ -304,17 +290,14 @@
     background: var(--background-primary);
     border-radius: 8px;
     padding: 20px;
-    /* 设置宽度和最大宽度 */
     width: 80%;
     max-width: 600px;
-    /* 限制最大高度并允许滚动 */
     max-height: 80vh;
     overflow-y: auto;
 }
 
 /* 模态框标题栏样式 */
 .modal-title {
-    /* 使用flex布局实现标题和关闭按钮的两端对齐 */
     display: flex;
     justify-content: space-between;
     align-items: center;
@@ -386,7 +369,6 @@
     /* 使用主题变量设置背景和文字颜色 */
     background: var(--interactive-accent);
     color: var(--text-on-accent);
-    /* 移除边框并设置圆角 */
     border: none;
     border-radius: 4px;
     cursor: pointer;
@@ -395,7 +377,6 @@
 /* 活动筛选和排序标签容器样式 */
 .active-filters,
 .active-sorts {
-    /* 使用flex布局实现标签的流式排列 */
     display: flex;
     flex-wrap: wrap;
     gap: 8px;
@@ -405,11 +386,9 @@
 /* 筛选和排序标签样式 */
 .filter-tag,
 .sort-tag {
-    /* 使用flex布局对齐标签内容 */
     display: flex;
     align-items: center;
     gap: 6px;
-    /* 设置内边距和圆角 */
     padding: 4px 8px;
     /* 使用主题变量设置背景色 */
     background: var(--background-modifier-border);
@@ -427,7 +406,6 @@
 .remove-filter,
 .remove-sort,
 .move-sort-up {
-    /* 移除默认按钮样式 */
     background: none;
     border: none;
     /* 设置内边距和鼠标样式 */
@@ -743,7 +721,7 @@
   font-weight: 400;
 }
 
-/* 评分徽章容器样式 */
+                        /* 评分徽章容器样式 */
 .new-cards-container .rating {
   position: absolute;
   top: 8px;
@@ -863,7 +841,7 @@
   cursor: pointer;
 }
 
-/* 反链容器样式 */
+                /* 卡片总览页面反链容器样式 */
 .card-backlinks-container {
     position: absolute;
     bottom: 10px;
@@ -959,7 +937,6 @@
 
 /* 卡片背景图片样式 */
 .new-cards-container .background-container img {
-  /* 填满容器 */
   width: 100%;
   height: 100%;
   object-fit: cover;
@@ -1165,7 +1142,7 @@
   padding: 6px;
 }
 
-/* === Bird Animation Keyframes === */
+/* === 小鸟按钮动画效果---小鸟图案部分 === */
 
 @keyframes wakeup {
   0% {
@@ -1316,7 +1293,6 @@
   }
 }
 
-/* Add styles for bird hover effect */
 .save-button-container.quick-note-button.primary:hover .birdBox .wakeup {
   animation: wakeup 0.2s ease forwards;
 }
@@ -1333,13 +1309,10 @@
   animation: eye2 5s linear infinite;
 }
 
-/* Add default bird animation */
 .save-button-container .bird {
-  /* Existing bird styles... */
   animation: sleep 1s ease infinite alternate;
 }
 
-/* Add bird face styles */
 .save-button-container .bird .birdFace {
   position: absolute;
   top: 15px;
@@ -1368,7 +1341,6 @@
   right: -5px;
 }
 
-/* Add bird hair style */
 .save-button-container .bird::before {
   content: "";
   position: absolute;
@@ -1382,7 +1354,6 @@
   );
 }
 
-/* Add bird box styles if they were commented out or missing */
 .save-button-container .birdBox {
   position: absolute;
   top: -54px;
@@ -1394,7 +1365,7 @@
   align-items: flex-end;
   width: 136px;
   height: 56px;
-  pointer-events: none; /* Ensure birds don't interfere with button clicks */
+  pointer-events: none;
 }
 
 .save-button-container .bird {
@@ -1405,7 +1376,7 @@
   justify-content: center;
   border: solid 2px #000;
   background-color: #f4cf47;
-  border-radius: 60px 60px 40px 40px / 48px 48px 30px 30px; /* --border-radius1 */
+  border-radius: 60px 60px 40px 40px / 48px 48px 30px 30px; 
   position: relative;
   animation: sleep 1s ease infinite alternate;
 }
