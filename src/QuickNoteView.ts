@@ -267,14 +267,7 @@ export class QuickNoteView extends ItemView {
         cardContent += '```'; // 移除末尾多余的换行符
 
         // 获取目标文件
-        const fileNameMap = {
-            'idea': '想法.md',
-            'quote': '摘录.md',
-            'movie': '电影.md',
-            'book': '书籍.md',
-            'music': '音乐.md'
-        };
-        const targetFileName = fileNameMap[this.type];
+        const targetFileName = this.plugin.settings.cardStoragePaths[`${this.type}Card`];
         let targetFile = this.app.vault.getAbstractFileByPath(targetFileName);
 
         if (!targetFile) {

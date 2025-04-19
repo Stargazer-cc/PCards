@@ -6758,6 +6758,17 @@ var CardUtils = class {
     }
     await this.saveCardIndex(vault, index);
   }
+  static async removeCardsByPath(vault, path) {
+    const index = await this.loadCardIndex(vault);
+    for (const cid in index) {
+      const card = index[cid];
+      card.locations = card.locations.filter((loc) => loc.path !== path);
+      if (card.locations.length === 0) {
+        delete index[cid];
+      }
+    }
+    await this.saveCardIndex(vault, index);
+  }
 };
 CardUtils.base62Chars = "0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz";
 
@@ -7542,14 +7553,7 @@ var QuickNoteView = class extends import_obsidian3.ItemView {
         break;
     }
     cardContent += "```";
-    const fileNameMap = {
-      "idea": "\u60F3\u6CD5.md",
-      "quote": "\u6458\u5F55.md",
-      "movie": "\u7535\u5F71.md",
-      "book": "\u4E66\u7C4D.md",
-      "music": "\u97F3\u4E50.md"
-    };
-    const targetFileName = fileNameMap[this.type];
+    const targetFileName = this.plugin.settings.cardStoragePaths[`${this.type}Card`];
     let targetFile = this.app.vault.getAbstractFileByPath(targetFileName);
     if (!targetFile) {
       targetFile = await this.app.vault.create(targetFileName, "");
@@ -7581,6 +7585,13 @@ var DEFAULT_SETTINGS = {
     movieCard: "```movie-card\ntitle: \nyear: \ndirector: \ndescription: \nrating: \n```",
     ideaCard: "```idea-card\nidea: \nsource: \ndate: \ntags: \nurl: \n```",
     quoteCard: "```quote-card\nquote: \nsource: \ndate: \ntags: \nurl: \n```"
+  },
+  cardStoragePaths: {
+    musicCard: "\u97F3\u4E50.md",
+    bookCard: "\u4E66\u7C4D.md",
+    movieCard: "\u7535\u5F71.md",
+    ideaCard: "\u60F3\u6CD5.md",
+    quoteCard: "\u6458\u5F55.md"
   },
   textColors: {
     title: "rgb(91, 136, 241)",
@@ -7624,7 +7635,38 @@ var NewCardsSettingTab = class extends import_obsidian4.PluginSettingTab {
   display() {
     const { containerEl } = this;
     containerEl.empty();
-    containerEl.createEl("h3", { text: "\u6587\u5B57\u989C\u8272\u8BBE\u7F6E" });
+    containerEl.createEl("h3", { text: "\u5361\u7247\u5B58\u50A8\u8DEF\u5F84\u8BBE\u7F6E" });
+    new import_obsidian4.Setting(containerEl).setName("\u97F3\u4E50\u5361\u7247\u5B58\u50A8\u8DEF\u5F84").setDesc("\u8BBE\u7F6E\u97F3\u4E50\u5361\u7247\u7684\u9ED8\u8BA4\u5B58\u50A8\u7B14\u8BB0").addSearch((cb) => {
+      cb.setPlaceholder("\u4F8B\uFF1A\u6587\u4EF6\u5939\u540D/\u7B14\u8BB0\u540D.md").setValue(this.plugin.settings.cardStoragePaths.musicCard).onChange(async (value) => {
+        this.plugin.settings.cardStoragePaths.musicCard = value;
+        await this.plugin.saveSettings();
+      });
+    });
+    new import_obsidian4.Setting(containerEl).setName("\u4E66\u7C4D\u5361\u7247\u5B58\u50A8\u8DEF\u5F84").setDesc("\u8BBE\u7F6E\u4E66\u7C4D\u5361\u7247\u7684\u9ED8\u8BA4\u5B58\u50A8\u7B14\u8BB0").addSearch((cb) => {
+      cb.setPlaceholder("\u4F8B\uFF1A\u6587\u4EF6\u5939\u540D/\u7B14\u8BB0\u540D.md").setValue(this.plugin.settings.cardStoragePaths.bookCard).onChange(async (value) => {
+        this.plugin.settings.cardStoragePaths.bookCard = value;
+        await this.plugin.saveSettings();
+      });
+    });
+    new import_obsidian4.Setting(containerEl).setName("\u7535\u5F71\u5361\u7247\u5B58\u50A8\u8DEF\u5F84").setDesc("\u8BBE\u7F6E\u7535\u5F71\u5361\u7247\u7684\u9ED8\u8BA4\u5B58\u50A8\u7B14\u8BB0").addSearch((cb) => {
+      cb.setPlaceholder("\u4F8B\uFF1A\u6587\u4EF6\u5939\u540D/\u7B14\u8BB0\u540D.md").setValue(this.plugin.settings.cardStoragePaths.movieCard).onChange(async (value) => {
+        this.plugin.settings.cardStoragePaths.movieCard = value;
+        await this.plugin.saveSettings();
+      });
+    });
+    new import_obsidian4.Setting(containerEl).setName("\u60F3\u6CD5\u5361\u7247\u5B58\u50A8\u8DEF\u5F84").setDesc("\u8BBE\u7F6E\u60F3\u6CD5\u5361\u7247\u7684\u9ED8\u8BA4\u5B58\u50A8\u7B14\u8BB0").addSearch((cb) => {
+      cb.setPlaceholder("\u4F8B\uFF1A\u6587\u4EF6\u5939\u540D/\u7B14\u8BB0\u540D.md").setValue(this.plugin.settings.cardStoragePaths.ideaCard).onChange(async (value) => {
+        this.plugin.settings.cardStoragePaths.ideaCard = value;
+        await this.plugin.saveSettings();
+      });
+    });
+    new import_obsidian4.Setting(containerEl).setName("\u6458\u5F55\u5361\u7247\u5B58\u50A8\u8DEF\u5F84").setDesc("\u8BBE\u7F6E\u6458\u5F55\u5361\u7247\u7684\u9ED8\u8BA4\u5B58\u50A8\u7B14\u8BB0").addSearch((cb) => {
+      cb.setPlaceholder("\u4F8B\uFF1A\u6587\u4EF6\u5939\u540D/\u7B14\u8BB0\u540D.md").setValue(this.plugin.settings.cardStoragePaths.quoteCard).onChange(async (value) => {
+        this.plugin.settings.cardStoragePaths.quoteCard = value;
+        await this.plugin.saveSettings();
+      });
+    });
+    containerEl.createEl("h3", { text: "\u4E66\u5F71\u97F3\u5361\u7247\u6587\u5B57\u989C\u8272\u8BBE\u7F6E" });
     new import_obsidian4.Setting(containerEl).setName("\u6807\u9898\u989C\u8272").addColorPicker((color) => color.setValue(this.plugin.settings.textColors.title).onChange(async (value) => {
       this.plugin.settings.textColors.title = value;
       await this.plugin.saveSettings();
@@ -7715,6 +7757,13 @@ var NewCardsPlugin = class extends import_obsidian4.Plugin {
   }
   async onload() {
     await this.loadSettings();
+    this.registerEvent(
+      this.app.vault.on("delete", (file) => {
+        if (file instanceof import_obsidian4.TFile) {
+          CardUtils.removeCardsByPath(this.app.vault, file.path);
+        }
+      })
+    );
     this.addSettingTab(new NewCardsSettingTab(this.app, this));
     this.registerView(
       VIEW_TYPE_QUICK_NOTE,

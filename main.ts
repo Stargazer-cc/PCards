@@ -81,6 +81,13 @@ interface NewCardsPluginSettings {
     ideaCard: string;
     quoteCard: string;
   };
+  cardStoragePaths: {
+    musicCard: string;
+    bookCard: string;
+    movieCard: string;
+    ideaCard: string;
+    quoteCard: string;
+  };
   textColors: {
     title: string;
     description: string;
@@ -105,6 +112,13 @@ const DEFAULT_SETTINGS: NewCardsPluginSettings = {
     movieCard: '```movie-card\ntitle: \nyear: \ndirector: \ndescription: \nrating: \n```',
     ideaCard: '```idea-card\nidea: \nsource: \ndate: \ntags: \nurl: \n```',
     quoteCard: '```quote-card\nquote: \nsource: \ndate: \ntags: \nurl: \n```'
+  },
+  cardStoragePaths: {
+    musicCard: '音乐.md',
+    bookCard: '书籍.md',
+    movieCard: '电影.md',
+    ideaCard: '想法.md',
+    quoteCard: '摘录.md'
   },
   textColors: {
     title: 'rgb(91, 136, 241)',
@@ -166,7 +180,71 @@ class NewCardsSettingTab extends PluginSettingTab {
     containerEl.empty();
 
     // 添加文字颜色设置
-    containerEl.createEl('h3', {text: '文字颜色设置'});
+    // 添加卡片存储路径设置
+    containerEl.createEl('h3', {text: '卡片存储路径设置'});
+
+    new Setting(containerEl)
+      .setName('音乐卡片存储路径')
+      .setDesc('设置音乐卡片的默认存储笔记')
+      .addSearch(cb => {
+        cb.setPlaceholder('例：文件夹名/笔记名.md')
+          .setValue(this.plugin.settings.cardStoragePaths.musicCard)
+          .onChange(async (value) => {
+            this.plugin.settings.cardStoragePaths.musicCard = value;
+            await this.plugin.saveSettings();
+          })
+      });
+
+    new Setting(containerEl)
+      .setName('书籍卡片存储路径')
+      .setDesc('设置书籍卡片的默认存储笔记')
+      .addSearch(cb => {
+        cb.setPlaceholder('例：文件夹名/笔记名.md')
+          .setValue(this.plugin.settings.cardStoragePaths.bookCard)
+          .onChange(async (value) => {
+            this.plugin.settings.cardStoragePaths.bookCard = value;
+            await this.plugin.saveSettings();
+          })
+      });
+
+    new Setting(containerEl)
+      .setName('电影卡片存储路径')
+      .setDesc('设置电影卡片的默认存储笔记')
+      .addSearch(cb => {
+        cb.setPlaceholder('例：文件夹名/笔记名.md')
+          .setValue(this.plugin.settings.cardStoragePaths.movieCard)
+          .onChange(async (value) => {
+            this.plugin.settings.cardStoragePaths.movieCard = value;
+            await this.plugin.saveSettings();
+          })
+      });
+
+    new Setting(containerEl)
+      .setName('想法卡片存储路径')
+      .setDesc('设置想法卡片的默认存储笔记')
+      .addSearch(cb => {
+        cb.setPlaceholder('例：文件夹名/笔记名.md')
+          .setValue(this.plugin.settings.cardStoragePaths.ideaCard)
+          .onChange(async (value) => {
+            this.plugin.settings.cardStoragePaths.ideaCard = value;
+            await this.plugin.saveSettings();
+          })
+      });
+
+    new Setting(containerEl)
+      .setName('摘录卡片存储路径')
+      .setDesc('设置摘录卡片的默认存储笔记')
+      .addSearch(cb => {
+        cb.setPlaceholder('例：文件夹名/笔记名.md')
+          .setValue(this.plugin.settings.cardStoragePaths.quoteCard)
+          .onChange(async (value) => {
+            this.plugin.settings.cardStoragePaths.quoteCard = value;
+            await this.plugin.saveSettings();
+          })
+      });
+
+    // 添加文字颜色设置
+    containerEl.createEl('h3', {text: '书影音卡片文字颜色设置'});
 
     new Setting(containerEl)
       .setName('标题颜色')
@@ -324,6 +402,15 @@ export default class NewCardsPlugin extends Plugin {
 
   async onload() {
     await this.loadSettings();
+
+   // 在插件的 onload() 方法中注册事件监听
+    this.registerEvent(
+    this.app.vault.on('delete', (file) => {
+    if (file instanceof TFile) {
+      CardUtils.removeCardsByPath(this.app.vault, file.path);
+        }
+      })
+    );
 
     // 添加设置页面
     this.addSettingTab(new NewCardsSettingTab(this.app, this));

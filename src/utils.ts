@@ -228,4 +228,22 @@ export class CardUtils {
 
     await this.saveCardIndex(vault, index);
   }
+
+  static async removeCardsByPath(vault: any, path: string): Promise<void> {
+    const index = await this.loadCardIndex(vault);
+    
+    // 遍历所有卡片
+    for (const cid in index) {
+      const card = index[cid];
+      // 移除指定路径下的所有位置
+      card.locations = card.locations.filter(loc => loc.path !== path);
+      
+      // 如果卡片不再有任何位置引用，则删除该卡片
+      if (card.locations.length === 0) {
+        delete index[cid];
+      }
+    }
+
+    await this.saveCardIndex(vault, index);
+  }
 }

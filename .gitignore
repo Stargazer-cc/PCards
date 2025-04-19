@@ -1,0 +1,4 @@
+# 忽略特定文件
+example.md
+data.json
+node_modules/
