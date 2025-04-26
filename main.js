@@ -7636,31 +7636,31 @@ var NewCardsSettingTab = class extends import_obsidian4.PluginSettingTab {
     const { containerEl } = this;
     containerEl.empty();
     containerEl.createEl("h3", { text: "\u5361\u7247\u5B58\u50A8\u8DEF\u5F84\u8BBE\u7F6E" });
-    new import_obsidian4.Setting(containerEl).setName("\u97F3\u4E50\u5361\u7247\u5B58\u50A8\u8DEF\u5F84").setDesc("\u8BBE\u7F6E\u97F3\u4E50\u5361\u7247\u7684\u9ED8\u8BA4\u5B58\u50A8\u7B14\u8BB0").addSearch((cb) => {
+    new import_obsidian4.Setting(containerEl).setName("\u97F3\u4E50\u5361\u7247\u5B58\u50A8\u8DEF\u5F84").setDesc("\u8BBE\u7F6E\u97F3\u4E50\u5361\u7247\u7684\u9ED8\u8BA4\u5B58\u50A8\u7B14\u8BB0\uFF0C\u4F8B\uFF1A\u6587\u4EF6\u5939\u540D/\u7B14\u8BB0\u540D.md").addSearch((cb) => {
       cb.setPlaceholder("\u4F8B\uFF1A\u6587\u4EF6\u5939\u540D/\u7B14\u8BB0\u540D.md").setValue(this.plugin.settings.cardStoragePaths.musicCard).onChange(async (value) => {
         this.plugin.settings.cardStoragePaths.musicCard = value;
         await this.plugin.saveSettings();
       });
     });
-    new import_obsidian4.Setting(containerEl).setName("\u4E66\u7C4D\u5361\u7247\u5B58\u50A8\u8DEF\u5F84").setDesc("\u8BBE\u7F6E\u4E66\u7C4D\u5361\u7247\u7684\u9ED8\u8BA4\u5B58\u50A8\u7B14\u8BB0").addSearch((cb) => {
+    new import_obsidian4.Setting(containerEl).setName("\u4E66\u7C4D\u5361\u7247\u5B58\u50A8\u8DEF\u5F84").setDesc("\u8BBE\u7F6E\u4E66\u7C4D\u5361\u7247\u7684\u9ED8\u8BA4\u5B58\u50A8\u7B14\u8BB0\uFF0C\u4F8B\uFF1A\u6587\u4EF6\u5939\u540D/\u7B14\u8BB0\u540D.md").addSearch((cb) => {
       cb.setPlaceholder("\u4F8B\uFF1A\u6587\u4EF6\u5939\u540D/\u7B14\u8BB0\u540D.md").setValue(this.plugin.settings.cardStoragePaths.bookCard).onChange(async (value) => {
         this.plugin.settings.cardStoragePaths.bookCard = value;
         await this.plugin.saveSettings();
       });
     });
-    new import_obsidian4.Setting(containerEl).setName("\u7535\u5F71\u5361\u7247\u5B58\u50A8\u8DEF\u5F84").setDesc("\u8BBE\u7F6E\u7535\u5F71\u5361\u7247\u7684\u9ED8\u8BA4\u5B58\u50A8\u7B14\u8BB0").addSearch((cb) => {
+    new import_obsidian4.Setting(containerEl).setName("\u7535\u5F71\u5361\u7247\u5B58\u50A8\u8DEF\u5F84").setDesc("\u8BBE\u7F6E\u7535\u5F71\u5361\u7247\u7684\u9ED8\u8BA4\u5B58\u50A8\u7B14\u8BB0\uFF0C\u4F8B\uFF1A\u6587\u4EF6\u5939\u540D/\u7B14\u8BB0\u540D.md").addSearch((cb) => {
       cb.setPlaceholder("\u4F8B\uFF1A\u6587\u4EF6\u5939\u540D/\u7B14\u8BB0\u540D.md").setValue(this.plugin.settings.cardStoragePaths.movieCard).onChange(async (value) => {
         this.plugin.settings.cardStoragePaths.movieCard = value;
         await this.plugin.saveSettings();
       });
     });
-    new import_obsidian4.Setting(containerEl).setName("\u60F3\u6CD5\u5361\u7247\u5B58\u50A8\u8DEF\u5F84").setDesc("\u8BBE\u7F6E\u60F3\u6CD5\u5361\u7247\u7684\u9ED8\u8BA4\u5B58\u50A8\u7B14\u8BB0").addSearch((cb) => {
+    new import_obsidian4.Setting(containerEl).setName("\u60F3\u6CD5\u5361\u7247\u5B58\u50A8\u8DEF\u5F84").setDesc("\u8BBE\u7F6E\u60F3\u6CD5\u5361\u7247\u7684\u9ED8\u8BA4\u5B58\u50A8\u7B14\u8BB0\uFF0C\u4F8B\uFF1A\u6587\u4EF6\u5939\u540D/\u7B14\u8BB0\u540D.md").addSearch((cb) => {
       cb.setPlaceholder("\u4F8B\uFF1A\u6587\u4EF6\u5939\u540D/\u7B14\u8BB0\u540D.md").setValue(this.plugin.settings.cardStoragePaths.ideaCard).onChange(async (value) => {
         this.plugin.settings.cardStoragePaths.ideaCard = value;
         await this.plugin.saveSettings();
       });
     });
-    new import_obsidian4.Setting(containerEl).setName("\u6458\u5F55\u5361\u7247\u5B58\u50A8\u8DEF\u5F84").setDesc("\u8BBE\u7F6E\u6458\u5F55\u5361\u7247\u7684\u9ED8\u8BA4\u5B58\u50A8\u7B14\u8BB0").addSearch((cb) => {
+    new import_obsidian4.Setting(containerEl).setName("\u6458\u5F55\u5361\u7247\u5B58\u50A8\u8DEF\u5F84").setDesc("\u8BBE\u7F6E\u6458\u5F55\u5361\u7247\u7684\u9ED8\u8BA4\u5B58\u50A8\u7B14\u8BB0\uFF0C\u4F8B\uFF1A\u6587\u4EF6\u5939\u540D/\u7B14\u8BB0\u540D.md").addSearch((cb) => {
       cb.setPlaceholder("\u4F8B\uFF1A\u6587\u4EF6\u5939\u540D/\u7B14\u8BB0\u540D.md").setValue(this.plugin.settings.cardStoragePaths.quoteCard).onChange(async (value) => {
         this.plugin.settings.cardStoragePaths.quoteCard = value;
         await this.plugin.saveSettings();

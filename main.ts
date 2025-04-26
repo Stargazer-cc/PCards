@@ -185,7 +185,7 @@ class NewCardsSettingTab extends PluginSettingTab {
 
     new Setting(containerEl)
       .setName('音乐卡片存储路径')
-      .setDesc('设置音乐卡片的默认存储笔记')
+      .setDesc('设置音乐卡片的默认存储笔记，例：文件夹名/笔记名.md')
       .addSearch(cb => {
         cb.setPlaceholder('例：文件夹名/笔记名.md')
           .setValue(this.plugin.settings.cardStoragePaths.musicCard)
@@ -197,7 +197,7 @@ class NewCardsSettingTab extends PluginSettingTab {
 
     new Setting(containerEl)
       .setName('书籍卡片存储路径')
-      .setDesc('设置书籍卡片的默认存储笔记')
+      .setDesc('设置书籍卡片的默认存储笔记，例：文件夹名/笔记名.md')
       .addSearch(cb => {
         cb.setPlaceholder('例：文件夹名/笔记名.md')
           .setValue(this.plugin.settings.cardStoragePaths.bookCard)
@@ -209,7 +209,7 @@ class NewCardsSettingTab extends PluginSettingTab {
 
     new Setting(containerEl)
       .setName('电影卡片存储路径')
-      .setDesc('设置电影卡片的默认存储笔记')
+      .setDesc('设置电影卡片的默认存储笔记，例：文件夹名/笔记名.md')
       .addSearch(cb => {
         cb.setPlaceholder('例：文件夹名/笔记名.md')
           .setValue(this.plugin.settings.cardStoragePaths.movieCard)
@@ -221,7 +221,7 @@ class NewCardsSettingTab extends PluginSettingTab {
 
     new Setting(containerEl)
       .setName('想法卡片存储路径')
-      .setDesc('设置想法卡片的默认存储笔记')
+      .setDesc('设置想法卡片的默认存储笔记，例：文件夹名/笔记名.md')
       .addSearch(cb => {
         cb.setPlaceholder('例：文件夹名/笔记名.md')
           .setValue(this.plugin.settings.cardStoragePaths.ideaCard)
@@ -233,7 +233,7 @@ class NewCardsSettingTab extends PluginSettingTab {
 
     new Setting(containerEl)
       .setName('摘录卡片存储路径')
-      .setDesc('设置摘录卡片的默认存储笔记')
+      .setDesc('设置摘录卡片的默认存储笔记，例：文件夹名/笔记名.md')
       .addSearch(cb => {
         cb.setPlaceholder('例：文件夹名/笔记名.md')
           .setValue(this.plugin.settings.cardStoragePaths.quoteCard)
@@ -933,10 +933,8 @@ export default class NewCardsPlugin extends Plugin {
           if (key === 'tags') {
             data[key] = value.split(' ').filter(tag => tag.trim());
           } else if (key === 'meta') {
-            // Skip meta key itself as we handle meta data differently
             return;
           } else if (key.startsWith('meta.')) {
-            // Handle meta data fields
             const metaKey = key.substring(5).trim();
             if (metaKey) {
               meta[metaKey] = value;
