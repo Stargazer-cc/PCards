@@ -7792,6 +7792,7 @@ var NewCardsPlugin = class extends import_obsidian4.Plugin {
     this.registerEvent(
       this.app.workspace.on("file-open", async (file) => {
         if (!(file instanceof import_obsidian4.TFile)) return;
+        if (file.extension !== "md" || file.path.endsWith(".canvas.md")) return;
         const excludedNames = ["\u60F3\u6CD5", "\u6458\u5F55", "\u7535\u5F71", "\u97F3\u4E50", "\u4E66\u7C4D"];
         const baseName = file.basename;
         if (!excludedNames.includes(baseName)) {
@@ -7802,6 +7803,7 @@ var NewCardsPlugin = class extends import_obsidian4.Plugin {
           const codeBlockRegex = /^```(music-card|book-card|movie-card|quote-card|idea-card)$/;
           let inBlock = false;
           let blockLines = [];
+          let hasCard = false;
           for (let line of lines2) {
             const trimmed = line.trim();
             if (!inBlock) {
@@ -7809,6 +7811,7 @@ var NewCardsPlugin = class extends import_obsidian4.Plugin {
               if (match) {
                 inBlock = true;
                 blockLines = [];
+                hasCard = true;
               }
             } else if (trimmed === "```") {
               const tagLine = blockLines.find(
@@ -7825,26 +7828,28 @@ var NewCardsPlugin = class extends import_obsidian4.Plugin {
               blockLines.push(line);
             }
           }
-          const metadata = this.app.metadataCache.getFileCache(file);
-          const frontmatter = metadata?.frontmatter;
-          const hasFrontmatter = content2.startsWith("---\n");
-          const rawTags = frontmatter?.tags;
-          const existingTags = new Set(
-            (rawTags ?? []).filter((t) => typeof t === "string").map((t) => t.trim())
-          );
-          const allTags = /* @__PURE__ */ new Set([...existingTags, ...foundTags]);
-          if (!hasFrontmatter) {
-            const tagsStr = Array.from(allTags).join("\n  - ");
-            const newContent = `---
+          if (hasCard) {
+            const metadata = this.app.metadataCache.getFileCache(file);
+            const frontmatter = metadata?.frontmatter;
+            const hasFrontmatter = content2.startsWith("---\n");
+            const rawTags = frontmatter?.tags;
+            const existingTags = new Set(
+              (rawTags ?? []).filter((t) => typeof t === "string").map((t) => t.trim())
+            );
+            const allTags = /* @__PURE__ */ new Set([...existingTags, ...foundTags]);
+            if (!hasFrontmatter) {
+              const tagsStr = Array.from(allTags).join("\n  - ");
+              const newContent = `---
 tags:
   - ${tagsStr}
 ---
 ${content2.trimStart()}`;
-            await this.app.vault.modify(file, newContent);
-          } else {
-            await this.app.fileManager.processFrontMatter(file, (fm) => {
-              fm.tags = Array.from(allTags);
-            });
+              await this.app.vault.modify(file, newContent);
+            } else {
+              await this.app.fileManager.processFrontMatter(file, (fm) => {
+                fm.tags = Array.from(allTags);
+              });
+            }
           }
         }
         const content = await this.app.vault.read(file);

@@ -455,6 +455,9 @@ export default class NewCardsPlugin extends Plugin {
     this.registerEvent(
       this.app.workspace.on('file-open', async (file) => {
         if (!(file instanceof TFile)) return;
+
+        // 检查是否为普通的Markdown笔记
+        if (file.extension !== 'md' || file.path.endsWith('.canvas.md')) return;
     
         const excludedNames = ['想法', '摘录', '电影', '音乐', '书籍'];
         const baseName = file.basename;
@@ -468,6 +471,7 @@ export default class NewCardsPlugin extends Plugin {
           const codeBlockRegex = /^```(music-card|book-card|movie-card|quote-card|idea-card)$/;
           let inBlock = false;
           let blockLines: string[] = [];
+          let hasCard = false;
     
           for (let line of lines) {
             const trimmed = line.trim();
@@ -477,6 +481,7 @@ export default class NewCardsPlugin extends Plugin {
               if (match) {
                 inBlock = true;
                 blockLines = [];
+                hasCard = true;
               }
             } else if (trimmed === '```') {
               // 尝试找到 tag 或 tags 字段
@@ -494,28 +499,31 @@ export default class NewCardsPlugin extends Plugin {
               blockLines.push(line);
             }
           }
-    
-          // 更新 frontmatter tags 属性
-          const metadata = this.app.metadataCache.getFileCache(file);
-          const frontmatter = metadata?.frontmatter;
-          const hasFrontmatter = content.startsWith('---\n');
-          
-          const rawTags = frontmatter?.tags as string[] | undefined;
-          const existingTags = new Set(
-            (rawTags ?? []).filter((t): t is string => typeof t === 'string').map(t => t.trim())
-          );          
+
+          // 只有当文件中包含卡片时才更新frontmatter
+          if (hasCard) {
+            // 更新 frontmatter tags 属性
+            const metadata = this.app.metadataCache.getFileCache(file);
+            const frontmatter = metadata?.frontmatter;
+            const hasFrontmatter = content.startsWith('---\n');
+            
+            const rawTags = frontmatter?.tags as string[] | undefined;
+            const existingTags = new Set(
+              (rawTags ?? []).filter((t): t is string => typeof t === 'string').map(t => t.trim())
+            );          
             const allTags = new Set([...existingTags, ...foundTags]);
-          
-          if (!hasFrontmatter) {
-            // 如果文件没有frontmatter，直接在开头添加
-            const tagsStr = Array.from(allTags).join('\n  - ');
-            const newContent = `---\ntags:\n  - ${tagsStr}\n---\n${content.trimStart()}`;
-            await this.app.vault.modify(file, newContent);
-          } else {
-            // 如果已有frontmatter，使用processFrontMatter更新
-            await this.app.fileManager.processFrontMatter(file, (fm) => {
-              fm.tags = Array.from(allTags);
-            });
+            
+            if (!hasFrontmatter) {
+              // 如果文件没有frontmatter，直接在开头添加
+              const tagsStr = Array.from(allTags).join('\n  - ');
+              const newContent = `---\ntags:\n  - ${tagsStr}\n---\n${content.trimStart()}`;
+              await this.app.vault.modify(file, newContent);
+            } else {
+              // 如果已有frontmatter，使用processFrontMatter更新
+              await this.app.fileManager.processFrontMatter(file, (fm) => {
+                fm.tags = Array.from(allTags);
+              });
+            }
           }
         }          
     
