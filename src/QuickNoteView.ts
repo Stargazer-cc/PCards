@@ -6,7 +6,7 @@ export const VIEW_TYPE_QUICK_NOTE = 'quick-note-view';
 export class QuickNoteView extends ItemView {
     private plugin: NewCardsPlugin;
     private container: HTMLElement;
-    private type: 'idea' | 'quote' | 'movie' | 'book' | 'music' = 'idea';
+    private type: 'idea' | 'quote' | 'movie' | 'book' | 'music' | 'tv' | 'anime' = 'idea';
 
     constructor(leaf: WorkspaceLeaf, plugin: NewCardsPlugin) {
         super(leaf);
@@ -35,12 +35,14 @@ export class QuickNoteView extends ItemView {
 
         // 类型选择器
         const typeSelector = contentEl.createDiv({ cls: 'quick-note-type-selector' });
-        const buttons: Array<{ type: 'idea' | 'quote' | 'movie' | 'book' | 'music', text: string }> = [
+        const buttons: Array<{ type: 'idea' | 'quote' | 'movie' | 'book' | 'music' | 'tv' | 'anime', text: string }> = [
             { type: 'idea', text: '想法' },
             { type: 'quote', text: '摘录' },
             { type: 'movie', text: '电影' },
             { type: 'book', text: '书籍' },
-            { type: 'music', text: '音乐' }
+            { type: 'music', text: '音乐' },
+            { type: 'tv', text: '剧集' },
+            { type: 'anime', text: '番剧' }
         ];
 
         const typeButtons = buttons.map(({ type, text }) => {
@@ -68,7 +70,7 @@ export class QuickNoteView extends ItemView {
 
     }
 
-    private switchType(newType: 'idea' | 'quote' | 'movie' | 'book' | 'music', activeBtn: HTMLElement, inactiveButtons: HTMLElement[]) {
+    private switchType(newType: 'idea' | 'quote' | 'movie' | 'book' | 'music' | 'tv' | 'anime', activeBtn: HTMLElement, inactiveButtons: HTMLElement[]) {
         this.type = newType;
         activeBtn.classList.add('active');
         inactiveButtons.forEach(btn => btn.classList.remove('active'));
@@ -89,7 +91,7 @@ export class QuickNoteView extends ItemView {
     }
 
     // 新增方法：根据类型构建表单字段
-    private buildFormFields(form: HTMLElement, type: 'idea' | 'quote' | 'movie' | 'book' | 'music') {
+    private buildFormFields(form: HTMLElement, type: 'idea' | 'quote' | 'movie' | 'book' | 'music' | 'tv' | 'anime') {
         const now = new Date();
         const year = now.getFullYear();
         const month = (now.getMonth() + 1).toString().padStart(2, '0');
@@ -146,6 +148,26 @@ export class QuickNoteView extends ItemView {
                 this.createFormGroup(form, '标签', 'tags');
                 this.createFormGroup(form, '年份', 'year', false, 'text', 'YYYY-MM-DD');
                 break;
+            case 'tv':
+                this.createFormGroup(form, '剧评', 'description', true);
+                this.createFormGroup(form, '剧名', 'title');
+                this.createFormGroup(form, '导演', 'director');
+                this.createFormGroup(form, '评分', 'rating', false, 'number');
+                this.createFormGroup(form, '封面', 'cover');
+                this.createFormGroup(form, 'URL', 'url');
+                this.createFormGroup(form, '标签', 'tags');
+                this.createFormGroup(form, '年份', 'year', false, 'text', 'YYYY-MM-DD');
+                break;
+            case 'anime':
+                this.createFormGroup(form, '评论', 'description', true);
+                this.createFormGroup(form, '番名', 'title');
+                this.createFormGroup(form, '导演', 'director');
+                this.createFormGroup(form, '评分', 'rating', false, 'number');
+                this.createFormGroup(form, '封面', 'cover');
+                this.createFormGroup(form, 'URL', 'url');
+                this.createFormGroup(form, '标签', 'tags');
+                this.createFormGroup(form, '年份', 'year', false, 'text', 'YYYY-MM-DD');
+                break;
         }
     }
 
@@ -189,6 +211,7 @@ export class QuickNoteView extends ItemView {
         group.createEl('label', { text: labelText, attr: { for: inputId } });
         if (isTextarea) {
             const textarea = group.createEl('textarea', { attr: { id: inputId, name: inputId, placeholder: placeholder || '' } });
+            textarea.style.whiteSpace = 'pre-wrap';
             if (defaultValue) textarea.value = defaultValue;
         } else {
             const input = group.createEl('input', { attr: { id: inputId, name: inputId, type: inputType, placeholder: placeholder || '' } });
@@ -256,6 +279,26 @@ export class QuickNoteView extends ItemView {
                 cardContent += `description: ${content}\n`;
                 cardContent += `title: ${(this.container.querySelector('#title') as HTMLInputElement)?.value || ''}\n`;
                 cardContent += `artist: ${(this.container.querySelector('#artist') as HTMLInputElement)?.value || ''}\n`;
+                cardContent += `rating: ${(this.container.querySelector('#rating') as HTMLInputElement)?.value || ''}\n`;
+                cardContent += `cover: ${(this.container.querySelector('#cover') as HTMLInputElement)?.value || ''}\n`;
+                cardContent += `url: ${(this.container.querySelector('#url') as HTMLInputElement)?.value || ''}\n`;
+                cardContent += `tags: ${(this.container.querySelector('#tags') as HTMLInputElement)?.value || ''}\n`;
+                cardContent += `year: ${(this.container.querySelector('#year') as HTMLInputElement)?.value || ''}\n`;
+                break;
+            case 'tv':
+                cardContent += `description: ${content}\n`;
+                cardContent += `title: ${(this.container.querySelector('#title') as HTMLInputElement)?.value || ''}\n`;
+                cardContent += `director: ${(this.container.querySelector('#director') as HTMLInputElement)?.value || ''}\n`;
+                cardContent += `rating: ${(this.container.querySelector('#rating') as HTMLInputElement)?.value || ''}\n`;
+                cardContent += `cover: ${(this.container.querySelector('#cover') as HTMLInputElement)?.value || ''}\n`;
+                cardContent += `url: ${(this.container.querySelector('#url') as HTMLInputElement)?.value || ''}\n`;
+                cardContent += `tags: ${(this.container.querySelector('#tags') as HTMLInputElement)?.value || ''}\n`;
+                cardContent += `year: ${(this.container.querySelector('#year') as HTMLInputElement)?.value || ''}\n`;
+                break;
+            case 'anime':
+                cardContent += `description: ${content}\n`;
+                cardContent += `title: ${(this.container.querySelector('#title') as HTMLInputElement)?.value || ''}\n`;
+                cardContent += `director: ${(this.container.querySelector('#director') as HTMLInputElement)?.value || ''}\n`;
                 cardContent += `rating: ${(this.container.querySelector('#rating') as HTMLInputElement)?.value || ''}\n`;
                 cardContent += `cover: ${(this.container.querySelector('#cover') as HTMLInputElement)?.value || ''}\n`;
                 cardContent += `url: ${(this.container.querySelector('#url') as HTMLInputElement)?.value || ''}\n`;

@@ -84,7 +84,9 @@ export class CardsGalleryView extends ItemView {
             { id: 'all', text: '全部类型' },
             { id: 'music-card', text: '音乐' },
             { id: 'book-card', text: '书籍' },
-            { id: 'movie-card', text: '电影' }
+            { id: 'movie-card', text: '电影' },
+            { id: 'tv-card', text: '剧集' },
+            { id: 'anime-card', text: '番剧' }
         ];
 
         // 添加类型筛选按钮

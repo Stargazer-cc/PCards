@@ -33,6 +33,14 @@ interface MovieCardData extends CardData {
   director: string;
 }
 
+interface TvCardData extends CardData {
+  director: string;
+}
+
+interface AnimeCardData extends CardData {
+  director: string;
+}
+
 interface IdeaCardData extends CardData {
   idea: string;
   source: string;
@@ -78,6 +86,8 @@ interface NewCardsPluginSettings {
     musicCard: string;
     bookCard: string;
     movieCard: string;
+    tvCard: string;
+    animeCard: string;
     ideaCard: string;
     quoteCard: string;
   };
@@ -85,6 +95,8 @@ interface NewCardsPluginSettings {
     musicCard: string;
     bookCard: string;
     movieCard: string;
+    tvCard: string;
+    animeCard: string;
     ideaCard: string;
     quoteCard: string;
   };
@@ -110,6 +122,8 @@ const DEFAULT_SETTINGS: NewCardsPluginSettings = {
     musicCard: '```music-card\ntitle: \nyear: \nartist: \ndescription: \nrating: \n```',
     bookCard: '```book-card\ntitle: \nyear: \nauthor: \ndescription: \nrating: \n```',
     movieCard: '```movie-card\ntitle: \nyear: \ndirector: \ndescription: \nrating: \n```',
+    tvCard: '```tv-card\ntitle: \nyear: \ndirector: \ndescription: \nrating: \n```',
+    animeCard: '```anime-card\ntitle: \nyear: \ndirector: \ndescription: \nrating: \n```',
     ideaCard: '```idea-card\nidea: \nsource: \ndate: \ntags: \nurl: \n```',
     quoteCard: '```quote-card\nquote: \nsource: \ndate: \ntags: \nurl: \n```'
   },
@@ -117,6 +131,8 @@ const DEFAULT_SETTINGS: NewCardsPluginSettings = {
     musicCard: '音乐.md',
     bookCard: '书籍.md',
     movieCard: '电影.md',
+    tvCard: '剧集.md',
+    animeCard: '番剧.md',
     ideaCard: '想法.md',
     quoteCard: '摘录.md'
   },
@@ -215,6 +231,30 @@ class NewCardsSettingTab extends PluginSettingTab {
           .setValue(this.plugin.settings.cardStoragePaths.movieCard)
           .onChange(async (value) => {
             this.plugin.settings.cardStoragePaths.movieCard = value;
+            await this.plugin.saveSettings();
+          })
+      });
+
+    new Setting(containerEl)
+      .setName('剧集卡片存储路径')
+      .setDesc('设置剧集卡片的默认存储笔记，例：文件夹名/笔记名.md')
+      .addSearch(cb => {
+        cb.setPlaceholder('例：文件夹名/笔记名.md')
+          .setValue(this.plugin.settings.cardStoragePaths.tvCard)
+          .onChange(async (value) => {
+            this.plugin.settings.cardStoragePaths.tvCard = value;
+            await this.plugin.saveSettings();
+          })
+      });
+
+    new Setting(containerEl)
+      .setName('番剧卡片存储路径')
+      .setDesc('设置番剧卡片的默认存储笔记，例：文件夹名/笔记名.md')
+      .addSearch(cb => {
+        cb.setPlaceholder('例：文件夹名/笔记名.md')
+          .setValue(this.plugin.settings.cardStoragePaths.animeCard)
+          .onChange(async (value) => {
+            this.plugin.settings.cardStoragePaths.animeCard = value;
             await this.plugin.saveSettings();
           })
       });
@@ -327,6 +367,30 @@ class NewCardsSettingTab extends PluginSettingTab {
         .setValue(this.plugin.settings.cardTemplates.movieCard)
         .onChange(async (value) => {
           this.plugin.settings.cardTemplates.movieCard = value;
+          await this.plugin.saveSettings();
+        })
+        .inputEl.style.cssText = 'height: 150px; width: 100%; min-width: 400px;');
+
+    new Setting(containerEl)
+      .setName('剧集卡片模板')
+      .setDesc('设置剧集卡片的默认模板')
+      .addTextArea(text => text
+        .setPlaceholder('输入剧集卡片模板')
+        .setValue(this.plugin.settings.cardTemplates.tvCard)
+        .onChange(async (value) => {
+          this.plugin.settings.cardTemplates.tvCard = value;
+          await this.plugin.saveSettings();
+        })
+        .inputEl.style.cssText = 'height: 150px; width: 100%; min-width: 400px;');
+
+    new Setting(containerEl)
+      .setName('番剧卡片模板')
+      .setDesc('设置番剧卡片的默认模板')
+      .addTextArea(text => text
+        .setPlaceholder('输入番剧卡片模板')
+        .setValue(this.plugin.settings.cardTemplates.animeCard)
+        .onChange(async (value) => {
+          this.plugin.settings.cardTemplates.animeCard = value;
           await this.plugin.saveSettings();
         })
         .inputEl.style.cssText = 'height: 150px; width: 100%; min-width: 400px;');
@@ -465,10 +529,10 @@ export default class NewCardsPlugin extends Plugin {
           const content = await this.app.vault.read(file);
           const lines = content.split('\n');
     
-          const tagTypes = ['music-card', 'book-card', 'movie-card', 'quote-card', 'idea-card'];
+          const tagTypes = ['music-card', 'book-card', 'movie-card', 'tv-card', 'anime-card', 'quote-card', 'idea-card'];
           const foundTags = new Set<string>();
     
-          const codeBlockRegex = /^```(music-card|book-card|movie-card|quote-card|idea-card)$/;
+          const codeBlockRegex = /^```(music-card|book-card|movie-card|tv-card|anime-card|quote-card|idea-card)$/;
           let inBlock = false;
           let blockLines: string[] = [];
           let hasCard = false;
@@ -543,7 +607,7 @@ export default class NewCardsPlugin extends Plugin {
           const line = lines[currentLine].trim();
     
           if (line.startsWith('```')) {
-            const cardTypes = ['music-card', 'book-card', 'movie-card'];
+            const cardTypes = ['music-card', 'book-card', 'movie-card', 'tv-card', 'anime-card'];
             const isCardStart = cardTypes.some(type => line === '```' + type);
     
             if (isCardStart) {
@@ -655,7 +719,7 @@ export default class NewCardsPlugin extends Plugin {
           let cardStartLine = 0;
           
           // 定义卡片类型
-          const cardTypes = ['music-card', 'book-card', 'movie-card', 'quote-card', 'idea-card'];
+          const cardTypes = ['music-card', 'book-card', 'movie-card', 'tv-card', 'anime-card', 'quote-card', 'idea-card'];
           
           // 使用栈来跟踪代码块嵌套
           const blockStack: {type: string, startLine: number, content: string[]}[] = [];
@@ -846,6 +910,60 @@ export default class NewCardsPlugin extends Plugin {
                   }
                 });
             });
+                
+                // 添加插入剧集卡片选项
+            submenu.addItem((subItem: MenuItem) => {
+              subItem
+                .setTitle('插入剧集卡片')
+                .setIcon('film')
+                .onClick(() => {
+                  const cursor = editor.getCursor('to');
+                  console.log('光标位置:', cursor);
+                  const isInBlock = this.isInCodeBlock(editor, cursor.line);
+                  console.log('是否在代码块中:', isInBlock);
+                  const line = editor.getLine(cursor.line);
+                  const isInCodeBlock = this.isInCodeBlock(editor, cursor.line);
+                  const template = this.settings.cardTemplates.tvCard;
+                  const contentToInsert = '\n' + template + '\n';
+
+                  if (isInCodeBlock) {
+                    // 如果在代码块内，需要适当缩进
+                    const lines = contentToInsert.split('\n');
+                    const firstLine = '   ' + lines[0]; // 假设代码块内缩进为4个空格
+                    const otherLines = lines.slice(1).map(line => '    ' + line);
+                    editor.replaceRange('\n' + [firstLine, ...otherLines].join('\n') + '\n', cursor);
+                  } else {
+                    editor.replaceRange(contentToInsert, cursor);
+                  }
+                });
+            });
+
+            // 添加插入番剧卡片选项
+            submenu.addItem((subItem: MenuItem) => {
+              subItem
+                .setTitle('插入番剧卡片')
+                .setIcon('film')
+                .onClick(() => {
+                  const cursor = editor.getCursor('to');
+                  console.log('光标位置:', cursor);
+                  const isInBlock = this.isInCodeBlock(editor, cursor.line);
+                  console.log('是否在代码块中:', isInBlock);
+                  const line = editor.getLine(cursor.line);
+                  const isInCodeBlock = this.isInCodeBlock(editor, cursor.line);
+                  const template = this.settings.cardTemplates.animeCard;
+                  const contentToInsert = '\n' + template + '\n';
+
+                  if (isInCodeBlock) {
+                    // 如果在代码块内，需要适当缩进
+                    const lines = contentToInsert.split('\n');
+                    const firstLine = '   ' + lines[0]; // 假设代码块内缩进为4个空格
+                    const otherLines = lines.slice(1).map(line => '    ' + line);
+                    editor.replaceRange('\n' + [firstLine, ...otherLines].join('\n') + '\n', cursor);
+                  } else {
+                    editor.replaceRange(contentToInsert, cursor);
+                  }
+                });
+            });
 
             // 显示子菜单
             submenu.showAtMouseEvent(event as MouseEvent);
@@ -895,6 +1013,33 @@ export default class NewCardsPlugin extends Plugin {
       this.renderMovieCard(data, el, cid);
     });
 
+    // 注册剧集卡片处理器
+    this.registerMarkdownCodeBlockProcessor('tv-card', async (source, el, ctx) => {
+      const data = this.parseYaml(source) as TvCardData;
+      const fullContent = '```tv-card\n' + source + '\n```';
+      let cid = await CardUtils.findCIDByContent(this.app.vault, fullContent) || CardUtils.generateCID(fullContent);
+      if (ctx.sourcePath) {
+        const sectionInfo = ctx.getSectionInfo(el);
+        const startLine = sectionInfo ? sectionInfo.lineStart : 0;
+        const endLine = sectionInfo ? sectionInfo.lineEnd : 0;
+        cid = await CardUtils.updateCardIndex(this.app.vault, cid, fullContent, { path: ctx.sourcePath, startLine, endLine });
+      }
+      this.renderTvCard(data, el, cid);
+    });
+
+    // 注册番剧卡片处理器
+    this.registerMarkdownCodeBlockProcessor('anime-card', async (source, el, ctx) => {
+      const data = this.parseYaml(source) as AnimeCardData;
+      const fullContent = '```anime-card\n' + source + '\n```';
+      let cid = await CardUtils.findCIDByContent(this.app.vault, fullContent) || CardUtils.generateCID(fullContent);
+      if (ctx.sourcePath) {
+        const sectionInfo = ctx.getSectionInfo(el);
+        const startLine = sectionInfo ? sectionInfo.lineStart : 0;
+        const endLine = sectionInfo ? sectionInfo.lineEnd : 0;
+        cid = await CardUtils.updateCardIndex(this.app.vault, cid, fullContent, { path: ctx.sourcePath, startLine, endLine });
+      }
+      this.renderAnimeCard(data, el, cid);
+    });
     
     // 注册摘录卡片处理器
     this.registerMarkdownCodeBlockProcessor('quote-card', async (source, el, ctx) => {
@@ -1346,7 +1491,247 @@ export default class NewCardsPlugin extends Plugin {
   }
 
   public renderMovieCard(data: MovieCardData, el: HTMLElement, cid: string) {
-    const container = el.createDiv({ cls: 'new-cards-container movie-card' });
+    const container = el.createDiv({ cls: 'new-cards-container movie-card', });
+    
+    // 添加卡片ID
+    const cidEl = container.createDiv({ cls: 'card-id', text: cid });
+    cidEl.addEventListener('click', (e) => {
+      e.stopPropagation();
+      navigator.clipboard.writeText(cid);
+    });
+    
+    // 添加点击事件处理
+    if (data.url) {
+      container.addClass('clickable');
+      container.addEventListener('click', (e) => {
+        // 检查点击是否在标签容器或CID区域内
+        const isTagClick = (e.target as HTMLElement).closest('.card-tags-container');
+        const isCidClick = (e.target as HTMLElement).closest('.card-id');
+        if (!isTagClick && !isCidClick) {
+          if (data.url && (data.url.startsWith('http://') || data.url.startsWith('https://'))) {
+            window.open(data.url);
+          } else if (data.url && data.url.startsWith('obsidian://')) {
+            // 处理obsidian://协议链接
+            const url = new URL(data.url);
+            const vault = decodeURIComponent(url.searchParams.get('vault') || '');
+            const file = decodeURIComponent(url.searchParams.get('file') || '');
+            this.app.workspace.openLinkText(file, vault, true);
+          } else {
+            // 处理内部链接
+            const targetFile = this.app.metadataCache.getFirstLinkpathDest(data.url || '', '');
+            if (targetFile) {
+              this.app.workspace.getLeaf().openFile(targetFile);
+            }
+          }
+        }
+      });
+    }
+    
+    // 创建背景容器
+    if (data.cover) {
+      const backgroundContainer = container.createDiv({ cls: 'background-container' });
+      backgroundContainer.createEl('img', {
+        attr: { src: this.getCoverImageSrc(data.cover) }
+      });
+    }
+    
+    const coverContainer = container.createDiv({ cls: 'cover-container' });
+    const infoContainer = container.createDiv({ cls: 'info-container' });
+    
+    // 添加封面图片或电影图标
+    if (data.cover) {
+      const coverImg = coverContainer.createEl('img', {
+        attr: { src: this.getCoverImageSrc(data.cover) },
+        cls: 'cover-image'
+      });
+    } else {
+      coverContainer.innerHTML = `
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <rect x="2" y="2" width="20" height="20" rx="2.18" ry="2.18"/>
+          <line x1="7" y1="2" x2="7" y2="22"/>
+          <line x1="17" y1="2" x2="17" y2="22"/>
+          <line x1="2" y1="12" x2="22" y2="12"/>
+          <line x1="2" y1="7" x2="7" y2="7"/>
+          <line x1="2" y1="17" x2="7" y2="17"/>
+          <line x1="17" y1="17" x2="22" y2="17"/>
+          <line x1="17" y1="7" x2="22" y2="7"/>
+        </svg>
+      `;
+    }
+    
+    // 添加信息
+    infoContainer.createEl('h3', { text: data.title, cls: 'card-info-title' });
+    infoContainer.createEl('div', { text: data.director, cls: 'director' });
+    infoContainer.createEl('div', { text: data.year, cls: 'year' });
+    if (data.rating) {
+      const ratingContainer = infoContainer.createDiv({ cls: 'rating' });
+      const ratingScore = parseFloat(data.rating);
+      
+      // 根据评分范围设置不同的评分徽章样式
+      if (ratingScore >= 7.0) {
+        ratingContainer.setAttribute('data-score', 'excellent');
+        const ratingBadge = ratingContainer.createDiv({ cls: 'rating-badge' });
+        ratingBadge.createDiv({ cls: 'rating-score', text: data.rating });
+        ratingBadge.innerHTML += `
+          <svg t="1743841440004" class="icon" viewBox="0 0 1332 1024" version="1.1" xmlns="http://www.w3.org/2000/svg" p-id="5351" width="200" height="200"><path d="M754.999373 984.409613s-40.018391-7.918077-58.42257-18.618181c-18.618182-10.700104-120.483177-56.28255-189.39185-12.840126 0 0-28.462278 24.182236-57.35256 27.178266 0 0 36.808359 13.482132 74.900731 2.782027 0 0 32.528318-9.20209 50.932498-22.47022 0 0 40.660397-17.976176 78.538767 0.214002 37.87837 18.190178 33.170324 23.326228 64.842633 28.248276 31.672309 5.13605 35.952351-4.494044 35.952351-4.494044zM509.324974 912.076907s-16.692163-47.722466-74.472727-62.060606c0 0 9.20209 41.730408 56.068547 57.780564 0 0-93.732915 1.498015-130.11327 54.784535-0.214002 0 75.75674 29.960293 148.51745-50.504493z" fill="#B68A11" p-id="5352"></path><path d="M413.66604 896.454754s-3.638036-50.504493-55.640544-79.608777c0 0-2.140021 42.800418 38.734379 70.406688 0 0-90.950888-23.326228-139.957367 18.618181 0.214002 0 65.484639 49.006479 156.863532-9.416092z" fill="#B68A11" p-id="5353"></path><path d="M312.229049 767.411494s27.820272 47.294462-2.782027 98.440962c0 0-93.304911 28.67628-153.011494-39.590387 0 0 75.114734-24.824242 148.089446 35.096343 0.214002 0-22.042215-53.928527 7.704075-93.946918z" fill="#B68A11" p-id="5354"></path><path d="M252.308464 796.301776s-16.692163-53.28652 11.770115-84.102821c0 0 26.964263 48.792476-9.630094 91.16489 0 0-101.436991 19.902194-139.957367-49.862487 0 0.428004 61.632602-19.902194 137.817346 42.800418z" fill="#B68A11" p-id="5355"></path><path d="M202.873981 729.961129s-9.844096-47.936468 19.046186-78.966772c0 0 23.754232 43.656426-15.194148 87.954859 0 0-106.787043-2.354023-128.401254-60.990595-0.214002 0.214002 81.748798-3.852038 124.549216 52.002508z" fill="#B68A11" p-id="5356"></path><path d="M189.177847 585.081714s13.482132 52.644514-24.182236 81.106792c0 0-87.740857 2.354023-115.77513-67.410659 0 0 75.114734 2.140021 112.993103 60.990596 0 0-2.140021-51.360502 26.964263-74.686729z" fill="#B68A11" p-id="5357"></path><path d="M161.143574 519.811076s12.412121 43.442424-26.536259 73.616719c0 0-84.316823-4.494044-105.931035-70.406687 0 0 66.340648 2.782027 101.650993 64.842633 0-0.214002-2.782027-38.94838 30.816301-68.052665z" fill="#B68A11" p-id="5358"></path><path d="M151.085475 456.466458s6.206061 35.096343-33.81233 69.336677c0 0-82.176803-22.470219-92.876907-78.324765 0 0 70.192685 14.980146 91.806897 73.616719 0.214002-0.214002-2.568025-36.808359 34.88234-64.628631z" fill="#B68A11" p-id="5359"></path><path d="M147.875444 398.899896s2.354023 39.162382-40.232393 57.780564c0 0-79.394775-35.952351-76.184744-85.600836 0 0 48.15047 4.494044 76.184744 80.464786 0.214002 0 9.20209-38.306374 40.232393-52.644514z" fill="#B68A11" p-id="5360"></path><path d="M154.723511 340.049321s-6.206061 35.310345-46.010449 50.932497c0 0-66.982654-43.442424-61.632602-91.806896 0 0 54.142529 24.824242 61.846604 85.814838 0 0 7.918077-24.396238 45.796447-44.940439zM166.493626 281.198746s-4.06604 33.384326-46.224451 44.512435c0 0-55.854545-25.680251-52.644515-91.592895 0 0 48.578474 24.61024 53.286521 86.242843-0.214002 0 16.906165-37.236364 45.582445-39.162383zM185.753814 225.986207s-26.750261 2.354023-47.722466 33.170324c0 0-4.06604-65.270637-44.726437-85.386834 0 0-14.552142 49.006479 43.01442 92.876907 0.214002 0 36.594357-6.848067 49.434483-40.660397z" fill="#B68A11" p-id="5361"></path><path d="M205.442006 176.551724S189.605852 208.438036 157.71954 209.722048c0 0-47.722466-41.730408-35.310345-89.880878 0 0 36.166353 26.322257 36.594358 83.032811 0.214002 0 15.622153-24.61024 46.438453-26.322257zM230.052247 128.615256s-9.20209 28.67628-50.076489 29.532288c0 0-38.520376-47.08046-20.972205-89.880877 0 0 29.104284 23.54023 24.182236 81.9628 0-0.214002 20.330199-22.898224 46.866458-21.614211zM258.514525 85.814838s-14.980146 26.536259-47.936469 23.326228c0 0-37.664368-49.006479-15.194148-86.670847 0 0 27.392268 26.536259 17.334169 80.464786 0 0 19.688192-19.47419 45.796448-17.120167z" fill="#B68A11" p-id="5362"></path><path d="M279.914734 53.500522s-13.910136 25.894253-49.648485 21.186207c0 0-5.564054-39.804389 19.47419-52.21651 0 0 7.276071 20.544201-7.490073 41.302404-0.214002 0 11.984117-12.412121 37.664368-10.272101z" fill="#B68A11" p-id="5363"></path><path d="M291.256844 24.824242s-3.424033 24.182236-29.318286 22.042216c0 0 1.498015-20.116196 29.318286-22.042216z" fill="#B68A11" p-id="5364"></path><path d="M556.405434 984.409613s40.018391-7.918077 58.42257-18.618181 120.483177-56.28255 189.39185-12.840126c0 0 28.462278 24.182236 57.35256 27.178266 0 0-36.808359 13.482132-74.900732 2.782027 0 0-32.528318-9.20209-50.932497-22.47022 0 0-40.660397-17.976176-78.538767 0.214002-37.87837 18.190178-33.170324 23.326228-64.842633 28.248276C560.685475 994.039707 556.405434 984.409613 556.405434 984.409613zM802.079833 912.076907s16.692163-47.722466 74.472727-62.060606c0 0-9.20209 41.730408-56.068547 57.780564 0 0 93.732915 1.498015 130.11327 54.784535 0.214002 0-75.75674 29.960293-148.51745-50.504493z" fill="#B68A11" p-id="5365"></path><path d="M897.738767 896.454754s3.638036-50.504493 55.640543-79.608777c0 0 2.140021 42.800418-38.734378 70.406688 0 0 90.950888-23.326228 139.957367 18.618181-0.214002 0-65.484639 49.006479-156.863532-9.416092z" fill="#B68A11" p-id="5366"></path><path d="M999.175758 767.411494s-27.820272 47.294462 2.782027 98.440962c0 0 93.304911 28.67628 153.011494-39.590387 0 0-75.114734-24.824242-148.303448 35.096343 0 0 22.256217-53.928527-7.490073-93.946918z" fill="#B68A11" p-id="5367"></path><path d="M1059.096343 796.301776s16.692163-53.28652-11.770115-84.102821c0 0-26.964263 48.792476 9.630094 91.16489 0 0 101.436991 19.902194 139.957367-49.862487 0 0.428004-61.632602-19.902194-137.817346 42.800418z" fill="#B68A11" p-id="5368"></path><path d="M1108.530825 729.961129s9.844096-47.936468-19.046186-78.966772c0 0-23.754232 43.656426 15.194149 87.954859 0 0 106.787043-2.354023 128.401254-60.990595 0.214002 0.214002-81.748798-3.852038-124.549217 52.002508z" fill="#B68A11" p-id="5369"></path><path d="M1122.226959 585.081714s-13.482132 52.644514 24.182236 81.106792c0 0 87.740857 2.354023 115.775131-67.410659 0 0-75.114734 2.140021-112.993103 60.990596 0 0 2.140021-51.360502-26.964264-74.686729z" fill="#B68A11" p-id="5370"></path><path d="M1150.261233 519.811076s-12.412121 43.442424 26.536259 73.616719c0 0 84.316823-4.494044 105.931035-70.406687 0 0-66.340648 2.782027-101.650993 64.842633 0-0.214002 2.568025-38.94838-30.816301-68.052665z" fill="#B68A11" p-id="5371"></path><path d="M1160.105329 456.466458s-6.206061 35.096343 33.81233 69.336677c0 0 82.176803-22.470219 92.876907-78.324765 0 0-70.192685 14.980146-91.806896 73.616719 0-0.214002 2.568025-36.808359-34.882341-64.628631z" fill="#B68A11" p-id="5372"></path><path d="M1163.315361 398.899896s-2.354023 39.162382 40.232392 57.780564c0 0 79.394775-35.952351 76.184744-85.600836 0 0-48.15047 4.494044-76.184744 80.464786 0 0-9.20209-38.306374-40.232392-52.644514z" fill="#B68A11" p-id="5373"></path><path d="M1156.681296 340.049321s6.206061 35.310345 46.010449 50.932497c0 0 66.982654-43.442424 61.632602-91.806896 0 0-54.142529 24.824242-61.846604 85.814838 0 0-8.132079-24.396238-45.796447-44.940439zM1144.911181 281.198746s4.06604 33.384326 46.224451 44.512435c0 0 55.854545-25.680251 52.644514-91.592895 0 0-48.578474 24.61024-53.28652 86.242843 0.214002 0-16.906165-37.236364-45.582445-39.162383zM1125.650993 225.986207s26.750261 2.354023 47.722466 33.170324c0 0 4.06604-65.270637 44.726437-85.386834 0 0 14.552142 49.006479-43.014421 92.876907-0.214002 0-36.594357-6.848067-49.434482-40.660397z" fill="#B68A11" p-id="5374"></path><path d="M1105.9628 176.551724s15.836155 31.886311 47.722466 33.170324c0 0 47.722466-41.730408 35.310345-89.880878 0 0-36.166353 26.322257-36.594357 83.032811-0.214002 0-15.836155-24.61024-46.438454-26.322257zM1081.35256 128.615256s9.20209 28.67628 50.076489 29.532288c0 0 38.520376-47.08046 20.972205-89.880877 0 0-29.104284 23.54023-24.182236 81.9628-0.214002-0.214002-20.544201-22.898224-46.866458-21.614211zM1052.890282 85.814838s14.980146 26.536259 47.936468 23.326228c0 0 37.664368-49.006479 15.194149-86.670847 0 0-27.392268 26.536259-17.33417 80.464786 0 0-19.902194-19.47419-45.796447-17.120167z" fill="#B68A11" p-id="5375"></path><path d="M1031.490073 53.500522s13.910136 25.894253 49.862487 21.186207c0 0 5.564054-39.804389-19.47419-52.21651 0 0-7.276071 20.544201 7.490073 41.302404-0.214002 0-12.198119-12.412121-37.87837-10.272101z" fill="#B68A11" p-id="5376"></path><path d="M1019.93396 24.824242s3.424033 24.182236 29.532289 22.042216c0 0-1.712017-20.116196-29.532289-22.042216z" fill="#B68A11" p-id="5377"></path></svg>
+        `;
+      } else if (ratingScore >= 5.0) {
+        ratingContainer.setAttribute('data-score', 'good');
+        const simpleBadge = ratingContainer.createDiv({ cls: 'simple-badge' });
+        simpleBadge.createDiv({ text: data.rating });
+      } else {
+        ratingContainer.setAttribute('data-score', 'poor');
+        ratingContainer.createDiv({ text: data.rating });
+      }
+    }
+
+    // 添加meta数据
+    if (data.meta) {
+      const metaContainer = infoContainer.createDiv({ cls: 'meta-container' });
+      Object.entries(data.meta).forEach(([key, value]) => {
+        metaContainer.createEl('div', {
+          cls: 'meta-item',
+          text: `${key}: ${value}`
+        });
+      });
+    }
+
+    infoContainer.createEl('p', { text: data.description, cls: 'card-info-description' });
+
+    // 添加标签
+    if (data.tags && data.tags.length > 0) {
+      const tagsContainer = infoContainer.createDiv({ cls: 'card-tags-container' });
+      data.tags.forEach(tag => {
+        tagsContainer.createEl('a', {
+          text: tag,
+          cls: 'tag'
+        });
+      });
+    }
+  }
+
+  public renderAnimeCard(data: AnimeCardData, el: HTMLElement, cid: string) {
+    const container = el.createDiv({ cls: 'new-cards-container anime-card', });
+    
+    // 添加卡片ID
+    const cidEl = container.createDiv({ cls: 'card-id', text: cid });
+    cidEl.addEventListener('click', (e) => {
+      e.stopPropagation();
+      navigator.clipboard.writeText(cid);
+    });
+    
+    // 添加点击事件处理
+    if (data.url) {
+      container.addClass('clickable');
+      container.addEventListener('click', (e) => {
+        // 检查点击是否在标签容器或CID区域内
+        const isTagClick = (e.target as HTMLElement).closest('.card-tags-container');
+        const isCidClick = (e.target as HTMLElement).closest('.card-id');
+        if (!isTagClick && !isCidClick) {
+          if (data.url && (data.url.startsWith('http://') || data.url.startsWith('https://'))) {
+            window.open(data.url);
+          } else if (data.url && data.url.startsWith('obsidian://')) {
+            // 处理obsidian://协议链接
+            const url = new URL(data.url);
+            const vault = decodeURIComponent(url.searchParams.get('vault') || '');
+            const file = decodeURIComponent(url.searchParams.get('file') || '');
+            this.app.workspace.openLinkText(file, vault, true);
+          } else {
+            // 处理内部链接
+            const targetFile = this.app.metadataCache.getFirstLinkpathDest(data.url || '', '');
+            if (targetFile) {
+              this.app.workspace.getLeaf().openFile(targetFile);
+            }
+          }
+        }
+      });
+    }
+    
+    // 创建背景容器
+    if (data.cover) {
+      const backgroundContainer = container.createDiv({ cls: 'background-container' });
+      backgroundContainer.createEl('img', {
+        attr: { src: this.getCoverImageSrc(data.cover) }
+      });
+    }
+    
+    const coverContainer = container.createDiv({ cls: 'cover-container' });
+    const infoContainer = container.createDiv({ cls: 'info-container' });
+    
+    // 添加封面图片或电影图标
+    if (data.cover) {
+      const coverImg = coverContainer.createEl('img', {
+        attr: { src: this.getCoverImageSrc(data.cover) },
+        cls: 'cover-image'
+      });
+    } else {
+      coverContainer.innerHTML = `
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <rect x="2" y="2" width="20" height="20" rx="2.18" ry="2.18"/>
+          <line x1="7" y1="2" x2="7" y2="22"/>
+          <line x1="17" y1="2" x2="17" y2="22"/>
+          <line x1="2" y1="12" x2="22" y2="12"/>
+          <line x1="2" y1="7" x2="7" y2="7"/>
+          <line x1="2" y1="17" x2="7" y2="17"/>
+          <line x1="17" y1="17" x2="22" y2="17"/>
+          <line x1="17" y1="7" x2="22" y2="7"/>
+        </svg>
+      `;
+    }
+    
+    // 添加信息
+    infoContainer.createEl('h3', { text: data.title, cls: 'card-info-title' });
+    infoContainer.createEl('div', { text: data.director, cls: 'director' });
+    infoContainer.createEl('div', { text: data.year, cls: 'year' });
+    if (data.rating) {
+      const ratingContainer = infoContainer.createDiv({ cls: 'rating' });
+      const ratingScore = parseFloat(data.rating);
+      
+      // 根据评分范围设置不同的评分徽章样式
+      if (ratingScore >= 7.0) {
+        ratingContainer.setAttribute('data-score', 'excellent');
+        const ratingBadge = ratingContainer.createDiv({ cls: 'rating-badge' });
+        ratingBadge.createDiv({ cls: 'rating-score', text: data.rating });
+        ratingBadge.innerHTML += `
+          <svg t="1743841440004" class="icon" viewBox="0 0 1332 1024" version="1.1" xmlns="http://www.w3.org/2000/svg" p-id="5351" width="200" height="200"><path d="M754.999373 984.409613s-40.018391-7.918077-58.42257-18.618181c-18.618182-10.700104-120.483177-56.28255-189.39185-12.840126 0 0-28.462278 24.182236-57.35256 27.178266 0 0 36.808359 13.482132 74.900731 2.782027 0 0 32.528318-9.20209 50.932498-22.47022 0 0 40.660397-17.976176 78.538767 0.214002 37.87837 18.190178 33.170324 23.326228 64.842633 28.248276 31.672309 5.13605 35.952351-4.494044 35.952351-4.494044zM509.324974 912.076907s-16.692163-47.722466-74.472727-62.060606c0 0 9.20209 41.730408 56.068547 57.780564 0 0-93.732915 1.498015-130.11327 54.784535-0.214002 0 75.75674 29.960293 148.51745-50.504493z" fill="#B68A11" p-id="5352"></path><path d="M413.66604 896.454754s-3.638036-50.504493-55.640544-79.608777c0 0-2.140021 42.800418 38.734379 70.406688 0 0-90.950888-23.326228-139.957367 18.618181 0.214002 0 65.484639 49.006479 156.863532-9.416092z" fill="#B68A11" p-id="5353"></path><path d="M312.229049 767.411494s27.820272 47.294462-2.782027 98.440962c0 0-93.304911 28.67628-153.011494-39.590387 0 0 75.114734-24.824242 148.089446 35.096343 0.214002 0-22.042215-53.928527 7.704075-93.946918z" fill="#B68A11" p-id="5354"></path><path d="M252.308464 796.301776s-16.692163-53.28652 11.770115-84.102821c0 0 26.964263 48.792476-9.630094 91.16489 0 0-101.436991 19.902194-139.957367-49.862487 0 0.428004 61.632602-19.902194 137.817346 42.800418z" fill="#B68A11" p-id="5355"></path><path d="M202.873981 729.961129s-9.844096-47.936468 19.046186-78.966772c0 0 23.754232 43.656426-15.194148 87.954859 0 0-106.787043-2.354023-128.401254-60.990595-0.214002 0.214002 81.748798-3.852038 124.549216 52.002508z" fill="#B68A11" p-id="5356"></path><path d="M189.177847 585.081714s13.482132 52.644514-24.182236 81.106792c0 0-87.740857 2.354023-115.77513-67.410659 0 0 75.114734 2.140021 112.993103 60.990596 0 0-2.140021-51.360502 26.964263-74.686729z" fill="#B68A11" p-id="5357"></path><path d="M161.143574 519.811076s12.412121 43.442424-26.536259 73.616719c0 0-84.316823-4.494044-105.931035-70.406687 0 0 66.340648 2.782027 101.650993 64.842633 0-0.214002-2.782027-38.94838 30.816301-68.052665z" fill="#B68A11" p-id="5358"></path><path d="M151.085475 456.466458s6.206061 35.096343-33.81233 69.336677c0 0-82.176803-22.470219-92.876907-78.324765 0 0 70.192685 14.980146 91.806897 73.616719 0.214002-0.214002-2.568025-36.808359 34.88234-64.628631z" fill="#B68A11" p-id="5359"></path><path d="M147.875444 398.899896s2.354023 39.162382-40.232393 57.780564c0 0-79.394775-35.952351-76.184744-85.600836 0 0 48.15047 4.494044 76.184744 80.464786 0.214002 0 9.20209-38.306374 40.232393-52.644514z" fill="#B68A11" p-id="5360"></path><path d="M154.723511 340.049321s-6.206061 35.310345-46.010449 50.932497c0 0-66.982654-43.442424-61.632602-91.806896 0 0 54.142529 24.824242 61.846604 85.814838 0 0 7.918077-24.396238 45.796447-44.940439zM166.493626 281.198746s-4.06604 33.384326-46.224451 44.512435c0 0-55.854545-25.680251-52.644515-91.592895 0 0 48.578474 24.61024 53.286521 86.242843-0.214002 0 16.906165-37.236364 45.582445-39.162383zM185.753814 225.986207s-26.750261 2.354023-47.722466 33.170324c0 0-4.06604-65.270637-44.726437-85.386834 0 0-14.552142 49.006479 43.01442 92.876907 0.214002 0 36.594357-6.848067 49.434483-40.660397z" fill="#B68A11" p-id="5361"></path><path d="M205.442006 176.551724S189.605852 208.438036 157.71954 209.722048c0 0-47.722466-41.730408-35.310345-89.880878 0 0 36.166353 26.322257 36.594358 83.032811 0.214002 0 15.622153-24.61024 46.438453-26.322257zM230.052247 128.615256s-9.20209 28.67628-50.076489 29.532288c0 0-38.520376-47.08046-20.972205-89.880877 0 0 29.104284 23.54023 24.182236 81.9628 0-0.214002 20.330199-22.898224 46.866458-21.614211zM258.514525 85.814838s-14.980146 26.536259-47.936469 23.326228c0 0-37.664368-49.006479-15.194148-86.670847 0 0 27.392268 26.536259 17.334169 80.464786 0 0 19.688192-19.47419 45.796448-17.120167z" fill="#B68A11" p-id="5362"></path><path d="M279.914734 53.500522s-13.910136 25.894253-49.648485 21.186207c0 0-5.564054-39.804389 19.47419-52.21651 0 0 7.276071 20.544201-7.490073 41.302404-0.214002 0 11.984117-12.412121 37.664368-10.272101z" fill="#B68A11" p-id="5363"></path><path d="M291.256844 24.824242s-3.424033 24.182236-29.318286 22.042216c0 0 1.498015-20.116196 29.318286-22.042216z" fill="#B68A11" p-id="5364"></path><path d="M556.405434 984.409613s40.018391-7.918077 58.42257-18.618181 120.483177-56.28255 189.39185-12.840126c0 0 28.462278 24.182236 57.35256 27.178266 0 0-36.808359 13.482132-74.900732 2.782027 0 0-32.528318-9.20209-50.932497-22.47022 0 0-40.660397-17.976176-78.538767 0.214002-37.87837 18.190178-33.170324 23.326228-64.842633 28.248276C560.685475 994.039707 556.405434 984.409613 556.405434 984.409613zM802.079833 912.076907s16.692163-47.722466 74.472727-62.060606c0 0-9.20209 41.730408-56.068547 57.780564 0 0 93.732915 1.498015 130.11327 54.784535 0.214002 0-75.75674 29.960293-148.51745-50.504493z" fill="#B68A11" p-id="5365"></path><path d="M897.738767 896.454754s3.638036-50.504493 55.640543-79.608777c0 0 2.140021 42.800418-38.734378 70.406688 0 0 90.950888-23.326228 139.957367 18.618181-0.214002 0-65.484639 49.006479-156.863532-9.416092z" fill="#B68A11" p-id="5366"></path><path d="M999.175758 767.411494s-27.820272 47.294462 2.782027 98.440962c0 0 93.304911 28.67628 153.011494-39.590387 0 0-75.114734-24.824242-148.303448 35.096343 0 0 22.256217-53.928527-7.490073-93.946918z" fill="#B68A11" p-id="5367"></path><path d="M1059.096343 796.301776s16.692163-53.28652-11.770115-84.102821c0 0-26.964263 48.792476 9.630094 91.16489 0 0 101.436991 19.902194 139.957367-49.862487 0 0.428004-61.632602-19.902194-137.817346 42.800418z" fill="#B68A11" p-id="5368"></path><path d="M1108.530825 729.961129s9.844096-47.936468-19.046186-78.966772c0 0-23.754232 43.656426 15.194149 87.954859 0 0 106.787043-2.354023 128.401254-60.990595 0.214002 0.214002-81.748798-3.852038-124.549217 52.002508z" fill="#B68A11" p-id="5369"></path><path d="M1122.226959 585.081714s-13.482132 52.644514 24.182236 81.106792c0 0 87.740857 2.354023 115.775131-67.410659 0 0-75.114734 2.140021-112.993103 60.990596 0 0 2.140021-51.360502-26.964264-74.686729z" fill="#B68A11" p-id="5370"></path><path d="M1150.261233 519.811076s-12.412121 43.442424 26.536259 73.616719c0 0 84.316823-4.494044 105.931035-70.406687 0 0-66.340648 2.782027-101.650993 64.842633 0-0.214002 2.568025-38.94838-30.816301-68.052665z" fill="#B68A11" p-id="5371"></path><path d="M1160.105329 456.466458s-6.206061 35.096343 33.81233 69.336677c0 0 82.176803-22.470219 92.876907-78.324765 0 0-70.192685 14.980146-91.806896 73.616719 0-0.214002 2.568025-36.808359-34.882341-64.628631z" fill="#B68A11" p-id="5372"></path><path d="M1163.315361 398.899896s-2.354023 39.162382 40.232392 57.780564c0 0 79.394775-35.952351 76.184744-85.600836 0 0-48.15047 4.494044-76.184744 80.464786 0 0-9.20209-38.306374-40.232392-52.644514z" fill="#B68A11" p-id="5373"></path><path d="M1156.681296 340.049321s6.206061 35.310345 46.010449 50.932497c0 0 66.982654-43.442424 61.632602-91.806896 0 0-54.142529 24.824242-61.846604 85.814838 0 0-8.132079-24.396238-45.796447-44.940439zM1144.911181 281.198746s4.06604 33.384326 46.224451 44.512435c0 0 55.854545-25.680251 52.644514-91.592895 0 0-48.578474 24.61024-53.28652 86.242843 0.214002 0-16.906165-37.236364-45.582445-39.162383zM1125.650993 225.986207s26.750261 2.354023 47.722466 33.170324c0 0 4.06604-65.270637 44.726437-85.386834 0 0 14.552142 49.006479-43.014421 92.876907-0.214002 0-36.594357-6.848067-49.434482-40.660397z" fill="#B68A11" p-id="5374"></path><path d="M1105.9628 176.551724s15.836155 31.886311 47.722466 33.170324c0 0 47.722466-41.730408 35.310345-89.880878 0 0-36.166353 26.322257-36.594357 83.032811-0.214002 0-15.836155-24.61024-46.438454-26.322257zM1081.35256 128.615256s9.20209 28.67628 50.076489 29.532288c0 0 38.520376-47.08046 20.972205-89.880877 0 0-29.104284 23.54023-24.182236 81.9628-0.214002-0.214002-20.544201-22.898224-46.866458-21.614211zM1052.890282 85.814838s14.980146 26.536259 47.936468 23.326228c0 0 37.664368-49.006479 15.194149-86.670847 0 0-27.392268 26.536259-17.33417 80.464786 0 0-19.902194-19.47419-45.796447-17.120167z" fill="#B68A11" p-id="5375"></path><path d="M1031.490073 53.500522s13.910136 25.894253 49.862487 21.186207c0 0 5.564054-39.804389-19.47419-52.21651 0 0-7.276071 20.544201 7.490073 41.302404-0.214002 0-12.198119-12.412121-37.87837-10.272101z" fill="#B68A11" p-id="5376"></path><path d="M1019.93396 24.824242s3.424033 24.182236 29.532289 22.042216c0 0-1.712017-20.116196-29.532289-22.042216z" fill="#B68A11" p-id="5377"></path></svg>
+        `;
+      } else if (ratingScore >= 5.0) {
+        ratingContainer.setAttribute('data-score', 'good');
+        const simpleBadge = ratingContainer.createDiv({ cls: 'simple-badge' });
+        simpleBadge.createDiv({ text: data.rating });
+      } else {
+        ratingContainer.setAttribute('data-score', 'poor');
+        ratingContainer.createDiv({ text: data.rating });
+      }
+    }
+
+    // 添加meta数据
+    if (data.meta) {
+      const metaContainer = infoContainer.createDiv({ cls: 'meta-container' });
+      Object.entries(data.meta).forEach(([key, value]) => {
+        metaContainer.createEl('div', {
+          cls: 'meta-item',
+          text: `${key}: ${value}`
+        });
+      });
+    }
+
+    infoContainer.createEl('p', { text: data.description, cls: 'card-info-description' });
+
+    // 添加标签
+    if (data.tags && data.tags.length > 0) {
+      const tagsContainer = infoContainer.createDiv({ cls: 'card-tags-container' });
+      data.tags.forEach(tag => {
+        tagsContainer.createEl('a', {
+          text: tag,
+          cls: 'tag'
+        });
+      });
+    }
+  }
+
+  public renderTvCard(data: TvCardData, el: HTMLElement, cid: string) {
+    const container = el.createDiv({ cls: 'new-cards-container tv-card', });
     
     // 添加卡片ID
     const cidEl = container.createDiv({ cls: 'card-id', text: cid });
@@ -1467,7 +1852,7 @@ export default class NewCardsPlugin extends Plugin {
 
   private extractCardsFromContent(content: string): string[] {
     const cards: string[] = [];
-    const cardTypes = ['music-card', 'book-card', 'movie-card'];
+    const cardTypes = ['music-card', 'book-card', 'movie-card', 'tv-card', 'anime-card'];
     
     for (const type of cardTypes) {
       const regex = new RegExp('```' + type + '\\n([\\s\\S]*?)```', 'g');

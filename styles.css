@@ -667,7 +667,9 @@
   line-height: 1.6;
   color: #222;
   padding-left: 24px;
-  padding-top: 20px;  
+  padding-top: 20px;
+  white-space: pre-wrap;
+  word-break: break-word;
 }
 
 .new-cards-container.idea-card .idea-meta, .new-cards-container.quote-card .quote-meta {
@@ -970,6 +972,8 @@
 }
 
 .movie-card .cover-container,
+.tv-card .cover-container,
+.anime-card .cover-container,
 .book-card .cover-container{
   aspect-ratio: 2/3;
   max-height: none;
@@ -1137,7 +1141,9 @@
   padding: 8px;
 }
 
-.movie-card .cover-container svg {
+.movie-card .cover-container svg,
+.tv-card .cover-container svg,
+.anime-card .cover-container svg {
   /* 为电影卡片的SVG图标设置较小内边距，使图标更加紧凑 */
   padding: 6px;
 }
