@@ -1,5 +1,5 @@
-import { ItemView, WorkspaceLeaf, TFile } from 'obsidian';
-import { CardUtils } from './utils';
+import { ItemView, WorkspaceLeaf, TFile, Notice } from 'obsidian';
+import { CardUtils, CardLocation } from './utils';
 import type NewCardsPlugin from '../main';
 
 export const VIEW_TYPE_CARDS_GALLERY = 'cards-gallery-view';
@@ -80,6 +80,100 @@ export class CardsGalleryView extends ItemView {
         // 添加控制按钮容器
         const controlsContainer = this.container.createDiv({ cls: 'gallery-controls' });
 
+        // 添加刷新按钮
+        const refreshButton = controlsContainer.createEl('button', {
+            text: '刷新索引',
+            cls: 'gallery-refresh-button'
+        });
+
+        refreshButton.addEventListener('click', async () => {
+            // 显示遍历提示
+            const notice = new Notice('遍历笔记中，请稍后...', 0);
+            
+            try {
+                // 获取所有笔记文件
+                const files = this.plugin.app.vault.getMarkdownFiles();
+                let processedCount = 0;
+                
+                // 先加载现有索引
+                const newIndex = await CardUtils.loadCardIndex(this.plugin.app.vault);
+                
+                // 遍历所有笔记文件
+                for (const file of files) {
+                    try {
+                        // 读取文件内容
+                        const content = await this.plugin.app.vault.read(file);
+                        
+                        // 查找所有卡片内容
+                        const cardRegex = /```([\w-]+)\n([\s\S]*?)```/g;
+                        let match;
+                        let lineCount = 0;
+                        const lines = content.split('\n');
+                        
+                        // 计算每个匹配项的起始行和结束行
+                        while ((match = cardRegex.exec(content)) !== null) {
+                            const cardType = match[1];
+                            // 只处理有效的卡片类型
+                            if (!cardType.endsWith('-card')) continue;
+                            
+                            const cardContent = match[0]; // 包含整个卡片内容，包括 ``` 标记
+                            const cid = CardUtils.generateCID(cardContent);
+                            
+                            // 计算起始行和结束行
+                            const matchStart = content.substring(0, match.index).split('\n').length - 1;
+                            const matchEnd = matchStart + cardContent.split('\n').length;
+                            
+                            // 创建位置信息
+                            const location: CardLocation = {
+                                path: file.path,
+                                startLine: matchStart,
+                                endLine: matchEnd
+                            };
+                            
+                            // 更新索引
+                            if (!newIndex[cid]) {
+                                newIndex[cid] = {
+                                    content: cardContent,
+                                    locations: [location],
+                                    lastUpdated: new Date().toISOString()
+                                };
+                            } else {
+                                // 清理同一文件中的旧位置记录
+                                newIndex[cid].locations = newIndex[cid].locations.filter(loc => loc.path !== file.path);
+                                // 添加新的位置信息
+                                newIndex[cid].locations.push(location);
+                                newIndex[cid].lastUpdated = new Date().toISOString();
+                            }
+                        }
+                    } catch (error) {
+                        console.error(`处理文件 ${file.path} 时出错:`, error);
+                        continue; // 继续处理下一个文件
+                    }
+                    
+                    // 更新进度
+                    processedCount++;
+                    notice.setMessage(`遍历笔记中，请稍后... (${processedCount}/${files.length})`);
+                }
+                
+                // 保存新的索引
+                await CardUtils.saveCardIndex(this.plugin.app.vault, newIndex);
+                
+                // 关闭遍历提示
+                notice.hide();
+                
+                // 显示完成提示
+                new Notice('已完成遍历，索引已重构');
+                
+                // 刷新卡片显示
+                this.renderCards();
+                
+            } catch (error) {
+                console.error('更新索引失败:', error);
+                notice.hide();
+                new Notice('更新索引失败，请查看控制台获取详细信息');
+            }
+        });
+
         const types = [
             { id: 'all', text: '全部类型' },
             { id: 'music-card', text: '音乐' },
@@ -135,7 +229,17 @@ export class CardsGalleryView extends ItemView {
 
         // 创建字段选择下拉菜单
         const fieldsDropdown = fieldsControl.createDiv({ cls: 'gallery-fields-dropdown' });
-        const fields = ['description', 'year', 'rating', 'tags', 'meta'];
+        const fields = ['description', 'year', 'rating', 'tags', 'meta', 'collection_date', 'status'];
+        
+        const fieldLabels: { [key: string]: string } = {
+            'description': '描述',
+            'year': '年份',
+            'rating': '评分',
+            'tags': '标签',
+            'meta': '元信息',
+            'collection_date': '收录时间',
+            'status': '阅读状态'
+        };
         
         fields.forEach(field => {
             const fieldOption = fieldsDropdown.createDiv({ cls: 'field-option' });
@@ -144,7 +248,7 @@ export class CardsGalleryView extends ItemView {
                 attr: { id: `field-${field}` }
             });
             fieldOption.createEl('label', {
-                text: field,
+                text: fieldLabels[field],
                 attr: { for: `field-${field}` }
             });
 
@@ -189,7 +293,6 @@ export class CardsGalleryView extends ItemView {
         // 添加模态框标题
         const filterModalTitle = filterModalContent.createDiv({ cls: 'modal-title' });
         filterModalTitle.createSpan({ text: '筛选设置' });
-        const closeFilterModal = filterModalTitle.createEl('button', { cls: 'modal-close-button', text: '×' });
 
         // 筛选字段定义
         const filterFields = [
@@ -197,49 +300,54 @@ export class CardsGalleryView extends ItemView {
             { field: 'rating', text: '评分' },
             { field: 'lastUpdate', text: '更新时间' },
             { field: 'title', text: '标题' },
-            { field: 'description', text: '描述' }
+            { field: 'description', text: '描述' },
+            { field: 'collection_date', text: '收录时间' }
         ];
 
-        // 添加条件组合选择
-        const conjunctionContainer = filterModalContent.createDiv({ cls: 'conjunction-container' });
-        const andRadio = conjunctionContainer.createEl('input', {
-            type: 'radio',
-            attr: { name: 'conjunction', value: 'and', id: 'conj-and' }
-        });
-        conjunctionContainer.createEl('label', { text: '满足所有条件', attr: { for: 'conj-and' } });
+        // 添加阅读状态筛选
+        const statusFilterContainer = filterModalContent.createDiv({ cls: 'status-filter-container' });
+        statusFilterContainer.createSpan({ text: '阅读状态：' });
+        const statusSelect = statusFilterContainer.createEl('select', { cls: 'status-select' });
         
-        const orRadio = conjunctionContainer.createEl('input', {
-            type: 'radio',
-            attr: { name: 'conjunction', value: 'or', id: 'conj-or' }
+        // 添加全部选项
+        statusSelect.createEl('option', {
+            value: '',
+            text: '全部'
         });
-        conjunctionContainer.createEl('label', { text: '满足任一条件', attr: { for: 'conj-or' } });
+        
+        // 添加已阅和待阅选项
+        ['已阅', '待阅'].forEach(status => {
+            statusSelect.createEl('option', {
+                value: status,
+                text: status
+            });
+        });
 
         // 设置初始值
-        if (this.filterDefinition.conjunction === 'and') {
-            andRadio.checked = true;
-        } else {
-            orRadio.checked = true;
+        const statusCondition = this.filterDefinition.conditions.find(c => c.field === 'status');
+        if (statusCondition) {
+            statusSelect.value = statusCondition.value;
         }
 
         // 添加事件监听
-        andRadio.addEventListener('change', () => {
-            if (andRadio.checked) {
-                this.filterDefinition.conjunction = 'and';
-                this.plugin.settings.gallerySettings.filterDefinition = this.filterDefinition;
-                this.plugin.saveSettings();
-                this.renderCards();
-                updateFilterDisplay();
+        statusSelect.addEventListener('change', () => {
+            // 移除现有的状态筛选条件
+            this.filterDefinition.conditions = this.filterDefinition.conditions.filter(c => c.field !== 'status');
+            
+            // 如果选择了状态，添加新的筛选条件
+            if (statusSelect.value) {
+                this.filterDefinition.conditions.push({
+                    field: 'status',
+                    operator: 'equals',
+                    value: statusSelect.value,
+                    enabled: true
+                });
             }
-        });
-
-        orRadio.addEventListener('change', () => {
-            if (orRadio.checked) {
-                this.filterDefinition.conjunction = 'or';
-                this.plugin.settings.gallerySettings.filterDefinition = this.filterDefinition;
-                this.plugin.saveSettings();
-                this.renderCards();
-                updateFilterDisplay();
-            }
+            
+            this.plugin.settings.gallerySettings.filterDefinition = this.filterDefinition;
+            this.plugin.saveSettings();
+            this.renderCards();
+            updateFilterDisplay();
         });
 
         // 创建筛选条件添加界面
@@ -266,6 +374,7 @@ export class CardsGalleryView extends ItemView {
             });
         });
 
+        // 创建值输入框
         const valueInput = addFilterContainer.createEl('input', {
             type: 'text',
             cls: 'value-input',
@@ -317,6 +426,9 @@ export class CardsGalleryView extends ItemView {
         const updateFilterDisplay = () => {
             activeFiltersContainer.empty();
             this.filterDefinition.conditions.forEach((condition, index) => {
+                // 跳过阅读状态筛选条件，因为它有专门的下拉框
+                if (condition.field === 'status') return;
+                
                 const field = filterFields.find(f => f.field === condition.field);
                 const filterTag = activeFiltersContainer.createDiv({ cls: 'filter-tag' });
                 const checkbox = filterTag.createEl('input', {
@@ -343,11 +455,6 @@ export class CardsGalleryView extends ItemView {
             filterModal.classList.add('show');
         });
 
-        // 关闭模态框
-        closeFilterModal.addEventListener('click', () => {
-            filterModal.classList.remove('show');
-        });
-
         // 点击模态框外部关闭
         filterModal.addEventListener('click', (e) => {
             if (e.target === filterModal) {
@@ -371,13 +478,13 @@ export class CardsGalleryView extends ItemView {
         // 添加模态框标题
         const sortModalTitle = sortModalContent.createDiv({ cls: 'modal-title' });
         sortModalTitle.createSpan({ text: '排序设置' });
-        const closeSortModal = sortModalTitle.createEl('button', { cls: 'modal-close-button', text: '×' });
 
         const sortFields = [
             { field: 'year', text: '年份' },
             { field: 'rating', text: '评分' },
             { field: 'lastUpdate', text: '更新时间' },
-            { field: 'title', text: '标题' }
+            { field: 'title', text: '标题' },
+            { field: 'collection_date', text: '收录时间' }
         ];
 
         // 创建排序条件添加界面
@@ -482,11 +589,6 @@ export class CardsGalleryView extends ItemView {
             sortModal.classList.add('show');
         });
 
-        // 关闭模态框
-        closeSortModal.addEventListener('click', () => {
-            sortModal.classList.remove('show');
-        });
-
         // 点击模态框外部关闭
         sortModal.addEventListener('click', (e) => {
             if (e.target === sortModal) {
@@ -545,13 +647,45 @@ export class CardsGalleryView extends ItemView {
         }).filter(card => card !== null);
 
         // 应用筛选条件
-        const filteredCards = cards.filter(card => {
+        const applyFilter = async (card: {
+            cid: string;
+            type: string;
+            data: {
+                title?: string;
+                year?: number;
+                rating?: number;
+                description?: string;
+                collection_date?: string;
+                meta?: Record<string, any>;
+                [key: string]: any;
+            };
+            lastUpdate: number;
+        }) => {
             if (this.selectedCardType !== 'all' && card.type !== this.selectedCardType) {
                 return false;
             }
 
-            return this.filterDefinition.conditions.every(condition => {
-                if (!condition.enabled) return true;
+            for (const condition of this.filterDefinition.conditions) {
+                if (!condition.enabled) continue;
+
+                if (condition.field === 'status') {
+                    const cardLocations = index[card.cid]?.locations;
+                    if (cardLocations && cardLocations.length > 0) {
+                        const file = this.app.vault.getAbstractFileByPath(cardLocations[0].path);
+                        if (file instanceof TFile) {
+                            const content = await this.app.vault.read(file);
+                            const frontmatterMatch = content.match(/^---[\r\n]([\s\S]*?)[\r\n]---/);
+                            if (frontmatterMatch) {
+                                const frontmatter = this.plugin.parseYaml(frontmatterMatch[1]);
+                                const fileStatus = frontmatter.status || 'unread';
+                                const filterStatus = condition.value === '已阅' ? 'read' : 'unread';
+                                if (fileStatus !== filterStatus) return false;
+                                continue;
+                            }
+                        }
+                    }
+                    return false;
+                }
 
                 const value = condition.field === 'lastUpdate' 
                     ? card.lastUpdate 
@@ -559,20 +693,47 @@ export class CardsGalleryView extends ItemView {
                         ? card.data?.meta?.[condition.field.split('.')[1]] 
                         : card.data?.[condition.field];
 
+                let matches = true;
                 switch (condition.operator) {
                     case 'contains':
-                        return String(value).toLowerCase().includes(String(condition.value).toLowerCase());
+                        matches = String(value).toLowerCase().includes(String(condition.value).toLowerCase());
+                        break;
                     case 'equals':
-                        return String(value) === condition.value;
+                        matches = String(value) === condition.value;
+                        break;
                     case 'greater':
-                        return parseFloat(value) > parseFloat(condition.value);
+                        matches = parseFloat(value) > parseFloat(condition.value);
+                        break;
                     case 'less':
-                        return parseFloat(value) < parseFloat(condition.value);
-                    default:
-                        return true;
+                        matches = parseFloat(value) < parseFloat(condition.value);
+                        break;
                 }
-            });
-        });
+                if (!matches) return false;
+            }
+            return true;
+        };
+
+        // 异步筛选所有卡片
+        const filteredCards = [];
+        for (const card of cards) {
+            // 确保 lastUpdate 是数字类型
+            const cardWithNumberLastUpdate = {
+                ...card,
+                lastUpdate: typeof card.lastUpdate === 'string' ? new Date(card.lastUpdate).getTime() : card.lastUpdate
+            };
+            const shouldInclude = await applyFilter(cardWithNumberLastUpdate);
+            if (shouldInclude) {
+                filteredCards.push(card);
+            }
+        }
+
+        // 如果没有启用的筛选条件，仍然需要应用卡片类型筛选
+        if (this.filterDefinition.conditions.every(c => !c.enabled)) {
+            // 只添加符合当前选中类型的卡片
+            filteredCards.push(...cards.filter(card => 
+                this.selectedCardType === 'all' || card.type === this.selectedCardType
+            ));
+        }
 
         // 首先按lastUpdate时间降序排序
         filteredCards.sort((a, b) => new Date(b.lastUpdate).getTime() - new Date(a.lastUpdate).getTime());
@@ -629,11 +790,83 @@ export class CardsGalleryView extends ItemView {
                 case 'movie-card':
                     await this.plugin.renderMovieCard(card.data, cardContainer, card.cid);
                     break;
+                case 'tv-card':
+                    await this.plugin.renderTvCard(card.data, cardContainer, card.cid);
+                    break;
+                case 'anime-card':
+                    await this.plugin.renderAnimeCard(card.data, cardContainer, card.cid);
+                    break;
             }
 
             // 获取卡片容器
             const newCardsContainer = cardContainer.querySelector('.new-cards-container');
             if (newCardsContainer) {
+                // 获取卡片所在的笔记
+                const cardIndex = await CardUtils.loadCardIndex(this.plugin.app.vault);
+                const cardLocations = cardIndex[card.cid]?.locations;
+                if (cardLocations && cardLocations.length > 0) {
+                    // 直接使用第一个包含该卡片的笔记文件
+                    const noteFile = cardLocations[0];
+
+                    if (noteFile) {
+                        // 获取笔记的 frontmatter
+                        const file = this.plugin.app.vault.getAbstractFileByPath(noteFile.path);
+                        if (file instanceof TFile) {
+                            const metadata = this.plugin.app.metadataCache.getFileCache(file)?.frontmatter;
+                            const status = metadata?.status || 'unread';
+
+                            // 创建状态指示按钮
+                            const statusIndicator = newCardsContainer.createDiv({ cls: `status-indicator ${status}` });
+                            statusIndicator.textContent = status === 'read' ? '已看' : '未看';
+
+                            // 添加点击事件处理
+                            statusIndicator.addEventListener('click', async (e) => {
+                                e.stopPropagation();
+                                const newStatus = status === 'read' ? 'unread' : 'read';
+                                const content = await this.plugin.app.vault.read(file);
+                                // 解析现有的 frontmatter
+                                const frontmatterMatch = content.match(/^---(\r?\n|\r)(.*?)(\r?\n|\r)---/s);
+                                let updatedContent = content;
+                                
+                                if (frontmatterMatch) {
+                                    const frontmatter = frontmatterMatch[2];
+                                    // 更新或添加 status 属性
+                                    const lines = frontmatter.split(/\r?\n/);
+                                    let statusFound = false;
+                                    
+                                    const updatedLines = lines.map(line => {
+                                        if (line.startsWith('status:')) {
+                                            statusFound = true;
+                                            return `status: ${newStatus}`;
+                                        }
+                                        return line;
+                                    });
+                                    
+                                    if (!statusFound) {
+                                        updatedLines.push(`status: ${newStatus}`);
+                                    }
+                                    
+                                    // 重建 frontmatter
+                                    updatedContent = content.replace(
+                                        /^---(\r?\n|\r)(.*?)(\r?\n|\r)---/s,
+                                        `---\n${updatedLines.join('\n')}\n---`
+                                    );
+                                } else {
+                                    // 如果没有 frontmatter，添加一个新的
+                                    updatedContent = `---\nstatus: ${newStatus}\n---\n\n${content}`;
+                                }
+                                await this.plugin.app.vault.modify(file, updatedContent);
+
+                                // 更新状态指示器
+                                statusIndicator.className = `status-indicator ${newStatus}`;
+                                statusIndicator.textContent = newStatus === 'read' ? '已看' : '未看';
+
+                                // 显示通知
+                                new Notice(`已将 ${card.data.title} 标记为${newStatus === 'read' ? '已看' : '未看'}`, 3000);
+                            });
+                        }
+                    }
+                }
                 // 添加反链图标和容器
                 const backlinksContainer = newCardsContainer.createDiv({ cls: 'card-backlinks-container' });
                 const backlinksIcon = backlinksContainer.createDiv({ cls: 'card-backlinks-icon' });
@@ -641,14 +874,14 @@ export class CardsGalleryView extends ItemView {
                 const backlinksDropdown = backlinksContainer.createDiv({ cls: 'card-backlinks-dropdown' });
 
                 // 获取卡片所在的笔记和引用了当前卡片的笔记
-                const cardIndex = await CardUtils.loadCardIndex(this.plugin.app.vault);
-                const cardInfo = cardIndex[card.cid];
+                const backlinksCardIndex = await CardUtils.loadCardIndex(this.plugin.app.vault);
+                const backlinksCardInfo = backlinksCardIndex[card.cid];
                 const resolvedLinks = this.plugin.app.metadataCache.resolvedLinks;
                 
                 // 显示卡片所在的笔记
-                if (cardInfo && cardInfo.locations && cardInfo.locations.length > 0) {
+                if (backlinksCardInfo && backlinksCardInfo.locations && backlinksCardInfo.locations.length > 0) {
                     // 按文件路径排序
-                    const locations = [...cardInfo.locations].sort((a, b) => a.path.localeCompare(b.path));
+                    const locations = [...backlinksCardInfo.locations].sort((a, b) => a.path.localeCompare(b.path));
                     
                     // 添加标题
                     const locationTitle = backlinksDropdown.createDiv({ cls: 'backlink-section-title' });

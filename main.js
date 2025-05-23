@@ -6733,7 +6733,8 @@ var CardUtils = class {
           };
         }
       } else {
-        if (location.startLine > 0 && location.endLine > 0 && !index[cid].locations.some((loc) => loc.path === location.path && loc.startLine === location.startLine && loc.endLine === location.endLine)) {
+        index[cid].locations = index[cid].locations.filter((loc) => loc.path !== location.path);
+        if (location.startLine > 0 && location.endLine > 0) {
           index[cid].locations.push(location);
         }
         index[cid].lastUpdated = (/* @__PURE__ */ new Date()).toISOString();
@@ -6819,6 +6820,64 @@ var CardsGalleryView = class extends import_obsidian2.ItemView {
     this.container.addClass("cards-gallery-container");
     this.container.setAttribute("data-hidden-fields", Array.from(this.hiddenFields).join(" "));
     const controlsContainer = this.container.createDiv({ cls: "gallery-controls" });
+    const refreshButton = controlsContainer.createEl("button", {
+      text: "\u5237\u65B0\u7D22\u5F15",
+      cls: "gallery-refresh-button"
+    });
+    refreshButton.addEventListener("click", async () => {
+      const notice = new import_obsidian2.Notice("\u904D\u5386\u7B14\u8BB0\u4E2D\uFF0C\u8BF7\u7A0D\u540E...", 0);
+      try {
+        const files = this.plugin.app.vault.getMarkdownFiles();
+        let processedCount = 0;
+        const newIndex = await CardUtils.loadCardIndex(this.plugin.app.vault);
+        for (const file of files) {
+          try {
+            const content = await this.plugin.app.vault.read(file);
+            const cardRegex = /```([\w-]+)\n([\s\S]*?)```/g;
+            let match;
+            let lineCount = 0;
+            const lines = content.split("\n");
+            while ((match = cardRegex.exec(content)) !== null) {
+              const cardType = match[1];
+              if (!cardType.endsWith("-card")) continue;
+              const cardContent = match[0];
+              const cid = CardUtils.generateCID(cardContent);
+              const matchStart = content.substring(0, match.index).split("\n").length - 1;
+              const matchEnd = matchStart + cardContent.split("\n").length;
+              const location = {
+                path: file.path,
+                startLine: matchStart,
+                endLine: matchEnd
+              };
+              if (!newIndex[cid]) {
+                newIndex[cid] = {
+                  content: cardContent,
+                  locations: [location],
+                  lastUpdated: (/* @__PURE__ */ new Date()).toISOString()
+                };
+              } else {
+                newIndex[cid].locations = newIndex[cid].locations.filter((loc) => loc.path !== file.path);
+                newIndex[cid].locations.push(location);
+                newIndex[cid].lastUpdated = (/* @__PURE__ */ new Date()).toISOString();
+              }
+            }
+          } catch (error) {
+            console.error(`\u5904\u7406\u6587\u4EF6 ${file.path} \u65F6\u51FA\u9519:`, error);
+            continue;
+          }
+          processedCount++;
+          notice.setMessage(`\u904D\u5386\u7B14\u8BB0\u4E2D\uFF0C\u8BF7\u7A0D\u540E... (${processedCount}/${files.length})`);
+        }
+        await CardUtils.saveCardIndex(this.plugin.app.vault, newIndex);
+        notice.hide();
+        new import_obsidian2.Notice("\u5DF2\u5B8C\u6210\u904D\u5386\uFF0C\u7D22\u5F15\u5DF2\u91CD\u6784");
+        this.renderCards();
+      } catch (error) {
+        console.error("\u66F4\u65B0\u7D22\u5F15\u5931\u8D25:", error);
+        notice.hide();
+        new import_obsidian2.Notice("\u66F4\u65B0\u7D22\u5F15\u5931\u8D25\uFF0C\u8BF7\u67E5\u770B\u63A7\u5236\u53F0\u83B7\u53D6\u8BE6\u7EC6\u4FE1\u606F");
+      }
+    });
     const types = [
       { id: "all", text: "\u5168\u90E8\u7C7B\u578B" },
       { id: "music-card", text: "\u97F3\u4E50" },
@@ -6861,7 +6920,16 @@ var CardsGalleryView = class extends import_obsidian2.ItemView {
       cls: "gallery-fields-toggle"
     });
     const fieldsDropdown = fieldsControl.createDiv({ cls: "gallery-fields-dropdown" });
-    const fields = ["description", "year", "rating", "tags", "meta"];
+    const fields = ["description", "year", "rating", "tags", "meta", "collection_date", "status"];
+    const fieldLabels = {
+      "description": "\u63CF\u8FF0",
+      "year": "\u5E74\u4EFD",
+      "rating": "\u8BC4\u5206",
+      "tags": "\u6807\u7B7E",
+      "meta": "\u5143\u4FE1\u606F",
+      "collection_date": "\u6536\u5F55\u65F6\u95F4",
+      "status": "\u9605\u8BFB\u72B6\u6001"
+    };
     fields.forEach((field) => {
       const fieldOption = fieldsDropdown.createDiv({ cls: "field-option" });
       const checkbox = fieldOption.createEl("input", {
@@ -6869,7 +6937,7 @@ var CardsGalleryView = class extends import_obsidian2.ItemView {
         attr: { id: `field-${field}` }
       });
       fieldOption.createEl("label", {
-        text: field,
+        text: fieldLabels[field],
         attr: { for: `field-${field}` }
       });
       checkbox.checked = !this.hiddenFields.has(field);
@@ -6903,47 +6971,45 @@ var CardsGalleryView = class extends import_obsidian2.ItemView {
     const filterModalContent = filterModal.createDiv({ cls: "gallery-modal-content" });
     const filterModalTitle = filterModalContent.createDiv({ cls: "modal-title" });
     filterModalTitle.createSpan({ text: "\u7B5B\u9009\u8BBE\u7F6E" });
-    const closeFilterModal = filterModalTitle.createEl("button", { cls: "modal-close-button", text: "\xD7" });
     const filterFields = [
       { field: "year", text: "\u5E74\u4EFD" },
       { field: "rating", text: "\u8BC4\u5206" },
       { field: "lastUpdate", text: "\u66F4\u65B0\u65F6\u95F4" },
       { field: "title", text: "\u6807\u9898" },
-      { field: "description", text: "\u63CF\u8FF0" }
+      { field: "description", text: "\u63CF\u8FF0" },
+      { field: "collection_date", text: "\u6536\u5F55\u65F6\u95F4" }
     ];
-    const conjunctionContainer = filterModalContent.createDiv({ cls: "conjunction-container" });
-    const andRadio = conjunctionContainer.createEl("input", {
-      type: "radio",
-      attr: { name: "conjunction", value: "and", id: "conj-and" }
+    const statusFilterContainer = filterModalContent.createDiv({ cls: "status-filter-container" });
+    statusFilterContainer.createSpan({ text: "\u9605\u8BFB\u72B6\u6001\uFF1A" });
+    const statusSelect = statusFilterContainer.createEl("select", { cls: "status-select" });
+    statusSelect.createEl("option", {
+      value: "",
+      text: "\u5168\u90E8"
     });
-    conjunctionContainer.createEl("label", { text: "\u6EE1\u8DB3\u6240\u6709\u6761\u4EF6", attr: { for: "conj-and" } });
-    const orRadio = conjunctionContainer.createEl("input", {
-      type: "radio",
-      attr: { name: "conjunction", value: "or", id: "conj-or" }
+    ["\u5DF2\u9605", "\u5F85\u9605"].forEach((status) => {
+      statusSelect.createEl("option", {
+        value: status,
+        text: status
+      });
     });
-    conjunctionContainer.createEl("label", { text: "\u6EE1\u8DB3\u4EFB\u4E00\u6761\u4EF6", attr: { for: "conj-or" } });
-    if (this.filterDefinition.conjunction === "and") {
-      andRadio.checked = true;
-    } else {
-      orRadio.checked = true;
+    const statusCondition = this.filterDefinition.conditions.find((c) => c.field === "status");
+    if (statusCondition) {
+      statusSelect.value = statusCondition.value;
     }
-    andRadio.addEventListener("change", () => {
-      if (andRadio.checked) {
-        this.filterDefinition.conjunction = "and";
-        this.plugin.settings.gallerySettings.filterDefinition = this.filterDefinition;
-        this.plugin.saveSettings();
-        this.renderCards();
-        updateFilterDisplay();
+    statusSelect.addEventListener("change", () => {
+      this.filterDefinition.conditions = this.filterDefinition.conditions.filter((c) => c.field !== "status");
+      if (statusSelect.value) {
+        this.filterDefinition.conditions.push({
+          field: "status",
+          operator: "equals",
+          value: statusSelect.value,
+          enabled: true
+        });
       }
-    });
-    orRadio.addEventListener("change", () => {
-      if (orRadio.checked) {
-        this.filterDefinition.conjunction = "or";
-        this.plugin.settings.gallerySettings.filterDefinition = this.filterDefinition;
-        this.plugin.saveSettings();
-        this.renderCards();
-        updateFilterDisplay();
-      }
+      this.plugin.settings.gallerySettings.filterDefinition = this.filterDefinition;
+      this.plugin.saveSettings();
+      this.renderCards();
+      updateFilterDisplay();
     });
     const addFilterContainer = filterModalContent.createDiv({ cls: "add-filter-container" });
     const fieldSelect = addFilterContainer.createEl("select", { cls: "field-select" });
@@ -7007,6 +7073,7 @@ var CardsGalleryView = class extends import_obsidian2.ItemView {
     const updateFilterDisplay = () => {
       activeFiltersContainer.empty();
       this.filterDefinition.conditions.forEach((condition, index) => {
+        if (condition.field === "status") return;
         const field = filterFields.find((f) => f.field === condition.field);
         const filterTag = activeFiltersContainer.createDiv({ cls: "filter-tag" });
         const checkbox = filterTag.createEl("input", {
@@ -7029,9 +7096,6 @@ var CardsGalleryView = class extends import_obsidian2.ItemView {
     filterToggle.addEventListener("click", () => {
       filterModal.classList.add("show");
     });
-    closeFilterModal.addEventListener("click", () => {
-      filterModal.classList.remove("show");
-    });
     filterModal.addEventListener("click", (e) => {
       if (e.target === filterModal) {
         filterModal.classList.remove("show");
@@ -7046,12 +7110,12 @@ var CardsGalleryView = class extends import_obsidian2.ItemView {
     const sortModalContent = sortModal.createDiv({ cls: "gallery-modal-content" });
     const sortModalTitle = sortModalContent.createDiv({ cls: "modal-title" });
     sortModalTitle.createSpan({ text: "\u6392\u5E8F\u8BBE\u7F6E" });
-    const closeSortModal = sortModalTitle.createEl("button", { cls: "modal-close-button", text: "\xD7" });
     const sortFields = [
       { field: "year", text: "\u5E74\u4EFD" },
       { field: "rating", text: "\u8BC4\u5206" },
       { field: "lastUpdate", text: "\u66F4\u65B0\u65F6\u95F4" },
-      { field: "title", text: "\u6807\u9898" }
+      { field: "title", text: "\u6807\u9898" },
+      { field: "collection_date", text: "\u6536\u5F55\u65F6\u95F4" }
     ];
     const addSortContainer = sortModalContent.createDiv({ cls: "add-sort-container" });
     const sortFieldSelect = addSortContainer.createEl("select", { cls: "sort-field-select" });
@@ -7139,9 +7203,6 @@ var CardsGalleryView = class extends import_obsidian2.ItemView {
     sortToggle.addEventListener("click", () => {
       sortModal.classList.add("show");
     });
-    closeSortModal.addEventListener("click", () => {
-      sortModal.classList.remove("show");
-    });
     sortModal.addEventListener("click", (e) => {
       if (e.target === sortModal) {
         sortModal.classList.remove("show");
@@ -7182,27 +7243,66 @@ var CardsGalleryView = class extends import_obsidian2.ItemView {
         lastUpdate: cardInfo.lastUpdated || 0
       };
     }).filter((card) => card !== null);
-    const filteredCards = cards.filter((card) => {
+    const applyFilter = async (card) => {
       if (this.selectedCardType !== "all" && card.type !== this.selectedCardType) {
         return false;
       }
-      return this.filterDefinition.conditions.every((condition) => {
-        if (!condition.enabled) return true;
+      for (const condition of this.filterDefinition.conditions) {
+        if (!condition.enabled) continue;
+        if (condition.field === "status") {
+          const cardLocations = index[card.cid]?.locations;
+          if (cardLocations && cardLocations.length > 0) {
+            const file = this.app.vault.getAbstractFileByPath(cardLocations[0].path);
+            if (file instanceof import_obsidian2.TFile) {
+              const content = await this.app.vault.read(file);
+              const frontmatterMatch = content.match(/^---[\r\n]([\s\S]*?)[\r\n]---/);
+              if (frontmatterMatch) {
+                const frontmatter = this.plugin.parseYaml(frontmatterMatch[1]);
+                const fileStatus = frontmatter.status || "unread";
+                const filterStatus = condition.value === "\u5DF2\u9605" ? "read" : "unread";
+                if (fileStatus !== filterStatus) return false;
+                continue;
+              }
+            }
+          }
+          return false;
+        }
         const value = condition.field === "lastUpdate" ? card.lastUpdate : condition.field.startsWith("meta.") ? card.data?.meta?.[condition.field.split(".")[1]] : card.data?.[condition.field];
+        let matches = true;
         switch (condition.operator) {
           case "contains":
-            return String(value).toLowerCase().includes(String(condition.value).toLowerCase());
+            matches = String(value).toLowerCase().includes(String(condition.value).toLowerCase());
+            break;
           case "equals":
-            return String(value) === condition.value;
+            matches = String(value) === condition.value;
+            break;
           case "greater":
-            return parseFloat(value) > parseFloat(condition.value);
+            matches = parseFloat(value) > parseFloat(condition.value);
+            break;
           case "less":
-            return parseFloat(value) < parseFloat(condition.value);
-          default:
-            return true;
+            matches = parseFloat(value) < parseFloat(condition.value);
+            break;
         }
-      });
-    });
+        if (!matches) return false;
+      }
+      return true;
+    };
+    const filteredCards = [];
+    for (const card of cards) {
+      const cardWithNumberLastUpdate = {
+        ...card,
+        lastUpdate: typeof card.lastUpdate === "string" ? new Date(card.lastUpdate).getTime() : card.lastUpdate
+      };
+      const shouldInclude = await applyFilter(cardWithNumberLastUpdate);
+      if (shouldInclude) {
+        filteredCards.push(card);
+      }
+    }
+    if (this.filterDefinition.conditions.every((c) => !c.enabled)) {
+      filteredCards.push(...cards.filter(
+        (card) => this.selectedCardType === "all" || card.type === this.selectedCardType
+      ));
+    }
     filteredCards.sort((a, b) => new Date(b.lastUpdate).getTime() - new Date(a.lastUpdate).getTime());
     const titleMap = /* @__PURE__ */ new Map();
     filteredCards.forEach((card) => {
@@ -7237,18 +7337,76 @@ var CardsGalleryView = class extends import_obsidian2.ItemView {
         case "movie-card":
           await this.plugin.renderMovieCard(card.data, cardContainer, card.cid);
           break;
+        case "tv-card":
+          await this.plugin.renderTvCard(card.data, cardContainer, card.cid);
+          break;
+        case "anime-card":
+          await this.plugin.renderAnimeCard(card.data, cardContainer, card.cid);
+          break;
       }
       const newCardsContainer = cardContainer.querySelector(".new-cards-container");
       if (newCardsContainer) {
+        const cardIndex = await CardUtils.loadCardIndex(this.plugin.app.vault);
+        const cardLocations = cardIndex[card.cid]?.locations;
+        if (cardLocations && cardLocations.length > 0) {
+          const noteFile = cardLocations[0];
+          if (noteFile) {
+            const file = this.plugin.app.vault.getAbstractFileByPath(noteFile.path);
+            if (file instanceof import_obsidian2.TFile) {
+              const metadata = this.plugin.app.metadataCache.getFileCache(file)?.frontmatter;
+              const status = metadata?.status || "unread";
+              const statusIndicator = newCardsContainer.createDiv({ cls: `status-indicator ${status}` });
+              statusIndicator.textContent = status === "read" ? "\u5DF2\u770B" : "\u672A\u770B";
+              statusIndicator.addEventListener("click", async (e) => {
+                e.stopPropagation();
+                const newStatus = status === "read" ? "unread" : "read";
+                const content = await this.plugin.app.vault.read(file);
+                const frontmatterMatch = content.match(/^---(\r?\n|\r)(.*?)(\r?\n|\r)---/s);
+                let updatedContent = content;
+                if (frontmatterMatch) {
+                  const frontmatter = frontmatterMatch[2];
+                  const lines = frontmatter.split(/\r?\n/);
+                  let statusFound = false;
+                  const updatedLines = lines.map((line) => {
+                    if (line.startsWith("status:")) {
+                      statusFound = true;
+                      return `status: ${newStatus}`;
+                    }
+                    return line;
+                  });
+                  if (!statusFound) {
+                    updatedLines.push(`status: ${newStatus}`);
+                  }
+                  updatedContent = content.replace(
+                    /^---(\r?\n|\r)(.*?)(\r?\n|\r)---/s,
+                    `---
+${updatedLines.join("\n")}
+---`
+                  );
+                } else {
+                  updatedContent = `---
+status: ${newStatus}
+---
+
+${content}`;
+                }
+                await this.plugin.app.vault.modify(file, updatedContent);
+                statusIndicator.className = `status-indicator ${newStatus}`;
+                statusIndicator.textContent = newStatus === "read" ? "\u5DF2\u770B" : "\u672A\u770B";
+                new import_obsidian2.Notice(`\u5DF2\u5C06 ${card.data.title} \u6807\u8BB0\u4E3A${newStatus === "read" ? "\u5DF2\u770B" : "\u672A\u770B"}`, 3e3);
+              });
+            }
+          }
+        }
         const backlinksContainer = newCardsContainer.createDiv({ cls: "card-backlinks-container" });
         const backlinksIcon = backlinksContainer.createDiv({ cls: "card-backlinks-icon" });
         backlinksIcon.innerHTML = '<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"></path><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"></path></svg>';
         const backlinksDropdown = backlinksContainer.createDiv({ cls: "card-backlinks-dropdown" });
-        const cardIndex = await CardUtils.loadCardIndex(this.plugin.app.vault);
-        const cardInfo = cardIndex[card.cid];
+        const backlinksCardIndex = await CardUtils.loadCardIndex(this.plugin.app.vault);
+        const backlinksCardInfo = backlinksCardIndex[card.cid];
         const resolvedLinks = this.plugin.app.metadataCache.resolvedLinks;
-        if (cardInfo && cardInfo.locations && cardInfo.locations.length > 0) {
-          const locations = [...cardInfo.locations].sort((a, b) => a.path.localeCompare(b.path));
+        if (backlinksCardInfo && backlinksCardInfo.locations && backlinksCardInfo.locations.length > 0) {
+          const locations = [...backlinksCardInfo.locations].sort((a, b) => a.path.localeCompare(b.path));
           const locationTitle = backlinksDropdown.createDiv({ cls: "backlink-section-title" });
           locationTitle.textContent = "\u5361\u7247\u6240\u5728\u7B14\u8BB0";
           const addedPaths = /* @__PURE__ */ new Set();
@@ -7374,6 +7532,7 @@ var QuickNoteView = class extends import_obsidian3.ItemView {
     const seconds = now.getSeconds().toString().padStart(2, "0");
     const currentDateTime = `${year}-${month}-${day} ${hours}:${minutes}:${seconds}`;
     const currentDate = `${year}-${month}-${day}`;
+    const collectionDate = `${year.toString().slice(-2)}-${month}-${day}`;
     switch (type) {
       case "idea":
         this.createFormGroup(form, "\u60F3\u6CD5", "content", true);
@@ -7397,7 +7556,13 @@ var QuickNoteView = class extends import_obsidian3.ItemView {
         this.createFormGroup(form, "\u5C01\u9762", "cover");
         this.createFormGroup(form, "URL", "url");
         this.createFormGroup(form, "\u6807\u7B7E", "tags");
-        this.createFormGroup(form, "\u5E74\u4EFD", "year", false, "text", "YYYY-MM-DD");
+        this.createFormGroup(form, "\u5E74\u4EFD", "year", false, "text", "YYYY");
+        this.createFormGroup(form, "\u6536\u5F55\u65F6\u95F4", "collection_date", false, "text", "YY-MM-DD", collectionDate);
+        const movieStatusGroup = form.createDiv({ cls: "form-group form-group-inline" });
+        movieStatusGroup.createEl("label", { text: "\u72B6\u6001" });
+        const movieStatusSelect = movieStatusGroup.createEl("select", { attr: { id: "status", name: "status" } });
+        movieStatusSelect.createEl("option", { value: "unread", text: "\u5F85\u770B/\u5F85\u8BFB" });
+        movieStatusSelect.createEl("option", { value: "read", text: "\u5DF2\u770B/\u5DF2\u8BFB" });
         break;
       case "book":
         this.createFormGroup(form, "\u4E66\u8BC4", "description", true);
@@ -7407,7 +7572,13 @@ var QuickNoteView = class extends import_obsidian3.ItemView {
         this.createFormGroup(form, "\u5C01\u9762", "cover");
         this.createFormGroup(form, "URL", "url");
         this.createFormGroup(form, "\u6807\u7B7E", "tags");
-        this.createFormGroup(form, "\u5E74\u4EFD", "year", false, "text", "YYYY-MM-DD");
+        this.createFormGroup(form, "\u5E74\u4EFD", "year", false, "text", "YYYY");
+        this.createFormGroup(form, "\u6536\u5F55\u65F6\u95F4", "collection_date", false, "text", "YY-MM-DD", collectionDate);
+        const bookStatusGroup = form.createDiv({ cls: "form-group form-group-inline" });
+        bookStatusGroup.createEl("label", { text: "\u72B6\u6001" });
+        const bookStatusSelect = bookStatusGroup.createEl("select", { attr: { id: "status", name: "status" } });
+        bookStatusSelect.createEl("option", { value: "unread", text: "\u5F85\u770B/\u5F85\u8BFB" });
+        bookStatusSelect.createEl("option", { value: "read", text: "\u5DF2\u770B/\u5DF2\u8BFB" });
         break;
       case "music":
         this.createFormGroup(form, "\u4E50\u8BC4", "description", true);
@@ -7417,7 +7588,13 @@ var QuickNoteView = class extends import_obsidian3.ItemView {
         this.createFormGroup(form, "\u5C01\u9762", "cover");
         this.createFormGroup(form, "URL", "url");
         this.createFormGroup(form, "\u6807\u7B7E", "tags");
-        this.createFormGroup(form, "\u5E74\u4EFD", "year", false, "text", "YYYY-MM-DD");
+        this.createFormGroup(form, "\u5E74\u4EFD", "year", false, "text", "YYYY");
+        this.createFormGroup(form, "\u6536\u5F55\u65F6\u95F4", "collection_date", false, "text", "YY-MM-DD", collectionDate);
+        const musicStatusGroup = form.createDiv({ cls: "form-group form-group-inline" });
+        musicStatusGroup.createEl("label", { text: "\u72B6\u6001" });
+        const musicStatusSelect = musicStatusGroup.createEl("select", { attr: { id: "status", name: "status" } });
+        musicStatusSelect.createEl("option", { value: "unread", text: "\u5F85\u770B/\u5F85\u8BFB" });
+        musicStatusSelect.createEl("option", { value: "read", text: "\u5DF2\u770B/\u5DF2\u8BFB" });
         break;
       case "tv":
         this.createFormGroup(form, "\u5267\u8BC4", "description", true);
@@ -7427,7 +7604,13 @@ var QuickNoteView = class extends import_obsidian3.ItemView {
         this.createFormGroup(form, "\u5C01\u9762", "cover");
         this.createFormGroup(form, "URL", "url");
         this.createFormGroup(form, "\u6807\u7B7E", "tags");
-        this.createFormGroup(form, "\u5E74\u4EFD", "year", false, "text", "YYYY-MM-DD");
+        this.createFormGroup(form, "\u5E74\u4EFD", "year", false, "text", "YYYY");
+        this.createFormGroup(form, "\u6536\u5F55\u65F6\u95F4", "collection_date", false, "text", "YY-MM-DD", collectionDate);
+        const tvStatusGroup = form.createDiv({ cls: "form-group form-group-inline" });
+        tvStatusGroup.createEl("label", { text: "\u72B6\u6001" });
+        const tvStatusSelect = tvStatusGroup.createEl("select", { attr: { id: "status", name: "status" } });
+        tvStatusSelect.createEl("option", { value: "unread", text: "\u5F85\u770B/\u5F85\u8BFB" });
+        tvStatusSelect.createEl("option", { value: "read", text: "\u5DF2\u770B/\u5DF2\u8BFB" });
         break;
       case "anime":
         this.createFormGroup(form, "\u8BC4\u8BBA", "description", true);
@@ -7437,7 +7620,13 @@ var QuickNoteView = class extends import_obsidian3.ItemView {
         this.createFormGroup(form, "\u5C01\u9762", "cover");
         this.createFormGroup(form, "URL", "url");
         this.createFormGroup(form, "\u6807\u7B7E", "tags");
-        this.createFormGroup(form, "\u5E74\u4EFD", "year", false, "text", "YYYY-MM-DD");
+        this.createFormGroup(form, "\u5E74\u4EFD", "year", false, "text", "YYYY");
+        this.createFormGroup(form, "\u6536\u5F55\u65F6\u95F4", "collection_date", false, "text", "YY-MM-DD", collectionDate);
+        const animeStatusGroup = form.createDiv({ cls: "form-group form-group-inline" });
+        animeStatusGroup.createEl("label", { text: "\u72B6\u6001" });
+        const animeStatusSelect = animeStatusGroup.createEl("select", { attr: { id: "status", name: "status" } });
+        animeStatusSelect.createEl("option", { value: "unread", text: "\u5F85\u770B/\u5F85\u8BFB" });
+        animeStatusSelect.createEl("option", { value: "read", text: "\u5DF2\u770B/\u5DF2\u8BFB" });
         break;
     }
   }
@@ -7483,17 +7672,15 @@ var QuickNoteView = class extends import_obsidian3.ItemView {
   async saveNote() {
     const content = this.container.querySelector("#content, #description")?.value;
     if (!content) return;
-    let identifierLine = "";
-    const tags = this.container.querySelector("#tags")?.value || "#\u6807\u7B7E";
+    let cardContent = "";
     if (["idea", "quote"].includes(this.type)) {
       const dateValue = this.container.querySelector("#date")?.value || "";
-      identifierLine = `${dateValue.split(" ")[0]} ${tags}`;
-    } else {
-      const yearValue = this.container.querySelector("#year")?.value || (/* @__PURE__ */ new Date()).getFullYear().toString();
-      identifierLine = `${yearValue} ${tags}`;
+      const tags = this.container.querySelector("#tags")?.value || "#\u6807\u7B7E";
+      const identifierLine = `${dateValue.split(" ")[0]} ${tags}`;
+      cardContent = `${identifierLine}
+`;
     }
-    let cardContent = `${identifierLine}
-\`\`\`${this.type}-card
+    cardContent += `\`\`\`${this.type}-card
 `;
     switch (this.type) {
       case "idea":
@@ -7523,84 +7710,24 @@ var QuickNoteView = class extends import_obsidian3.ItemView {
 `;
         break;
       case "movie":
-        cardContent += `description: ${content}
-`;
-        cardContent += `title: ${this.container.querySelector("#title")?.value || ""}
-`;
-        cardContent += `director: ${this.container.querySelector("#director")?.value || ""}
-`;
-        cardContent += `rating: ${this.container.querySelector("#rating")?.value || ""}
-`;
-        cardContent += `cover: ${this.container.querySelector("#cover")?.value || ""}
-`;
-        cardContent += `url: ${this.container.querySelector("#url")?.value || ""}
-`;
-        cardContent += `tags: ${this.container.querySelector("#tags")?.value || ""}
-`;
-        cardContent += `year: ${this.container.querySelector("#year")?.value || ""}
-`;
-        break;
       case "book":
-        cardContent += `description: ${content}
-`;
-        cardContent += `title: ${this.container.querySelector("#title")?.value || ""}
-`;
-        cardContent += `author: ${this.container.querySelector("#author")?.value || ""}
-`;
-        cardContent += `rating: ${this.container.querySelector("#rating")?.value || ""}
-`;
-        cardContent += `cover: ${this.container.querySelector("#cover")?.value || ""}
-`;
-        cardContent += `url: ${this.container.querySelector("#url")?.value || ""}
-`;
-        cardContent += `tags: ${this.container.querySelector("#tags")?.value || ""}
-`;
-        cardContent += `year: ${this.container.querySelector("#year")?.value || ""}
-`;
-        break;
       case "music":
-        cardContent += `description: ${content}
-`;
-        cardContent += `title: ${this.container.querySelector("#title")?.value || ""}
-`;
-        cardContent += `artist: ${this.container.querySelector("#artist")?.value || ""}
-`;
-        cardContent += `rating: ${this.container.querySelector("#rating")?.value || ""}
-`;
-        cardContent += `cover: ${this.container.querySelector("#cover")?.value || ""}
-`;
-        cardContent += `url: ${this.container.querySelector("#url")?.value || ""}
-`;
-        cardContent += `tags: ${this.container.querySelector("#tags")?.value || ""}
-`;
-        cardContent += `year: ${this.container.querySelector("#year")?.value || ""}
-`;
-        break;
       case "tv":
-        cardContent += `description: ${content}
-`;
-        cardContent += `title: ${this.container.querySelector("#title")?.value || ""}
-`;
-        cardContent += `director: ${this.container.querySelector("#director")?.value || ""}
-`;
-        cardContent += `rating: ${this.container.querySelector("#rating")?.value || ""}
-`;
-        cardContent += `cover: ${this.container.querySelector("#cover")?.value || ""}
-`;
-        cardContent += `url: ${this.container.querySelector("#url")?.value || ""}
-`;
-        cardContent += `tags: ${this.container.querySelector("#tags")?.value || ""}
-`;
-        cardContent += `year: ${this.container.querySelector("#year")?.value || ""}
-`;
-        break;
       case "anime":
         cardContent += `description: ${content}
 `;
         cardContent += `title: ${this.container.querySelector("#title")?.value || ""}
 `;
-        cardContent += `director: ${this.container.querySelector("#director")?.value || ""}
+        if (this.type === "book") {
+          cardContent += `author: ${this.container.querySelector("#author")?.value || ""}
 `;
+        } else if (this.type === "music") {
+          cardContent += `artist: ${this.container.querySelector("#artist")?.value || ""}
+`;
+        } else {
+          cardContent += `director: ${this.container.querySelector("#director")?.value || ""}
+`;
+        }
         cardContent += `rating: ${this.container.querySelector("#rating")?.value || ""}
 `;
         cardContent += `cover: ${this.container.querySelector("#cover")?.value || ""}
@@ -7611,17 +7738,42 @@ var QuickNoteView = class extends import_obsidian3.ItemView {
 `;
         cardContent += `year: ${this.container.querySelector("#year")?.value || ""}
 `;
+        cardContent += `collection_date: ${this.container.querySelector("#collection_date")?.value || ""}
+`;
         break;
     }
     cardContent += "```";
-    const targetFileName = this.plugin.settings.cardStoragePaths[`${this.type}Card`];
-    let targetFile = this.app.vault.getAbstractFileByPath(targetFileName);
-    if (!targetFile) {
-      targetFile = await this.app.vault.create(targetFileName, "");
-    }
-    if (targetFile instanceof import_obsidian3.TFile) {
-      const currentContent = await this.app.vault.read(targetFile);
-      await this.app.vault.modify(targetFile, currentContent + "\n" + cardContent);
+    if (["movie", "book", "music", "tv", "anime"].includes(this.type)) {
+      const title = this.container.querySelector("#title")?.value;
+      if (!title) return;
+      const folderPath = this.plugin.settings.cardStoragePaths[`${this.type}Card`];
+      const fileName = `${title}.md`;
+      const fullPath = `${folderPath}/${fileName}`;
+      if (!await this.app.vault.adapter.exists(folderPath)) {
+        await this.app.vault.createFolder(folderPath);
+      }
+      let targetFile = this.app.vault.getAbstractFileByPath(fullPath);
+      const status = this.container.querySelector("#status")?.value || "unread";
+      const frontmatter = `---
+status: ${status}
+---
+
+`;
+      if (!targetFile) {
+        targetFile = await this.app.vault.create(fullPath, frontmatter + cardContent);
+      } else if (targetFile instanceof import_obsidian3.TFile) {
+        await this.app.vault.modify(targetFile, frontmatter + cardContent);
+      }
+    } else {
+      const targetFileName = this.plugin.settings.cardStoragePaths[`${this.type}Card`];
+      let targetFile = this.app.vault.getAbstractFileByPath(targetFileName);
+      if (!targetFile) {
+        targetFile = await this.app.vault.create(targetFileName, "");
+      }
+      if (targetFile instanceof import_obsidian3.TFile) {
+        const currentContent = await this.app.vault.read(targetFile);
+        await this.app.vault.modify(targetFile, currentContent + "\n" + cardContent);
+      }
     }
     const formInputs = this.container.querySelectorAll("input, textarea");
     formInputs.forEach((input) => {
@@ -7836,8 +7988,9 @@ var NewCardsPlugin = class extends import_obsidian4.Plugin {
       badge.createSpan({ text: rating });
     } else {
       ratingContainer.setAttribute("data-score", "good");
-      const simpleBadge = ratingContainer.createDiv({ cls: "simple-badge" });
-      simpleBadge.createSpan({ text: rating });
+      const badge = ratingContainer.createDiv({ cls: "simple-badge" });
+      badge.innerHTML = `<svg t="1747991540919" class="icon" viewBox="0 0 1024 1024" version="1.1" xmlns="http://www.w3.org/2000/svg" p-id="17372" width="200" height="200"><path d="M851.411627 578.194773c7.051947 0.16384 14.107307 0.331093 21.159253 0.494933 4.00384-88.285867 8.004267-57.56928 12.059307-147.032747-18.13504 0-29.51168 0-45.653333 0C843.209387 522.079573 847.312213 490.642773 851.411627 578.194773z" p-id="17373" fill="#707070"></path><path d="M961.73056 353.498453c-146.08384 0-762.402133 0-908.48256 0-1.099093 10.625707 9.611947 291.099307 10.082987 292.017493 5.393067 10.356053 10.881707 20.66432 16.35328 30.979413 4.79232-9.844053 12.2368-19.27168 13.820587-29.597013 3.19488-20.872533 15.506773-216.108373 16.489813-228.287147 12.765867-0.723627 782.226773-0.723627 794.996053 0 0.979627 12.178773 13.294933 207.414613 16.489813 228.287147 1.580373 10.325333 9.03168 19.75296 13.817173 29.597013 5.474987-10.315093 10.960213-20.62336 16.35328-30.979413C952.1152 644.59776 962.833067 364.12416 961.73056 353.498453z" p-id="17374" fill="#707070"></path><path d="M142.40768 578.686293c7.051947-0.16384 14.107307-0.331093 21.162667-0.494933 4.096-87.548587 8.198827-56.111787 12.434773-146.541227-16.141653 0-27.521707 0-45.653333 0C134.403413 521.117013 138.40384 490.400427 142.40768 578.686293z" p-id="17375" fill="#707070"></path><path d="M507.48416 340.933973c151.98208 0.02048 303.977813 0.139947 455.95648-0.457387 9.427627-0.034133 18.824533-6.662827 28.23168-10.222933-5.021013-10.123947-7.461547-24.87296-15.588693-29.39904-16.704853-9.28768-36.430507-18.302293-54.941013-18.367147-132.28032-0.498347-264.553813-0.72704-396.83072-0.785067l0-0.03072c-5.608107 0-11.2128 0.013653-16.831147 0.013653-5.608107 0-11.216213-0.013653-16.82432-0.013653l0 0.03072c-132.27008 0.058027-264.5504 0.28672-396.823893 0.785067-18.510507 0.064853-38.239573 9.079467-54.9376 18.367147-8.133973 4.529493-10.574507 19.275093-15.592107 29.39904 9.407147 3.560107 18.807467 10.185387 28.235093 10.222933C203.516587 341.07392 355.505493 340.954453 507.48416 340.933973z" p-id="17376" fill="#707070"></path></svg>`;
+      badge.createSpan({ text: rating });
     }
   }
   async onload() {
@@ -7878,7 +8031,7 @@ var NewCardsPlugin = class extends import_obsidian4.Plugin {
       this.app.workspace.on("file-open", async (file) => {
         if (!(file instanceof import_obsidian4.TFile)) return;
         if (file.extension !== "md" || file.path.endsWith(".canvas.md")) return;
-        const excludedNames = ["\u60F3\u6CD5", "\u6458\u5F55", "\u7535\u5F71", "\u97F3\u4E50", "\u4E66\u7C4D"];
+        const excludedNames = Object.values(this.settings.cardStoragePaths).map((path) => path.split("/").pop()?.replace(".md", ""));
         const baseName = file.basename;
         if (!excludedNames.includes(baseName)) {
           const content2 = await this.app.vault.read(file);
@@ -8513,12 +8666,16 @@ ${content2.trimStart()}`;
         `;
       } else if (ratingScore >= 5) {
         ratingContainer.setAttribute("data-score", "good");
-        const simpleBadge = ratingContainer.createDiv({ cls: "simple-badge" });
-        simpleBadge.createDiv({ text: data.rating });
+        const ratingBadge = ratingContainer.createDiv({ cls: "simple-badge" });
+        ratingBadge.createDiv({ cls: "simple-score", text: data.rating });
+        ratingBadge.innerHTML += `<svg t="1747995989766" class="icon" viewBox="0 0 1024 1024" version="1.1" xmlns="http://www.w3.org/2000/svg" p-id="1354" width="200" height="200"><path d="M0 870.4m32 0l960 0q32 0 32 32l0 0q0 32-32 32l-960 0q-32 0-32-32l0 0q0-32 32-32Z" p-id="1355" fill="#c0c0c0"></path><path d="M64 640m0 32l0 230.4q0 32-32 32l0 0q-32 0-32-32l0-230.4q0-32 32-32l0 0q32 0 32 32Z" p-id="1356" fill="#c0c0c0"></path><path d="M1024 640m0 32l0 230.4q0 32-32 32l0 0q-32 0-32-32l0-230.4q0-32 32-32l0 0q32 0 32 32Z" p-id="1357" fill="#c0c0c0"></path><path d="M358.4 960m32 0l230.4 0q32 0 32 32l0 0q0 32-32 32l-230.4 0q-32 0-32-32l0 0q0-32 32-32Z" p-id="1358" fill="#c0c0c0"></path></svg>`;
       } else {
         ratingContainer.setAttribute("data-score", "poor");
         ratingContainer.createDiv({ text: data.rating });
       }
+    }
+    if (data.collection_date) {
+      const collectionDateEl = infoContainer.createDiv({ cls: "collection-date", text: data.collection_date });
     }
     if (data.meta) {
       const metaContainer = infoContainer.createDiv({ cls: "meta-container" });
@@ -8607,8 +8764,9 @@ ${content2.trimStart()}`;
         `;
       } else if (ratingScore >= 5) {
         ratingContainer.setAttribute("data-score", "good");
-        const simpleBadge = ratingContainer.createDiv({ cls: "simple-badge" });
-        simpleBadge.createDiv({ text: data.rating });
+        const ratingBadge = ratingContainer.createDiv({ cls: "simple-badge" });
+        ratingBadge.createDiv({ cls: "simple-score", text: data.rating });
+        ratingBadge.innerHTML += `<svg t="1747995989766" class="icon" viewBox="0 0 1024 1024" version="1.1" xmlns="http://www.w3.org/2000/svg" p-id="1354" width="200" height="200"><path d="M0 870.4m32 0l960 0q32 0 32 32l0 0q0 32-32 32l-960 0q-32 0-32-32l0 0q0-32 32-32Z" p-id="1355" fill="#c0c0c0"></path><path d="M64 640m0 32l0 230.4q0 32-32 32l0 0q-32 0-32-32l0-230.4q0-32 32-32l0 0q32 0 32 32Z" p-id="1356" fill="#c0c0c0"></path><path d="M1024 640m0 32l0 230.4q0 32-32 32l0 0q-32 0-32-32l0-230.4q0-32 32-32l0 0q32 0 32 32Z" p-id="1357" fill="#c0c0c0"></path><path d="M358.4 960m32 0l230.4 0q32 0 32 32l0 0q0 32-32 32l-230.4 0q-32 0-32-32l0 0q0-32 32-32Z" p-id="1358" fill="#c0c0c0"></path></svg>`;
       } else {
         ratingContainer.setAttribute("data-score", "poor");
         ratingContainer.createDiv({ text: data.rating });
@@ -8624,14 +8782,19 @@ ${content2.trimStart()}`;
       });
     }
     infoContainer.createEl("p", { text: data.description, cls: "card-info-description" });
-    if (data.tags && data.tags.length > 0) {
+    if (data.tags && data.tags.length > 0 || data.collection_date) {
       const tagsContainer = infoContainer.createDiv({ cls: "card-tags-container" });
-      data.tags.forEach((tag) => {
-        tagsContainer.createEl("a", {
-          text: tag,
-          cls: "tag"
+      if (data.tags) {
+        data.tags.forEach((tag) => {
+          tagsContainer.createEl("a", {
+            text: tag,
+            cls: "tag"
+          });
         });
-      });
+      }
+      if (data.collection_date) {
+        const collectionDateEl = tagsContainer.createDiv({ cls: "collection-date", text: data.collection_date });
+      }
     }
   }
   renderMovieCard(data, el, cid) {
@@ -8705,8 +8868,9 @@ ${content2.trimStart()}`;
         `;
       } else if (ratingScore >= 5) {
         ratingContainer.setAttribute("data-score", "good");
-        const simpleBadge = ratingContainer.createDiv({ cls: "simple-badge" });
-        simpleBadge.createDiv({ text: data.rating });
+        const ratingBadge = ratingContainer.createDiv({ cls: "simple-badge" });
+        ratingBadge.createDiv({ cls: "simple-score", text: data.rating });
+        ratingBadge.innerHTML += `<svg t="1747995989766" class="icon" viewBox="0 0 1024 1024" version="1.1" xmlns="http://www.w3.org/2000/svg" p-id="1354" width="200" height="200"><path d="M0 870.4m32 0l960 0q32 0 32 32l0 0q0 32-32 32l-960 0q-32 0-32-32l0 0q0-32 32-32Z" p-id="1355" fill="#c0c0c0"></path><path d="M64 640m0 32l0 230.4q0 32-32 32l0 0q-32 0-32-32l0-230.4q0-32 32-32l0 0q32 0 32 32Z" p-id="1356" fill="#c0c0c0"></path><path d="M1024 640m0 32l0 230.4q0 32-32 32l0 0q-32 0-32-32l0-230.4q0-32 32-32l0 0q32 0 32 32Z" p-id="1357" fill="#c0c0c0"></path><path d="M358.4 960m32 0l230.4 0q32 0 32 32l0 0q0 32-32 32l-230.4 0q-32 0-32-32l0 0q0-32 32-32Z" p-id="1358" fill="#c0c0c0"></path></svg>`;
       } else {
         ratingContainer.setAttribute("data-score", "poor");
         ratingContainer.createDiv({ text: data.rating });
@@ -8722,14 +8886,19 @@ ${content2.trimStart()}`;
       });
     }
     infoContainer.createEl("p", { text: data.description, cls: "card-info-description" });
-    if (data.tags && data.tags.length > 0) {
+    if (data.tags && data.tags.length > 0 || data.collection_date) {
       const tagsContainer = infoContainer.createDiv({ cls: "card-tags-container" });
-      data.tags.forEach((tag) => {
-        tagsContainer.createEl("a", {
-          text: tag,
-          cls: "tag"
+      if (data.tags) {
+        data.tags.forEach((tag) => {
+          tagsContainer.createEl("a", {
+            text: tag,
+            cls: "tag"
+          });
         });
-      });
+      }
+      if (data.collection_date) {
+        const collectionDateEl = tagsContainer.createDiv({ cls: "collection-date", text: data.collection_date });
+      }
     }
   }
   renderAnimeCard(data, el, cid) {
@@ -8803,8 +8972,9 @@ ${content2.trimStart()}`;
         `;
       } else if (ratingScore >= 5) {
         ratingContainer.setAttribute("data-score", "good");
-        const simpleBadge = ratingContainer.createDiv({ cls: "simple-badge" });
-        simpleBadge.createDiv({ text: data.rating });
+        const ratingBadge = ratingContainer.createDiv({ cls: "simple-badge" });
+        ratingBadge.createDiv({ cls: "simple-score", text: data.rating });
+        ratingBadge.innerHTML += `<svg t="1747995989766" class="icon" viewBox="0 0 1024 1024" version="1.1" xmlns="http://www.w3.org/2000/svg" p-id="1354" width="200" height="200"><path d="M0 870.4m32 0l960 0q32 0 32 32l0 0q0 32-32 32l-960 0q-32 0-32-32l0 0q0-32 32-32Z" p-id="1355" fill="#c0c0c0"></path><path d="M64 640m0 32l0 230.4q0 32-32 32l0 0q-32 0-32-32l0-230.4q0-32 32-32l0 0q32 0 32 32Z" p-id="1356" fill="#c0c0c0"></path><path d="M1024 640m0 32l0 230.4q0 32-32 32l0 0q-32 0-32-32l0-230.4q0-32 32-32l0 0q32 0 32 32Z" p-id="1357" fill="#c0c0c0"></path><path d="M358.4 960m32 0l230.4 0q32 0 32 32l0 0q0 32-32 32l-230.4 0q-32 0-32-32l0 0q0-32 32-32Z" p-id="1358" fill="#c0c0c0"></path></svg>`;
       } else {
         ratingContainer.setAttribute("data-score", "poor");
         ratingContainer.createDiv({ text: data.rating });
@@ -8820,14 +8990,19 @@ ${content2.trimStart()}`;
       });
     }
     infoContainer.createEl("p", { text: data.description, cls: "card-info-description" });
-    if (data.tags && data.tags.length > 0) {
+    if (data.tags && data.tags.length > 0 || data.collection_date) {
       const tagsContainer = infoContainer.createDiv({ cls: "card-tags-container" });
-      data.tags.forEach((tag) => {
-        tagsContainer.createEl("a", {
-          text: tag,
-          cls: "tag"
+      if (data.tags) {
+        data.tags.forEach((tag) => {
+          tagsContainer.createEl("a", {
+            text: tag,
+            cls: "tag"
+          });
         });
-      });
+      }
+      if (data.collection_date) {
+        const collectionDateEl = tagsContainer.createDiv({ cls: "collection-date", text: data.collection_date });
+      }
     }
   }
   renderTvCard(data, el, cid) {
@@ -8901,8 +9076,9 @@ ${content2.trimStart()}`;
         `;
       } else if (ratingScore >= 5) {
         ratingContainer.setAttribute("data-score", "good");
-        const simpleBadge = ratingContainer.createDiv({ cls: "simple-badge" });
-        simpleBadge.createDiv({ text: data.rating });
+        const ratingBadge = ratingContainer.createDiv({ cls: "simple-badge" });
+        ratingBadge.createDiv({ cls: "simple-score", text: data.rating });
+        ratingBadge.innerHTML += `<svg t="1747995989766" class="icon" viewBox="0 0 1024 1024" version="1.1" xmlns="http://www.w3.org/2000/svg" p-id="1354" width="200" height="200"><path d="M0 870.4m32 0l960 0q32 0 32 32l0 0q0 32-32 32l-960 0q-32 0-32-32l0 0q0-32 32-32Z" p-id="1355" fill="#c0c0c0"></path><path d="M64 640m0 32l0 230.4q0 32-32 32l0 0q-32 0-32-32l0-230.4q0-32 32-32l0 0q32 0 32 32Z" p-id="1356" fill="#c0c0c0"></path><path d="M1024 640m0 32l0 230.4q0 32-32 32l0 0q-32 0-32-32l0-230.4q0-32 32-32l0 0q32 0 32 32Z" p-id="1357" fill="#c0c0c0"></path><path d="M358.4 960m32 0l230.4 0q32 0 32 32l0 0q0 32-32 32l-230.4 0q-32 0-32-32l0 0q0-32 32-32Z" p-id="1358" fill="#c0c0c0"></path></svg>`;
       } else {
         ratingContainer.setAttribute("data-score", "poor");
         ratingContainer.createDiv({ text: data.rating });
@@ -8918,14 +9094,19 @@ ${content2.trimStart()}`;
       });
     }
     infoContainer.createEl("p", { text: data.description, cls: "card-info-description" });
-    if (data.tags && data.tags.length > 0) {
+    if (data.tags && data.tags.length > 0 || data.collection_date) {
       const tagsContainer = infoContainer.createDiv({ cls: "card-tags-container" });
-      data.tags.forEach((tag) => {
-        tagsContainer.createEl("a", {
-          text: tag,
-          cls: "tag"
+      if (data.tags) {
+        data.tags.forEach((tag) => {
+          tagsContainer.createEl("a", {
+            text: tag,
+            cls: "tag"
+          });
         });
-      });
+      }
+      if (data.collection_date) {
+        const collectionDateEl = tagsContainer.createDiv({ cls: "collection-date", text: data.collection_date });
+      }
     }
   }
   extractCardsFromContent(content) {

@@ -31,14 +31,27 @@ interface BookCardData extends CardData {
 
 interface MovieCardData extends CardData {
   director: string;
+  collection_date?: string;
 }
 
 interface TvCardData extends CardData {
   director: string;
+  collection_date?: string;
 }
 
 interface AnimeCardData extends CardData {
   director: string;
+  collection_date?: string;
+}
+
+interface BookCardData extends CardData {
+  author: string;
+  collection_date?: string;
+}
+
+interface MusicCardData extends CardData {
+  artist: string;
+  collection_date?: string;
 }
 
 interface IdeaCardData extends CardData {
@@ -456,8 +469,9 @@ export default class NewCardsPlugin extends Plugin {
       badge.createSpan({ text: rating });
     } else {
       ratingContainer.setAttribute('data-score', 'good');
-      const simpleBadge = ratingContainer.createDiv({ cls: 'simple-badge' });
-      simpleBadge.createSpan({ text: rating });
+      const badge = ratingContainer.createDiv({ cls: 'simple-badge' });
+      badge.innerHTML = `<svg t="1747991540919" class="icon" viewBox="0 0 1024 1024" version="1.1" xmlns="http://www.w3.org/2000/svg" p-id="17372" width="200" height="200"><path d="M851.411627 578.194773c7.051947 0.16384 14.107307 0.331093 21.159253 0.494933 4.00384-88.285867 8.004267-57.56928 12.059307-147.032747-18.13504 0-29.51168 0-45.653333 0C843.209387 522.079573 847.312213 490.642773 851.411627 578.194773z" p-id="17373" fill="#707070"></path><path d="M961.73056 353.498453c-146.08384 0-762.402133 0-908.48256 0-1.099093 10.625707 9.611947 291.099307 10.082987 292.017493 5.393067 10.356053 10.881707 20.66432 16.35328 30.979413 4.79232-9.844053 12.2368-19.27168 13.820587-29.597013 3.19488-20.872533 15.506773-216.108373 16.489813-228.287147 12.765867-0.723627 782.226773-0.723627 794.996053 0 0.979627 12.178773 13.294933 207.414613 16.489813 228.287147 1.580373 10.325333 9.03168 19.75296 13.817173 29.597013 5.474987-10.315093 10.960213-20.62336 16.35328-30.979413C952.1152 644.59776 962.833067 364.12416 961.73056 353.498453z" p-id="17374" fill="#707070"></path><path d="M142.40768 578.686293c7.051947-0.16384 14.107307-0.331093 21.162667-0.494933 4.096-87.548587 8.198827-56.111787 12.434773-146.541227-16.141653 0-27.521707 0-45.653333 0C134.403413 521.117013 138.40384 490.400427 142.40768 578.686293z" p-id="17375" fill="#707070"></path><path d="M507.48416 340.933973c151.98208 0.02048 303.977813 0.139947 455.95648-0.457387 9.427627-0.034133 18.824533-6.662827 28.23168-10.222933-5.021013-10.123947-7.461547-24.87296-15.588693-29.39904-16.704853-9.28768-36.430507-18.302293-54.941013-18.367147-132.28032-0.498347-264.553813-0.72704-396.83072-0.785067l0-0.03072c-5.608107 0-11.2128 0.013653-16.831147 0.013653-5.608107 0-11.216213-0.013653-16.82432-0.013653l0 0.03072c-132.27008 0.058027-264.5504 0.28672-396.823893 0.785067-18.510507 0.064853-38.239573 9.079467-54.9376 18.367147-8.133973 4.529493-10.574507 19.275093-15.592107 29.39904 9.407147 3.560107 18.807467 10.185387 28.235093 10.222933C203.516587 341.07392 355.505493 340.954453 507.48416 340.933973z" p-id="17376" fill="#707070"></path></svg>`;
+      badge.createSpan({ text: rating });
     }
   }
 
@@ -522,8 +536,7 @@ export default class NewCardsPlugin extends Plugin {
 
         // 检查是否为普通的Markdown笔记
         if (file.extension !== 'md' || file.path.endsWith('.canvas.md')) return;
-    
-        const excludedNames = ['想法', '摘录', '电影', '音乐', '书籍'];
+        const excludedNames = Object.values(this.settings.cardStoragePaths).map(path => path.split('/').pop()?.replace('.md', ''));
         const baseName = file.basename;
         if (!excludedNames.includes(baseName)) {
           const content = await this.app.vault.read(file);
@@ -1339,14 +1352,21 @@ export default class NewCardsPlugin extends Plugin {
          <svg t="1743841440004" class="icon" viewBox="0 0 1332 1024" version="1.1" xmlns="http://www.w3.org/2000/svg" p-id="5351" width="200" height="200"><path d="M754.999373 984.409613s-40.018391-7.918077-58.42257-18.618181c-18.618182-10.700104-120.483177-56.28255-189.39185-12.840126 0 0-28.462278 24.182236-57.35256 27.178266 0 0 36.808359 13.482132 74.900731 2.782027 0 0 32.528318-9.20209 50.932498-22.47022 0 0 40.660397-17.976176 78.538767 0.214002 37.87837 18.190178 33.170324 23.326228 64.842633 28.248276 31.672309 5.13605 35.952351-4.494044 35.952351-4.494044zM509.324974 912.076907s-16.692163-47.722466-74.472727-62.060606c0 0 9.20209 41.730408 56.068547 57.780564 0 0-93.732915 1.498015-130.11327 54.784535-0.214002 0 75.75674 29.960293 148.51745-50.504493z" fill="#B68A11" p-id="5352"></path><path d="M413.66604 896.454754s-3.638036-50.504493-55.640544-79.608777c0 0-2.140021 42.800418 38.734379 70.406688 0 0-90.950888-23.326228-139.957367 18.618181 0.214002 0 65.484639 49.006479 156.863532-9.416092z" fill="#B68A11" p-id="5353"></path><path d="M312.229049 767.411494s27.820272 47.294462-2.782027 98.440962c0 0-93.304911 28.67628-153.011494-39.590387 0 0 75.114734-24.824242 148.089446 35.096343 0.214002 0-22.042215-53.928527 7.704075-93.946918z" fill="#B68A11" p-id="5354"></path><path d="M252.308464 796.301776s-16.692163-53.28652 11.770115-84.102821c0 0 26.964263 48.792476-9.630094 91.16489 0 0-101.436991 19.902194-139.957367-49.862487 0 0.428004 61.632602-19.902194 137.817346 42.800418z" fill="#B68A11" p-id="5355"></path><path d="M202.873981 729.961129s-9.844096-47.936468 19.046186-78.966772c0 0 23.754232 43.656426-15.194148 87.954859 0 0-106.787043-2.354023-128.401254-60.990595-0.214002 0.214002 81.748798-3.852038 124.549216 52.002508z" fill="#B68A11" p-id="5356"></path><path d="M189.177847 585.081714s13.482132 52.644514-24.182236 81.106792c0 0-87.740857 2.354023-115.77513-67.410659 0 0 75.114734 2.140021 112.993103 60.990596 0 0-2.140021-51.360502 26.964263-74.686729z" fill="#B68A11" p-id="5357"></path><path d="M161.143574 519.811076s12.412121 43.442424-26.536259 73.616719c0 0-84.316823-4.494044-105.931035-70.406687 0 0 66.340648 2.782027 101.650993 64.842633 0-0.214002-2.782027-38.94838 30.816301-68.052665z" fill="#B68A11" p-id="5358"></path><path d="M151.085475 456.466458s6.206061 35.096343-33.81233 69.336677c0 0-82.176803-22.470219-92.876907-78.324765 0 0 70.192685 14.980146 91.806897 73.616719 0.214002-0.214002-2.568025-36.808359 34.88234-64.628631z" fill="#B68A11" p-id="5359"></path><path d="M147.875444 398.899896s2.354023 39.162382-40.232393 57.780564c0 0-79.394775-35.952351-76.184744-85.600836 0 0 48.15047 4.494044 76.184744 80.464786 0.214002 0 9.20209-38.306374 40.232393-52.644514z" fill="#B68A11" p-id="5360"></path><path d="M154.723511 340.049321s-6.206061 35.310345-46.010449 50.932497c0 0-66.982654-43.442424-61.632602-91.806896 0 0 54.142529 24.824242 61.846604 85.814838 0 0 7.918077-24.396238 45.796447-44.940439zM166.493626 281.198746s-4.06604 33.384326-46.224451 44.512435c0 0-55.854545-25.680251-52.644515-91.592895 0 0 48.578474 24.61024 53.286521 86.242843-0.214002 0 16.906165-37.236364 45.582445-39.162383zM185.753814 225.986207s-26.750261 2.354023-47.722466 33.170324c0 0-4.06604-65.270637-44.726437-85.386834 0 0-14.552142 49.006479 43.01442 92.876907 0.214002 0 36.594357-6.848067 49.434483-40.660397z" fill="#B68A11" p-id="5361"></path><path d="M205.442006 176.551724S189.605852 208.438036 157.71954 209.722048c0 0-47.722466-41.730408-35.310345-89.880878 0 0 36.166353 26.322257 36.594358 83.032811 0.214002 0 15.622153-24.61024 46.438453-26.322257zM230.052247 128.615256s-9.20209 28.67628-50.076489 29.532288c0 0-38.520376-47.08046-20.972205-89.880877 0 0 29.104284 23.54023 24.182236 81.9628 0-0.214002 20.330199-22.898224 46.866458-21.614211zM258.514525 85.814838s-14.980146 26.536259-47.936469 23.326228c0 0-37.664368-49.006479-15.194148-86.670847 0 0 27.392268 26.536259 17.334169 80.464786 0 0 19.688192-19.47419 45.796448-17.120167z" fill="#B68A11" p-id="5362"></path><path d="M279.914734 53.500522s-13.910136 25.894253-49.648485 21.186207c0 0-5.564054-39.804389 19.47419-52.21651 0 0 7.276071 20.544201-7.490073 41.302404-0.214002 0 11.984117-12.412121 37.664368-10.272101z" fill="#B68A11" p-id="5363"></path><path d="M291.256844 24.824242s-3.424033 24.182236-29.318286 22.042216c0 0 1.498015-20.116196 29.318286-22.042216z" fill="#B68A11" p-id="5364"></path><path d="M556.405434 984.409613s40.018391-7.918077 58.42257-18.618181 120.483177-56.28255 189.39185-12.840126c0 0 28.462278 24.182236 57.35256 27.178266 0 0-36.808359 13.482132-74.900732 2.782027 0 0-32.528318-9.20209-50.932497-22.47022 0 0-40.660397-17.976176-78.538767 0.214002-37.87837 18.190178-33.170324 23.326228-64.842633 28.248276C560.685475 994.039707 556.405434 984.409613 556.405434 984.409613zM802.079833 912.076907s16.692163-47.722466 74.472727-62.060606c0 0-9.20209 41.730408-56.068547 57.780564 0 0 93.732915 1.498015 130.11327 54.784535 0.214002 0-75.75674 29.960293-148.51745-50.504493z" fill="#B68A11" p-id="5365"></path><path d="M897.738767 896.454754s3.638036-50.504493 55.640543-79.608777c0 0 2.140021 42.800418-38.734378 70.406688 0 0 90.950888-23.326228 139.957367 18.618181-0.214002 0-65.484639 49.006479-156.863532-9.416092z" fill="#B68A11" p-id="5366"></path><path d="M999.175758 767.411494s-27.820272 47.294462 2.782027 98.440962c0 0 93.304911 28.67628 153.011494-39.590387 0 0-75.114734-24.824242-148.303448 35.096343 0 0 22.256217-53.928527-7.490073-93.946918z" fill="#B68A11" p-id="5367"></path><path d="M1059.096343 796.301776s16.692163-53.28652-11.770115-84.102821c0 0-26.964263 48.792476 9.630094 91.16489 0 0 101.436991 19.902194 139.957367-49.862487 0 0.428004-61.632602-19.902194-137.817346 42.800418z" fill="#B68A11" p-id="5368"></path><path d="M1108.530825 729.961129s9.844096-47.936468-19.046186-78.966772c0 0-23.754232 43.656426 15.194149 87.954859 0 0 106.787043-2.354023 128.401254-60.990595 0.214002 0.214002-81.748798-3.852038-124.549217 52.002508z" fill="#B68A11" p-id="5369"></path><path d="M1122.226959 585.081714s-13.482132 52.644514 24.182236 81.106792c0 0 87.740857 2.354023 115.775131-67.410659 0 0-75.114734 2.140021-112.993103 60.990596 0 0 2.140021-51.360502-26.964264-74.686729z" fill="#B68A11" p-id="5370"></path><path d="M1150.261233 519.811076s-12.412121 43.442424 26.536259 73.616719c0 0 84.316823-4.494044 105.931035-70.406687 0 0-66.340648 2.782027-101.650993 64.842633 0-0.214002 2.568025-38.94838-30.816301-68.052665z" fill="#B68A11" p-id="5371"></path><path d="M1160.105329 456.466458s-6.206061 35.096343 33.81233 69.336677c0 0 82.176803-22.470219 92.876907-78.324765 0 0-70.192685 14.980146-91.806896 73.616719 0-0.214002 2.568025-36.808359-34.882341-64.628631z" fill="#B68A11" p-id="5372"></path><path d="M1163.315361 398.899896s-2.354023 39.162382 40.232392 57.780564c0 0 79.394775-35.952351 76.184744-85.600836 0 0-48.15047 4.494044-76.184744 80.464786 0 0-9.20209-38.306374-40.232392-52.644514z" fill="#B68A11" p-id="5373"></path><path d="M1156.681296 340.049321s6.206061 35.310345 46.010449 50.932497c0 0 66.982654-43.442424 61.632602-91.806896 0 0-54.142529 24.824242-61.846604 85.814838 0 0-8.132079-24.396238-45.796447-44.940439zM1144.911181 281.198746s4.06604 33.384326 46.224451 44.512435c0 0 55.854545-25.680251 52.644514-91.592895 0 0-48.578474 24.61024-53.28652 86.242843 0.214002 0-16.906165-37.236364-45.582445-39.162383zM1125.650993 225.986207s26.750261 2.354023 47.722466 33.170324c0 0 4.06604-65.270637 44.726437-85.386834 0 0 14.552142 49.006479-43.014421 92.876907-0.214002 0-36.594357-6.848067-49.434482-40.660397z" fill="#B68A11" p-id="5374"></path><path d="M1105.9628 176.551724s15.836155 31.886311 47.722466 33.170324c0 0 47.722466-41.730408 35.310345-89.880878 0 0-36.166353 26.322257-36.594357 83.032811-0.214002 0-15.836155-24.61024-46.438454-26.322257zM1081.35256 128.615256s9.20209 28.67628 50.076489 29.532288c0 0 38.520376-47.08046 20.972205-89.880877 0 0-29.104284 23.54023-24.182236 81.9628-0.214002-0.214002-20.544201-22.898224-46.866458-21.614211zM1052.890282 85.814838s14.980146 26.536259 47.936468 23.326228c0 0 37.664368-49.006479 15.194149-86.670847 0 0-27.392268 26.536259-17.33417 80.464786 0 0-19.902194-19.47419-45.796447-17.120167z" fill="#B68A11" p-id="5375"></path><path d="M1031.490073 53.500522s13.910136 25.894253 49.862487 21.186207c0 0 5.564054-39.804389-19.47419-52.21651 0 0-7.276071 20.544201 7.490073 41.302404-0.214002 0-12.198119-12.412121-37.87837-10.272101z" fill="#B68A11" p-id="5376"></path><path d="M1019.93396 24.824242s3.424033 24.182236 29.532289 22.042216c0 0-1.712017-20.116196-29.532289-22.042216z" fill="#B68A11" p-id="5377"></path></svg>
         `;
       } else if (ratingScore >= 5.0) {
-        ratingContainer.setAttribute('data-score', 'good');
-        const simpleBadge = ratingContainer.createDiv({ cls: 'simple-badge' });
-        simpleBadge.createDiv({text: data.rating });
+      ratingContainer.setAttribute('data-score', 'good');
+      const ratingBadge = ratingContainer.createDiv({ cls: 'simple-badge' });
+      ratingBadge.createDiv({ cls: 'simple-score', text: data.rating });
+      ratingBadge.innerHTML += `<svg t="1747995989766" class="icon" viewBox="0 0 1024 1024" version="1.1" xmlns="http://www.w3.org/2000/svg" p-id="1354" width="200" height="200"><path d="M0 870.4m32 0l960 0q32 0 32 32l0 0q0 32-32 32l-960 0q-32 0-32-32l0 0q0-32 32-32Z" p-id="1355" fill="#c0c0c0"></path><path d="M64 640m0 32l0 230.4q0 32-32 32l0 0q-32 0-32-32l0-230.4q0-32 32-32l0 0q32 0 32 32Z" p-id="1356" fill="#c0c0c0"></path><path d="M1024 640m0 32l0 230.4q0 32-32 32l0 0q-32 0-32-32l0-230.4q0-32 32-32l0 0q32 0 32 32Z" p-id="1357" fill="#c0c0c0"></path><path d="M358.4 960m32 0l230.4 0q32 0 32 32l0 0q0 32-32 32l-230.4 0q-32 0-32-32l0 0q0-32 32-32Z" p-id="1358" fill="#c0c0c0"></path></svg>`;
+     
         
       } else {
         ratingContainer.setAttribute('data-score', 'poor');
         ratingContainer.createDiv({ text: data.rating });
       }
+    }
+
+    // 添加收录时间
+    if (data.collection_date) {
+      const collectionDateEl = infoContainer.createDiv({ cls: 'collection-date', text: data.collection_date });
     }
 
     // 添加meta数据
@@ -1457,8 +1477,11 @@ export default class NewCardsPlugin extends Plugin {
         `;
       } else if (ratingScore >= 5.0) {
         ratingContainer.setAttribute('data-score', 'good');
-        const simpleBadge = ratingContainer.createDiv({ cls: 'simple-badge' });
-        simpleBadge.createDiv({ text: data.rating });
+        const ratingBadge = ratingContainer.createDiv({ cls: 'simple-badge' });
+        ratingBadge.createDiv({ cls: 'simple-score', text: data.rating });
+        ratingBadge.innerHTML += `<svg t="1747995989766" class="icon" viewBox="0 0 1024 1024" version="1.1" xmlns="http://www.w3.org/2000/svg" p-id="1354" width="200" height="200"><path d="M0 870.4m32 0l960 0q32 0 32 32l0 0q0 32-32 32l-960 0q-32 0-32-32l0 0q0-32 32-32Z" p-id="1355" fill="#c0c0c0"></path><path d="M64 640m0 32l0 230.4q0 32-32 32l0 0q-32 0-32-32l0-230.4q0-32 32-32l0 0q32 0 32 32Z" p-id="1356" fill="#c0c0c0"></path><path d="M1024 640m0 32l0 230.4q0 32-32 32l0 0q-32 0-32-32l0-230.4q0-32 32-32l0 0q32 0 32 32Z" p-id="1357" fill="#c0c0c0"></path><path d="M358.4 960m32 0l230.4 0q32 0 32 32l0 0q0 32-32 32l-230.4 0q-32 0-32-32l0 0q0-32 32-32Z" p-id="1358" fill="#c0c0c0"></path></svg>`;
+     
+        
       } else {
         ratingContainer.setAttribute('data-score', 'poor');
         ratingContainer.createDiv({ text: data.rating });
@@ -1478,15 +1501,20 @@ export default class NewCardsPlugin extends Plugin {
 
     infoContainer.createEl('p', { text: data.description, cls: 'card-info-description' });
 
-    // 添加标签
-    if (data.tags && data.tags.length > 0) {
+    // 添加标签和收录时间
+    if ((data.tags && data.tags.length > 0) || data.collection_date) {
       const tagsContainer = infoContainer.createDiv({ cls: 'card-tags-container' });
-      data.tags.forEach(tag => {
-        tagsContainer.createEl('a', {
-          text: tag,
-          cls: 'tag'
+      if (data.tags) {
+        data.tags.forEach(tag => {
+          tagsContainer.createEl('a', {
+            text: tag,
+            cls: 'tag'
+          });
         });
-      });
+      }
+      if (data.collection_date) {
+        const collectionDateEl = tagsContainer.createDiv({ cls: 'collection-date', text: data.collection_date });
+      }
     }
   }
 
@@ -1577,8 +1605,11 @@ export default class NewCardsPlugin extends Plugin {
         `;
       } else if (ratingScore >= 5.0) {
         ratingContainer.setAttribute('data-score', 'good');
-        const simpleBadge = ratingContainer.createDiv({ cls: 'simple-badge' });
-        simpleBadge.createDiv({ text: data.rating });
+        const ratingBadge = ratingContainer.createDiv({ cls: 'simple-badge' });
+        ratingBadge.createDiv({ cls: 'simple-score', text: data.rating });
+        ratingBadge.innerHTML += `<svg t="1747995989766" class="icon" viewBox="0 0 1024 1024" version="1.1" xmlns="http://www.w3.org/2000/svg" p-id="1354" width="200" height="200"><path d="M0 870.4m32 0l960 0q32 0 32 32l0 0q0 32-32 32l-960 0q-32 0-32-32l0 0q0-32 32-32Z" p-id="1355" fill="#c0c0c0"></path><path d="M64 640m0 32l0 230.4q0 32-32 32l0 0q-32 0-32-32l0-230.4q0-32 32-32l0 0q32 0 32 32Z" p-id="1356" fill="#c0c0c0"></path><path d="M1024 640m0 32l0 230.4q0 32-32 32l0 0q-32 0-32-32l0-230.4q0-32 32-32l0 0q32 0 32 32Z" p-id="1357" fill="#c0c0c0"></path><path d="M358.4 960m32 0l230.4 0q32 0 32 32l0 0q0 32-32 32l-230.4 0q-32 0-32-32l0 0q0-32 32-32Z" p-id="1358" fill="#c0c0c0"></path></svg>`;
+     
+        
       } else {
         ratingContainer.setAttribute('data-score', 'poor');
         ratingContainer.createDiv({ text: data.rating });
@@ -1598,15 +1629,20 @@ export default class NewCardsPlugin extends Plugin {
 
     infoContainer.createEl('p', { text: data.description, cls: 'card-info-description' });
 
-    // 添加标签
-    if (data.tags && data.tags.length > 0) {
+    // 添加标签和收录时间
+    if ((data.tags && data.tags.length > 0) || data.collection_date) {
       const tagsContainer = infoContainer.createDiv({ cls: 'card-tags-container' });
-      data.tags.forEach(tag => {
-        tagsContainer.createEl('a', {
-          text: tag,
-          cls: 'tag'
+      if (data.tags) {
+        data.tags.forEach(tag => {
+          tagsContainer.createEl('a', {
+            text: tag,
+            cls: 'tag'
+          });
         });
-      });
+      }
+      if (data.collection_date) {
+        const collectionDateEl = tagsContainer.createDiv({ cls: 'collection-date', text: data.collection_date });
+      }
     }
   }
 
@@ -1697,8 +1733,11 @@ export default class NewCardsPlugin extends Plugin {
         `;
       } else if (ratingScore >= 5.0) {
         ratingContainer.setAttribute('data-score', 'good');
-        const simpleBadge = ratingContainer.createDiv({ cls: 'simple-badge' });
-        simpleBadge.createDiv({ text: data.rating });
+        const ratingBadge = ratingContainer.createDiv({ cls: 'simple-badge' });
+        ratingBadge.createDiv({ cls: 'simple-score', text: data.rating });
+        ratingBadge.innerHTML += `<svg t="1747995989766" class="icon" viewBox="0 0 1024 1024" version="1.1" xmlns="http://www.w3.org/2000/svg" p-id="1354" width="200" height="200"><path d="M0 870.4m32 0l960 0q32 0 32 32l0 0q0 32-32 32l-960 0q-32 0-32-32l0 0q0-32 32-32Z" p-id="1355" fill="#c0c0c0"></path><path d="M64 640m0 32l0 230.4q0 32-32 32l0 0q-32 0-32-32l0-230.4q0-32 32-32l0 0q32 0 32 32Z" p-id="1356" fill="#c0c0c0"></path><path d="M1024 640m0 32l0 230.4q0 32-32 32l0 0q-32 0-32-32l0-230.4q0-32 32-32l0 0q32 0 32 32Z" p-id="1357" fill="#c0c0c0"></path><path d="M358.4 960m32 0l230.4 0q32 0 32 32l0 0q0 32-32 32l-230.4 0q-32 0-32-32l0 0q0-32 32-32Z" p-id="1358" fill="#c0c0c0"></path></svg>`;
+     
+        
       } else {
         ratingContainer.setAttribute('data-score', 'poor');
         ratingContainer.createDiv({ text: data.rating });
@@ -1718,15 +1757,20 @@ export default class NewCardsPlugin extends Plugin {
 
     infoContainer.createEl('p', { text: data.description, cls: 'card-info-description' });
 
-    // 添加标签
-    if (data.tags && data.tags.length > 0) {
+    // 添加标签和收录时间
+    if ((data.tags && data.tags.length > 0) || data.collection_date) {
       const tagsContainer = infoContainer.createDiv({ cls: 'card-tags-container' });
-      data.tags.forEach(tag => {
-        tagsContainer.createEl('a', {
-          text: tag,
-          cls: 'tag'
+      if (data.tags) {
+        data.tags.forEach(tag => {
+          tagsContainer.createEl('a', {
+            text: tag,
+            cls: 'tag'
+          });
         });
-      });
+      }
+      if (data.collection_date) {
+        const collectionDateEl = tagsContainer.createDiv({ cls: 'collection-date', text: data.collection_date });
+      }
     }
   }
 
@@ -1817,8 +1861,11 @@ export default class NewCardsPlugin extends Plugin {
         `;
       } else if (ratingScore >= 5.0) {
         ratingContainer.setAttribute('data-score', 'good');
-        const simpleBadge = ratingContainer.createDiv({ cls: 'simple-badge' });
-        simpleBadge.createDiv({ text: data.rating });
+        const ratingBadge = ratingContainer.createDiv({ cls: 'simple-badge' });
+        ratingBadge.createDiv({ cls: 'simple-score', text: data.rating });
+        ratingBadge.innerHTML += `<svg t="1747995989766" class="icon" viewBox="0 0 1024 1024" version="1.1" xmlns="http://www.w3.org/2000/svg" p-id="1354" width="200" height="200"><path d="M0 870.4m32 0l960 0q32 0 32 32l0 0q0 32-32 32l-960 0q-32 0-32-32l0 0q0-32 32-32Z" p-id="1355" fill="#c0c0c0"></path><path d="M64 640m0 32l0 230.4q0 32-32 32l0 0q-32 0-32-32l0-230.4q0-32 32-32l0 0q32 0 32 32Z" p-id="1356" fill="#c0c0c0"></path><path d="M1024 640m0 32l0 230.4q0 32-32 32l0 0q-32 0-32-32l0-230.4q0-32 32-32l0 0q32 0 32 32Z" p-id="1357" fill="#c0c0c0"></path><path d="M358.4 960m32 0l230.4 0q32 0 32 32l0 0q0 32-32 32l-230.4 0q-32 0-32-32l0 0q0-32 32-32Z" p-id="1358" fill="#c0c0c0"></path></svg>`;
+     
+        
       } else {
         ratingContainer.setAttribute('data-score', 'poor');
         ratingContainer.createDiv({ text: data.rating });
@@ -1838,15 +1885,20 @@ export default class NewCardsPlugin extends Plugin {
 
     infoContainer.createEl('p', { text: data.description, cls: 'card-info-description' });
 
-    // 添加标签
-    if (data.tags && data.tags.length > 0) {
+    // 添加标签和收录时间
+    if ((data.tags && data.tags.length > 0) || data.collection_date) {
       const tagsContainer = infoContainer.createDiv({ cls: 'card-tags-container' });
-      data.tags.forEach(tag => {
-        tagsContainer.createEl('a', {
-          text: tag,
-          cls: 'tag'
+      if (data.tags) {
+        data.tags.forEach(tag => {
+          tagsContainer.createEl('a', {
+            text: tag,
+            cls: 'tag'
+          });
         });
-      });
+      }
+      if (data.collection_date) {
+        const collectionDateEl = tagsContainer.createDiv({ cls: 'collection-date', text: data.collection_date });
+      }
     }
   }
 

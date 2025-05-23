@@ -101,6 +101,7 @@ export class QuickNoteView extends ItemView {
         const seconds = now.getSeconds().toString().padStart(2, '0');
         const currentDateTime = `${year}-${month}-${day} ${hours}:${minutes}:${seconds}`;
         const currentDate = `${year}-${month}-${day}`;
+        const collectionDate = `${year.toString().slice(-2)}-${month}-${day}`;
 
         switch (type) {
             case 'idea':
@@ -125,8 +126,14 @@ export class QuickNoteView extends ItemView {
                 this.createFormGroup(form, '封面', 'cover');
                 this.createFormGroup(form, 'URL', 'url');
                 this.createFormGroup(form, '标签', 'tags');
-                // For movie, book, music, keep using only date as default if needed, or adjust as required.
-                this.createFormGroup(form, '年份', 'year', false, 'text', 'YYYY-MM-DD');
+                this.createFormGroup(form, '年份', 'year', false, 'text', 'YYYY');
+                this.createFormGroup(form, '收录时间', 'collection_date', false, 'text', 'YY-MM-DD', collectionDate);
+                // 添加观看/阅读状态选择
+                const movieStatusGroup = form.createDiv({ cls: 'form-group form-group-inline' });
+                movieStatusGroup.createEl('label', { text: '状态' });
+                const movieStatusSelect = movieStatusGroup.createEl('select', { attr: { id: 'status', name: 'status' } });    
+                movieStatusSelect.createEl('option', { value: 'unread', text: '待看/待读' });
+                movieStatusSelect.createEl('option', { value: 'read', text: '已看/已读' });
                 break;
             case 'book':
                 this.createFormGroup(form, '书评', 'description', true);
@@ -136,7 +143,14 @@ export class QuickNoteView extends ItemView {
                 this.createFormGroup(form, '封面', 'cover');
                 this.createFormGroup(form, 'URL', 'url');
                 this.createFormGroup(form, '标签', 'tags');
-                this.createFormGroup(form, '年份', 'year', false, 'text', 'YYYY-MM-DD');
+                this.createFormGroup(form, '年份', 'year', false, 'text', 'YYYY');
+                this.createFormGroup(form, '收录时间', 'collection_date', false, 'text', 'YY-MM-DD', collectionDate);
+                // 添加观看/阅读状态选择
+                const bookStatusGroup = form.createDiv({ cls: 'form-group form-group-inline' });
+                bookStatusGroup.createEl('label', { text: '状态' });
+                const bookStatusSelect = bookStatusGroup.createEl('select', { attr: { id: 'status', name: 'status' } });    
+                bookStatusSelect.createEl('option', { value: 'unread', text: '待看/待读' });
+                bookStatusSelect.createEl('option', { value: 'read', text: '已看/已读' });
                 break;
             case 'music':
                 this.createFormGroup(form, '乐评', 'description', true);
@@ -146,7 +160,14 @@ export class QuickNoteView extends ItemView {
                 this.createFormGroup(form, '封面', 'cover');
                 this.createFormGroup(form, 'URL', 'url');
                 this.createFormGroup(form, '标签', 'tags');
-                this.createFormGroup(form, '年份', 'year', false, 'text', 'YYYY-MM-DD');
+                this.createFormGroup(form, '年份', 'year', false, 'text', 'YYYY');
+                this.createFormGroup(form, '收录时间', 'collection_date', false, 'text', 'YY-MM-DD', collectionDate);
+                // 添加观看/阅读状态选择
+                const musicStatusGroup = form.createDiv({ cls: 'form-group form-group-inline' });
+                musicStatusGroup.createEl('label', { text: '状态' });
+                const musicStatusSelect = musicStatusGroup.createEl('select', { attr: { id: 'status', name: 'status' } });    
+                musicStatusSelect.createEl('option', { value: 'unread', text: '待看/待读' });
+                musicStatusSelect.createEl('option', { value: 'read', text: '已看/已读' });
                 break;
             case 'tv':
                 this.createFormGroup(form, '剧评', 'description', true);
@@ -156,7 +177,14 @@ export class QuickNoteView extends ItemView {
                 this.createFormGroup(form, '封面', 'cover');
                 this.createFormGroup(form, 'URL', 'url');
                 this.createFormGroup(form, '标签', 'tags');
-                this.createFormGroup(form, '年份', 'year', false, 'text', 'YYYY-MM-DD');
+                this.createFormGroup(form, '年份', 'year', false, 'text', 'YYYY');
+                this.createFormGroup(form, '收录时间', 'collection_date', false, 'text', 'YY-MM-DD', collectionDate);
+                // 添加观看/阅读状态选择
+                const tvStatusGroup = form.createDiv({ cls: 'form-group form-group-inline' });
+                tvStatusGroup.createEl('label', { text: '状态' });
+                const tvStatusSelect = tvStatusGroup.createEl('select', { attr: { id: 'status', name: 'status' } });    
+                tvStatusSelect.createEl('option', { value: 'unread', text: '待看/待读' });
+                tvStatusSelect.createEl('option', { value: 'read', text: '已看/已读' });
                 break;
             case 'anime':
                 this.createFormGroup(form, '评论', 'description', true);
@@ -166,7 +194,14 @@ export class QuickNoteView extends ItemView {
                 this.createFormGroup(form, '封面', 'cover');
                 this.createFormGroup(form, 'URL', 'url');
                 this.createFormGroup(form, '标签', 'tags');
-                this.createFormGroup(form, '年份', 'year', false, 'text', 'YYYY-MM-DD');
+                this.createFormGroup(form, '年份', 'year', false, 'text', 'YYYY');
+                this.createFormGroup(form, '收录时间', 'collection_date', false, 'text', 'YY-MM-DD', collectionDate);
+                // 添加观看/阅读状态选择
+                const animeStatusGroup = form.createDiv({ cls: 'form-group form-group-inline' });
+                animeStatusGroup.createEl('label', { text: '状态' });
+                const animeStatusSelect = animeStatusGroup.createEl('select', { attr: { id: 'status', name: 'status' } });    
+                animeStatusSelect.createEl('option', { value: 'unread', text: '待看/待读' });
+                animeStatusSelect.createEl('option', { value: 'read', text: '已看/已读' });
                 break;
         }
     }
@@ -223,19 +258,16 @@ export class QuickNoteView extends ItemView {
         const content = (this.container.querySelector('#content, #description') as HTMLTextAreaElement)?.value;
         if (!content) return;
 
-        let identifierLine = '';
-        const tags = (this.container.querySelector('#tags') as HTMLInputElement)?.value || '#标签'; // 默认标签
-
-        // 根据类型确定日期/年份字段和格式
+        let cardContent = '';
+        // 只为想法和摘录卡片添加标识行
         if (['idea', 'quote'].includes(this.type)) {
             const dateValue = (this.container.querySelector('#date') as HTMLInputElement)?.value || '';
-            identifierLine = `${dateValue.split(' ')[0]} ${tags}`; // 取日期部分
-        } else {
-            const yearValue = (this.container.querySelector('#year') as HTMLInputElement)?.value || new Date().getFullYear().toString();
-            identifierLine = `${yearValue} ${tags}`;
+            const tags = (this.container.querySelector('#tags') as HTMLInputElement)?.value || '#标签';
+            const identifierLine = `${dateValue.split(' ')[0]} ${tags}`;
+            cardContent = `${identifierLine}\n`;
         }
-
-        let cardContent = `${identifierLine}\n\`\`\`${this.type}-card\n`; // 将标识行添加到卡片内容之前
+        
+        cardContent += `\`\`\`${this.type}-card\n`; // 添加卡片类型标记
 
         // 根据不同类型构建卡片内容
         switch (this.type) {
@@ -255,73 +287,66 @@ export class QuickNoteView extends ItemView {
                 cardContent += `date: ${(this.container.querySelector('#date') as HTMLInputElement)?.value || ''}\n`; // Use value directly
                 break;
             case 'movie':
-                cardContent += `description: ${content}\n`;
-                cardContent += `title: ${(this.container.querySelector('#title') as HTMLInputElement)?.value || ''}\n`;
-                cardContent += `director: ${(this.container.querySelector('#director') as HTMLInputElement)?.value || ''}\n`;
-                cardContent += `rating: ${(this.container.querySelector('#rating') as HTMLInputElement)?.value || ''}\n`;
-                cardContent += `cover: ${(this.container.querySelector('#cover') as HTMLInputElement)?.value || ''}\n`;
-                cardContent += `url: ${(this.container.querySelector('#url') as HTMLInputElement)?.value || ''}\n`;
-                cardContent += `tags: ${(this.container.querySelector('#tags') as HTMLInputElement)?.value || ''}\n`;
-                // Keep using 'year' for movie/book/music date field ID if that's intended
-                cardContent += `year: ${(this.container.querySelector('#year') as HTMLInputElement)?.value || ''}\n`;
-                break;
             case 'book':
-                cardContent += `description: ${content}\n`;
-                cardContent += `title: ${(this.container.querySelector('#title') as HTMLInputElement)?.value || ''}\n`;
-                cardContent += `author: ${(this.container.querySelector('#author') as HTMLInputElement)?.value || ''}\n`;
-                cardContent += `rating: ${(this.container.querySelector('#rating') as HTMLInputElement)?.value || ''}\n`;
-                cardContent += `cover: ${(this.container.querySelector('#cover') as HTMLInputElement)?.value || ''}\n`;
-                cardContent += `url: ${(this.container.querySelector('#url') as HTMLInputElement)?.value || ''}\n`;
-                cardContent += `tags: ${(this.container.querySelector('#tags') as HTMLInputElement)?.value || ''}\n`;
-                cardContent += `year: ${(this.container.querySelector('#year') as HTMLInputElement)?.value || ''}\n`;
-                break;
             case 'music':
-                cardContent += `description: ${content}\n`;
-                cardContent += `title: ${(this.container.querySelector('#title') as HTMLInputElement)?.value || ''}\n`;
-                cardContent += `artist: ${(this.container.querySelector('#artist') as HTMLInputElement)?.value || ''}\n`;
-                cardContent += `rating: ${(this.container.querySelector('#rating') as HTMLInputElement)?.value || ''}\n`;
-                cardContent += `cover: ${(this.container.querySelector('#cover') as HTMLInputElement)?.value || ''}\n`;
-                cardContent += `url: ${(this.container.querySelector('#url') as HTMLInputElement)?.value || ''}\n`;
-                cardContent += `tags: ${(this.container.querySelector('#tags') as HTMLInputElement)?.value || ''}\n`;
-                cardContent += `year: ${(this.container.querySelector('#year') as HTMLInputElement)?.value || ''}\n`;
-                break;
             case 'tv':
-                cardContent += `description: ${content}\n`;
-                cardContent += `title: ${(this.container.querySelector('#title') as HTMLInputElement)?.value || ''}\n`;
-                cardContent += `director: ${(this.container.querySelector('#director') as HTMLInputElement)?.value || ''}\n`;
-                cardContent += `rating: ${(this.container.querySelector('#rating') as HTMLInputElement)?.value || ''}\n`;
-                cardContent += `cover: ${(this.container.querySelector('#cover') as HTMLInputElement)?.value || ''}\n`;
-                cardContent += `url: ${(this.container.querySelector('#url') as HTMLInputElement)?.value || ''}\n`;
-                cardContent += `tags: ${(this.container.querySelector('#tags') as HTMLInputElement)?.value || ''}\n`;
-                cardContent += `year: ${(this.container.querySelector('#year') as HTMLInputElement)?.value || ''}\n`;
-                break;
             case 'anime':
                 cardContent += `description: ${content}\n`;
                 cardContent += `title: ${(this.container.querySelector('#title') as HTMLInputElement)?.value || ''}\n`;
-                cardContent += `director: ${(this.container.querySelector('#director') as HTMLInputElement)?.value || ''}\n`;
+                if (this.type === 'book') {
+                    cardContent += `author: ${(this.container.querySelector('#author') as HTMLInputElement)?.value || ''}\n`;
+                } else if (this.type === 'music') {
+                    cardContent += `artist: ${(this.container.querySelector('#artist') as HTMLInputElement)?.value || ''}\n`;
+                } else {
+                    cardContent += `director: ${(this.container.querySelector('#director') as HTMLInputElement)?.value || ''}\n`;
+                }
                 cardContent += `rating: ${(this.container.querySelector('#rating') as HTMLInputElement)?.value || ''}\n`;
                 cardContent += `cover: ${(this.container.querySelector('#cover') as HTMLInputElement)?.value || ''}\n`;
                 cardContent += `url: ${(this.container.querySelector('#url') as HTMLInputElement)?.value || ''}\n`;
                 cardContent += `tags: ${(this.container.querySelector('#tags') as HTMLInputElement)?.value || ''}\n`;
                 cardContent += `year: ${(this.container.querySelector('#year') as HTMLInputElement)?.value || ''}\n`;
+                cardContent += `collection_date: ${(this.container.querySelector('#collection_date') as HTMLInputElement)?.value || ''}\n`;
                 break;
         }
 
         cardContent += '```'; // 移除末尾多余的换行符
 
-        // 获取目标文件
-        const targetFileName = this.plugin.settings.cardStoragePaths[`${this.type}Card`];
-        let targetFile = this.app.vault.getAbstractFileByPath(targetFileName);
+        // 获取目标路径和文件名
+        if (['movie', 'book', 'music', 'tv', 'anime'].includes(this.type)) {
+            const title = (this.container.querySelector('#title') as HTMLInputElement)?.value;
+            if (!title) return;
 
-        if (!targetFile) {
-            // 如果文件不存在，创建新文件
-            targetFile = await this.app.vault.create(targetFileName, '');
-        }
+            const folderPath = this.plugin.settings.cardStoragePaths[`${this.type}Card`];
+            const fileName = `${title}.md`;
+            const fullPath = `${folderPath}/${fileName}`;
 
-        // 追加内容到文件
-        if (targetFile instanceof TFile) {
-            const currentContent = await this.app.vault.read(targetFile);
-            await this.app.vault.modify(targetFile, currentContent + '\n' + cardContent);
+            // 创建文件夹（如果不存在）
+            if (!await this.app.vault.adapter.exists(folderPath)) {
+                await this.app.vault.createFolder(folderPath);
+            }
+
+            // 创建或更新文件
+            let targetFile = this.app.vault.getAbstractFileByPath(fullPath);
+            const status = (this.container.querySelector('#status') as HTMLSelectElement)?.value || 'unread';
+            const frontmatter = `---\nstatus: ${status}\n---\n\n`;
+            if (!targetFile) {
+                targetFile = await this.app.vault.create(fullPath, frontmatter + cardContent);
+            } else if (targetFile instanceof TFile) {
+                await this.app.vault.modify(targetFile, frontmatter + cardContent);
+            }
+        } else {
+            // 对于想法和摘录卡片，保持原有的保存逻辑
+            const targetFileName = this.plugin.settings.cardStoragePaths[`${this.type}Card`];
+            let targetFile = this.app.vault.getAbstractFileByPath(targetFileName);
+
+            if (!targetFile) {
+                targetFile = await this.app.vault.create(targetFileName, '');
+            }
+
+            if (targetFile instanceof TFile) {
+                const currentContent = await this.app.vault.read(targetFile);
+                await this.app.vault.modify(targetFile, currentContent + '\n' + cardContent);
+            }
         }
 
         // 清空表单
