@@ -194,9 +194,10 @@ export class CardUtils {
           };
         }
       } else {
-        // 只有当位置信息有效且不重复时才添加
-        if (location.startLine > 0 && location.endLine > 0 && 
-            !index[cid].locations.some(loc => loc.path === location.path && loc.startLine === location.startLine && loc.endLine === location.endLine)) {
+        // 清理同一文件中的旧位置记录，只保留最新的位置
+        index[cid].locations = index[cid].locations.filter(loc => loc.path !== location.path);
+        // 添加新的位置信息
+        if (location.startLine > 0 && location.endLine > 0) {
           index[cid].locations.push(location);
         }
         index[cid].lastUpdated = new Date().toISOString();

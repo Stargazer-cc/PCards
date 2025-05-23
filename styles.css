@@ -76,7 +76,7 @@
 }
 
 .form-group-inline label {
-  min-width: 30px;
+  min-inline-size: fit-content;
 }
 
 .form-group-inline .input-short {
@@ -85,7 +85,6 @@
 
 .form-group label {
   font-size: 15px;
-  color: var(--text-muted);
 }
 
 .form-group input,
@@ -236,13 +235,6 @@
     overflow-y: auto;
 }
 
-/* 画廊控制按钮组样式 */
-.gallery-controls {
-    display: flex;
-    gap: 10px;
-    margin-bottom: 20px;
-}
-
 /* 各类控制按钮的容器样式 */
 .gallery-type-control,
 .gallery-fields-control,
@@ -305,18 +297,6 @@
     margin-bottom: 20px;
     padding-bottom: 10px;
     border-bottom: 1px solid var(--background-modifier-border);
-}
-
-/* 模态框关闭按钮样式 */
-.modal-close-button {
-    /* 移除默认按钮样式 */
-    background: none;
-    border: none;
-    /* 设置字体大小和鼠标样式 */
-    font-size: 20px;
-    cursor: pointer;
-    /* 使用主题变量设置颜色 */
-    color: var(--text-muted);
 }
 
 /* 条件组合容器样式 */
@@ -431,12 +411,14 @@
     justify-content: flex-end;
     gap: 10px;
     align-items: center;
+    margin-top: 20px;
 }
 
 .gallery-column-toggle,
 .gallery-fields-toggle,
 .gallery-type-toggle,
-.gallery-sort-toggle {
+.gallery-sort-toggle,
+.gallery-refresh-button {
     padding: 6px 12px;
     border-radius: 4px;
     background-color: var(--interactive-accent);
@@ -501,11 +483,14 @@
 .cards-gallery-container[data-hidden-fields*="year"] .year,
 .cards-gallery-container[data-hidden-fields*="tags"] .card-tags-container,
 .cards-gallery-container[data-hidden-fields*="meta"] .meta-container,
-.cards-gallery-container[data-hidden-fields*="rating"] .rating {
+.cards-gallery-container[data-hidden-fields*="rating"] .rating,
+.cards-gallery-container[data-hidden-fields*="status"] .status-indicator,
+.cards-gallery-container[data-hidden-fields*="collection_date"] .collection-date {
     display: none !important;
 }
 
-.gallery-column-toggle:hover {
+.gallery-column-toggle:hover,
+.gallery-refresh-button:hover {
     background-color: var(--interactive-accent-hover);
 }
 
@@ -537,7 +522,7 @@
 /* 卡片容器在网格中的适配样式 */
 .gallery-cards-container .new-cards-container {
     /* 确保卡片填满网格单元格 */
-    width: 100%;
+    width: auto;
     margin: 0;
     height: 100%;
 }
@@ -579,6 +564,7 @@
   /* 设置内边距和外边距 */
   padding: 16px;
   margin: 12px 0;
+  margin-left: 10%;
   /* 边框和圆角 */
   border: 1px solid var(--background-modifier-border);
   border-radius: 8px;
@@ -667,7 +653,9 @@
   line-height: 1.6;
   color: #222;
   padding-left: 24px;
-  padding-top: 20px;  
+  padding-top: 20px;
+  white-space: pre-wrap;
+  word-break: break-word;
 }
 
 .new-cards-container.idea-card .idea-meta, .new-cards-container.quote-card .quote-meta {
@@ -736,6 +724,7 @@
 .rating[data-score="excellent"] .rating-badge {
   position: relative;
   display: flex;
+  text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.5);
   align-items: center;
   justify-content: center;
   width: 55px;
@@ -751,10 +740,9 @@
   background-color: transparent;
   padding: 4px 8px;
   border-radius: 4px;
-  color: #C7FF68;
-  top: -12px;
-  right: -1px;
-  font-size: 18px;
+  top: -18px;
+  right: -10.5px;
+  font-size: 20px;
   position: absolute;
 }
 
@@ -771,9 +759,9 @@
   padding: 4px 8px;
   border-radius: 4px;
   color: #999;
-  top: -12px;
-  right: -1px;
-  font-size: 18px;
+  top: -5.5px;
+  right: 4px;
+  font-size: 20px;
   position: absolute;
 }
 
@@ -809,9 +797,27 @@
   transform: translateY(-3px);
 }
 
+.simple-badge .simple-score {
+  position: absolute;
+  top: 5px;
+  right: 0px;
+  font-size: 18px;
+  font-weight: bold;
+  color: #c0c0c0;
+  z-index: 2;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 100%;
+  height: 100%;
+  transform: translateY(-3px);
+  
+}
+
+
 /* 中等级评分徽章（5.0-6.9分）*/
 .simple-badge {
-  width: 36px;
+  width: 58px;
   height: 36px;
 }
 
@@ -822,12 +828,38 @@
   background: none;
 }
 
+/* 收录时间样式 */
+.collection-date {
+  font-size: 12px;
+  color: var(--text-muted);
+  opacity: 0.7;
+  padding: 2px 6px;
+  border-radius: 4px;
+  font-family: fantasy;
+  margin-left: 8px;
+  display: inline-flex;
+  align-items: center;
+  background: rgba(0, 0, 0, 0.15);
+}
+
+.new-cards-container .collection-date {
+  font-size: 0.9em;
+  color: rgb(255, 255, 255);
+  opacity: 0.7;
+  padding: 2px 8px;
+  border-radius: 4px;
+  display: inline-flex;
+  align-items: center;
+  margin-left: 8px;
+  background: rgba(0, 0, 0, 0.15);
+}
+
 /* 卡片ID样式 */
 .new-cards-container .card-id {
   /* 绝对定位到卡片右上角 */
   position: absolute;
-  top: 8px;
-  right: 48px; /* 为评分徽章留出空间 */
+  top: -3px;
+  right: 37%; /* 为评分徽章留出空间 */
   /* 设置字体大小和颜色 */
   font-size: 0.8em;
   color: rgba(245, 216, 179, 0);
@@ -841,7 +873,38 @@
   cursor: pointer;
 }
 
-                /* 卡片总览页面反链容器样式 */
+                /* 阅读状态指示器样式 */
+.new-cards-container .status-indicator {
+    position: absolute;
+    top: 54px;
+    right: 23px;
+    padding: 4px 8px;
+    border-radius: 4px;
+    font-size: 12px;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    z-index: 2;
+}
+
+.new-cards-container .status-indicator.read {
+    background-color: rgba(76, 175, 80, 0.2);
+    color: #4CAF50;
+}
+
+.new-cards-container .status-indicator.read:hover {
+    background-color: rgba(76, 175, 80, 0.3);
+}
+
+.new-cards-container .status-indicator.unread {
+    background-color: rgba(255, 152, 0, 0.2);
+    color: #FF9800;
+}
+
+.new-cards-container .status-indicator.unread:hover {
+    background-color: rgba(255, 152, 0, 0.3);
+}
+
+/* 卡片总览页面反链容器样式 */
 .card-backlinks-container {
     position: absolute;
     bottom: 10px;
@@ -970,6 +1033,8 @@
 }
 
 .movie-card .cover-container,
+.tv-card .cover-container,
+.anime-card .cover-container,
 .book-card .cover-container{
   aspect-ratio: 2/3;
   max-height: none;
@@ -1031,6 +1096,7 @@
   /* 使用主题变量设置创作者信息颜色，确保在不同主题下的一致性 */
   color: var(--card-creator-color);
   /* 添加适当的行高确保多行文本的可读性 */
+  text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.5);
   line-height: 1.2;
   /* 设置底部边距，与其他元素保持适当间距 */
   margin-bottom: 4px;
@@ -1038,15 +1104,17 @@
 
 .new-cards-container .year {
   /* 设置年份信息字体大小为0.8倍基准大小，作为次要信息显示 */
-  font-size: 0.8em;
+  font-size: 13px;
   /* 使用主题变量设置年份颜色，保持与主题的视觉统一 */
   color: var(--card-year-color);
   /* 设置8px的底部间距，与描述文本保持适当的视觉分隔 */
+  text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.5);
   margin-bottom: 8px;
   /* 添加字重设置，使年份信息更加突出 */
-  font-weight: 500;
+  font-weight: 600;
   /* 设置不透明度，增加与其他元素的视觉层次 */
   opacity: 0.85;
+  font-family: auto;
 }
 
 .new-cards-container .card-info-description {
@@ -1054,6 +1122,7 @@
   font-size: 0.9em;
   /* 使用主题变量设置描述文本颜色，确保在不同主题下的可读性 */
   color: var(--card-description-color);
+  text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.5);
   /* 设置上下外边距，与其他元素保持适当的视觉间距 */
   margin: 0 0 8px;
   /* 设置1.4倍行高提高长文本的可读性和视觉舒适度 */
@@ -1074,6 +1143,7 @@
   /* 使用flex布局实现标签的流式排列 */
   display: flex;
   flex-wrap: wrap;
+  align-items: center;
   /* 设置标签之间的间距 */
   gap: 6px;
   /* 容器宽度自适应内容 */
@@ -1137,7 +1207,9 @@
   padding: 8px;
 }
 
-.movie-card .cover-container svg {
+.movie-card .cover-container svg,
+.tv-card .cover-container svg,
+.anime-card .cover-container svg {
   /* 为电影卡片的SVG图标设置较小内边距，使图标更加紧凑 */
   padding: 6px;
 }
