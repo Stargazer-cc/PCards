@@ -257,6 +257,7 @@
     color: var(--text-normal);
     cursor: pointer;
 }
+
 /* 模态框基础样式 */
 .gallery-modal {
     display: none;
@@ -287,6 +288,13 @@
     max-height: 80vh;
     overflow-y: auto;
 }
+
+/* 刷新索引按钮样式 */
+.gallery-refresh-button {
+  position: absolute;
+  left: 20px;
+}
+
 
 /* 模态框标题栏样式 */
 .modal-title {
