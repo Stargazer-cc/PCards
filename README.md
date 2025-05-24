@@ -2,8 +2,6 @@
 
 一个为Obsidian设计的卡片式内容展示插件，支持音乐、书籍、电影、剧集、番剧、想法和摘录七种类型的卡片。美观的卡片布局让您的笔记内容更加生动直观。
 
-![卡片展示效果](https://raw.githubusercontent.com/Stargazer-cc/obsidian-PCards/main/assets/demo.png)
-
 ## 目录
 
 - [功能特点](#功能特点)
@@ -41,15 +39,9 @@
 
 ## 安装方法
 
-### 从Obsidian社区插件库安装
+### 使用插件BRAT
 
-1. 打开Obsidian设置
-2. 进入"第三方插件"
-3. 关闭"安全模式"
-4. 点击"浏览社区插件"
-5. 搜索"PCards"
-6. 点击"安装"
-7. 启用插件
+复制本仓库地址，使用BRAT安装最新release和更新
 
 ### 手动安装
 
@@ -132,19 +124,19 @@ meta.genre: 流行
 - `author`：作者名称（必填）
 
 **示例**：
-
-```book-card
-title: 活着
-author: 余华
-year: 1993
-description: 一部描述中国农村人生活的小说，通过福贵的一生展现了人如何在困境中求生存的故事。
-rating: 9.4
-cover: ![[活着.jpg]]
-tags: #小说 #中国文学 #经典
-url: https://book.douban.com/subject/4913064/
-collection_date: 21-05-12
-meta.publisher: 作家出版社
-meta.pages: 248
+```
+  ```book-card
+  title: 活着
+  author: 余华
+  year: 1993
+  description: 一部描述中国农村人生活的小说，通过福贵的一生展现了人如何在困境中求生存的故事。
+  rating: 9.4
+  cover: ![[活着.jpg]]
+  tags: #小说 #中国文学 #经典
+  url: https://book.douban.com/subject/4913064/
+  collection_date: 21-05-12
+  meta.publisher: 作家出版社
+  meta.pages: 248
 ```
 
 ### 电影卡片
@@ -155,7 +147,6 @@ meta.pages: 248
 - `director`：导演名称（必填）
 
 **示例**：
-
 ```movie-card
 title: 盗梦空间
 director: 克里斯托弗·诺兰
@@ -179,6 +170,7 @@ meta.时长: 148分钟
 
 **示例**：
 
+```
 ```tv-card
 title: 切尔诺贝利
 director: 约翰·伦克
@@ -201,7 +193,7 @@ meta.集数: 5
 - `director`：导演名称（必填）
 
 **示例**：
-
+```
 ```anime-card
 title: 进击的巨人
 director: 荒木哲郎
@@ -226,7 +218,7 @@ meta.集数: 86
 - `date`：记录日期，格式为YYYY-MM-DD HH:MM:SS（可选）
 
 **示例**：
-
+```
 ```idea-card
 idea: 将PCards插件与日记系统结合，自动生成每月媒体消费报告。
 source: Obsidian社区讨论
@@ -245,7 +237,7 @@ url: https://github.com/Stargazer-cc/obsidian-PCards/issues
 - `date`：记录日期，格式为YYYY-MM-DD HH:MM:SS（可选）
 
 **示例**：
-
+```
 ```quote-card
 quote: 生活不能等待别人来安排，要自己去争取和奋斗。
 source: 《平凡的世界》 - 路遥
