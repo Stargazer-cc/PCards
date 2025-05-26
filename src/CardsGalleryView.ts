@@ -301,54 +301,9 @@ export class CardsGalleryView extends ItemView {
             { field: 'lastUpdate', text: '更新时间' },
             { field: 'title', text: '标题' },
             { field: 'description', text: '描述' },
-            { field: 'collection_date', text: '收录时间' }
+            { field: 'collection_date', text: '收录时间' },
+            { field: 'tags', text: '标签' }
         ];
-
-        // 添加阅读状态筛选
-        const statusFilterContainer = filterModalContent.createDiv({ cls: 'status-filter-container' });
-        statusFilterContainer.createSpan({ text: '阅读状态：' });
-        const statusSelect = statusFilterContainer.createEl('select', { cls: 'status-select' });
-        
-        // 添加全部选项
-        statusSelect.createEl('option', {
-            value: '',
-            text: '全部'
-        });
-        
-        // 添加已阅和待阅选项
-        ['已阅', '待阅'].forEach(status => {
-            statusSelect.createEl('option', {
-                value: status,
-                text: status
-            });
-        });
-
-        // 设置初始值
-        const statusCondition = this.filterDefinition.conditions.find(c => c.field === 'status');
-        if (statusCondition) {
-            statusSelect.value = statusCondition.value;
-        }
-
-        // 添加事件监听
-        statusSelect.addEventListener('change', () => {
-            // 移除现有的状态筛选条件
-            this.filterDefinition.conditions = this.filterDefinition.conditions.filter(c => c.field !== 'status');
-            
-            // 如果选择了状态，添加新的筛选条件
-            if (statusSelect.value) {
-                this.filterDefinition.conditions.push({
-                    field: 'status',
-                    operator: 'equals',
-                    value: statusSelect.value,
-                    enabled: true
-                });
-            }
-            
-            this.plugin.settings.gallerySettings.filterDefinition = this.filterDefinition;
-            this.plugin.saveSettings();
-            this.renderCards();
-            updateFilterDisplay();
-        });
 
         // 创建筛选条件添加界面
         const addFilterContainer = filterModalContent.createDiv({ cls: 'add-filter-container' });
@@ -397,7 +352,7 @@ export class CardsGalleryView extends ItemView {
             this.plugin.settings.gallerySettings.filterDefinition = this.filterDefinition;
             this.plugin.saveSettings();
             this.renderCards();
-            updateFilterDisplay();
+            this.updateFilterDisplayUI();
         };
 
         // 移除筛选条件
@@ -406,7 +361,7 @@ export class CardsGalleryView extends ItemView {
             this.plugin.settings.gallerySettings.filterDefinition = this.filterDefinition;
             this.plugin.saveSettings();
             this.renderCards();
-            updateFilterDisplay();
+            this.updateFilterDisplayUI();
         };
 
         addButton.addEventListener('click', () => {
@@ -424,35 +379,136 @@ export class CardsGalleryView extends ItemView {
 
         // 更新筛选显示
         const updateFilterDisplay = () => {
-            activeFiltersContainer.empty();
-            this.filterDefinition.conditions.forEach((condition, index) => {
-                // 跳过阅读状态筛选条件，因为它有专门的下拉框
-                if (condition.field === 'status') return;
-                
-                const field = filterFields.find(f => f.field === condition.field);
-                const filterTag = activeFiltersContainer.createDiv({ cls: 'filter-tag' });
-                const checkbox = filterTag.createEl('input', {
-                    type: 'checkbox',
-                    cls: 'filter-enable-toggle',
-                    attr: { checked: condition.enabled }
-                });
-                checkbox.addEventListener('change', () => {
-                    condition.enabled = checkbox.checked;
-                    this.plugin.settings.gallerySettings.filterDefinition = this.filterDefinition;
-                    this.plugin.saveSettings();
-                    this.renderCards();
-                });
-                filterTag.createSpan({ text: `${field?.text || condition.field} ${condition.operator} ${condition.value}` });
-                const removeButton = filterTag.createEl('button', { cls: 'remove-filter' });
-                removeButton.addEventListener('click', () => removeFilterCondition(index));
-            });
+            this.updateFilterDisplayUI();
         };
 
         updateFilterDisplay();
+        
+        // 添加元数据筛选部分（移到更靠后的位置）
+        const metaFilterContainer = filterModalContent.createDiv({ cls: 'meta-filter-container' });
+        const metaFilterTitle = metaFilterContainer.createEl('h3', { 
+            text: '元数据筛选', 
+            cls: 'meta-filter-title' 
+        });
+        
+        // 创建元数据字段和值选择界面
+        const metaFieldContainer = metaFilterContainer.createDiv({ cls: 'meta-field-container' });
+        const metaFieldSelect = metaFieldContainer.createEl('select', { 
+            cls: 'meta-field-select',
+            attr: { placeholder: '选择元数据字段' }
+        });
+        
+        // 添加默认选项
+        metaFieldSelect.createEl('option', {
+            value: '',
+            text: '选择元数据字段',
+            attr: { selected: true, disabled: true }
+        });
+        
+        // 获取所有卡片的元数据字段
+        this.loadMetaFields(metaFieldSelect);
+        
+        const metaOperatorSelect = metaFieldContainer.createEl('select', { cls: 'meta-operator-select' });
+        
+        // 添加操作符选项
+        const metaOperators = [
+            { value: 'contains', text: '包含' },
+            { value: 'equals', text: '等于' },
+            { value: 'greater', text: '大于' },
+            { value: 'less', text: '小于' }
+        ];
+        
+        metaOperators.forEach(op => {
+            metaOperatorSelect.createEl('option', {
+                value: op.value,
+                text: op.text
+            });
+        });
+        
+        const metaValueInput = metaFieldContainer.createEl('input', {
+            type: 'text',
+            cls: 'meta-value-input',
+            placeholder: '输入值'
+        });
+        
+        const addMetaFilterButton = metaFieldContainer.createEl('button', {
+            text: '添加',
+            cls: 'add-meta-filter-button'
+        });
+        
+        // 添加元数据筛选按钮点击事件
+        addMetaFilterButton.addEventListener('click', () => {
+            const metaField = metaFieldSelect.value;
+            const operator = metaOperatorSelect.value;
+            const value = metaValueInput.value;
+            
+            if (metaField && operator && value) {
+                // 构建meta.字段名格式的字段值
+                const fullField = `meta.${metaField}`;
+                
+                // 添加筛选条件
+                addFilterCondition(fullField, operator, value);
+                
+                // 重置输入
+                metaValueInput.value = '';
+            }
+        });
+
+        // 添加阅读状态筛选
+        const statusFilterContainer = filterModalContent.createDiv({ cls: 'status-filter-container' });
+        statusFilterContainer.createSpan({ text: '阅读状态：' });
+        const statusSelect = statusFilterContainer.createEl('select', { cls: 'status-select' });
+        
+        // 添加全部选项
+        statusSelect.createEl('option', {
+            value: '',
+            text: '全部'
+        });
+        
+        // 添加已阅和待阅选项
+        ['已阅', '待阅'].forEach(status => {
+            statusSelect.createEl('option', {
+                value: status,
+                text: status
+            });
+        });
+
+        // 设置初始值
+        const statusCondition = this.filterDefinition.conditions.find(c => c.field === 'status');
+        if (statusCondition) {
+            statusSelect.value = statusCondition.value;
+        }
+
+        // 添加事件监听
+        statusSelect.addEventListener('change', () => {
+            // 移除现有的状态筛选条件
+            this.filterDefinition.conditions = this.filterDefinition.conditions.filter(c => c.field !== 'status');
+            
+            // 如果选择了状态，添加新的筛选条件
+            if (statusSelect.value) {
+                this.filterDefinition.conditions.push({
+                    field: 'status',
+                    operator: 'equals',
+                    value: statusSelect.value,
+                    enabled: true
+                });
+            }
+            
+            this.plugin.settings.gallerySettings.filterDefinition = this.filterDefinition;
+            this.plugin.saveSettings();
+            this.renderCards();
+            this.updateFilterDisplayUI();
+        });
 
         // 添加筛选按钮点击事件
         filterToggle.addEventListener('click', () => {
             filterModal.classList.add('show');
+            
+            // 每次打开筛选面板时，重新加载元数据字段
+            const metaFieldSelect = this.containerEl.querySelector('.meta-field-select') as HTMLSelectElement;
+            if (metaFieldSelect) {
+                this.loadMetaFields(metaFieldSelect);
+            }
         });
 
         // 点击模态框外部关闭
@@ -461,8 +517,6 @@ export class CardsGalleryView extends ItemView {
                 filterModal.classList.remove('show');
             }
         });
-
-
 
         // 添加排序控制
         const sortControl = controlsContainer.createDiv({ cls: 'gallery-sort-control' });
@@ -596,9 +650,6 @@ export class CardsGalleryView extends ItemView {
             }
         });
 
-
-
-
         // 添加列数切换按钮
         const columnToggle = controlsContainer.createEl('button', {
             text: `${this.columnCount}列显示`,
@@ -656,6 +707,7 @@ export class CardsGalleryView extends ItemView {
                 rating?: number;
                 description?: string;
                 collection_date?: string;
+                tags?: string[];
                 meta?: Record<string, any>;
                 [key: string]: any;
             };
@@ -684,6 +736,34 @@ export class CardsGalleryView extends ItemView {
                             }
                         }
                     }
+                    return false;
+                }
+
+                // 特殊处理标签筛选
+                if (condition.field === 'tags') {
+                    const cardTags = card.data?.tags || [];
+                    // 将标签转换为字符串数组，移除可能的#前缀
+                    const normalizedTags = Array.isArray(cardTags) 
+                        ? cardTags.map(tag => typeof tag === 'string' ? tag.replace(/^#/, '') : String(tag).replace(/^#/, ''))
+                        : String(cardTags).split(/[\s,]+/).map(tag => tag.replace(/^#/, ''));
+                    
+                    // 将筛选条件也规范化，移除#前缀
+                    const searchTag = condition.value.replace(/^#/, '');
+                    
+                    if (condition.operator === 'contains') {
+                        // 检查任一标签是否包含搜索字符串
+                        if (!normalizedTags.some(tag => tag.toLowerCase().includes(searchTag.toLowerCase()))) {
+                            return false;
+                        }
+                        continue;
+                    } else if (condition.operator === 'equals') {
+                        // 检查是否有标签完全匹配
+                        if (!normalizedTags.some(tag => tag.toLowerCase() === searchTag.toLowerCase())) {
+                            return false;
+                        }
+                        continue;
+                    }
+                    // 其他操作符不适用于标签
                     return false;
                 }
 
@@ -947,5 +1027,218 @@ export class CardsGalleryView extends ItemView {
     async onClose() {
         this.saveSettings();
         this.container.empty();
+    }
+
+    /**
+     * 添加标签筛选条件
+     * @param tag 要筛选的标签值
+     */
+    public addTagFilter(tag: string): void {
+        // 检查是否已经存在相同的标签筛选
+        const existingCondition = this.filterDefinition.conditions.find(
+            c => c.field === 'tags' && c.value === tag
+        );
+        
+        // 如果已存在相同筛选条件，则不再添加
+        if (existingCondition) {
+            // 确保筛选条件已启用
+            existingCondition.enabled = true;
+            this.plugin.settings.gallerySettings.filterDefinition = this.filterDefinition;
+            this.plugin.saveSettings();
+            this.renderCards();
+            
+            // 显示筛选面板
+            const filterModal = this.containerEl.querySelector('.gallery-modal.filter-modal') as HTMLElement;
+            if (filterModal) {
+                filterModal.classList.add('show');
+                // 更新筛选面板显示
+                this.updateFilterDisplayUI();
+            }
+            
+            return;
+        }
+        
+        // 添加新的标签筛选条件
+        this.filterDefinition.conditions.push({
+            field: 'tags',
+            operator: 'equals', // 使用精确匹配
+            value: tag,
+            enabled: true
+        });
+        
+        // 保存设置并重新渲染卡片
+        this.plugin.settings.gallerySettings.filterDefinition = this.filterDefinition;
+        this.plugin.saveSettings();
+        this.renderCards();
+        
+        // 显示筛选面板
+        const filterModal = this.containerEl.querySelector('.gallery-modal.filter-modal') as HTMLElement;
+        if (filterModal) {
+            filterModal.classList.add('show');
+            // 更新筛选面板显示
+            this.updateFilterDisplayUI();
+        }
+        
+        // 显示一个通知，提示用户已添加标签筛选
+        new Notice(`已添加标签筛选：${tag}`, 2000);
+    }
+    
+    /**
+     * 从所有卡片中加载元数据字段
+     */
+    private async loadMetaFields(selectElement: HTMLSelectElement) {
+        try {
+            // 清空现有选项，保留默认选项
+            while (selectElement.options.length > 1) {
+                selectElement.remove(1);
+            }
+            
+            // 加载卡片索引
+            const index = await CardUtils.loadCardIndex(this.plugin.app.vault);
+            
+            // 收集所有卡片中的元数据字段
+            const metaFields = new Set<string>();
+            
+            // 遍历所有卡片
+            for (const cardId in index) {
+                const cardInfo = index[cardId];
+                if (!cardInfo || !cardInfo.content) continue;
+                
+                // 解析卡片内容
+                const cardMatch = cardInfo.content.match(/```(.*?)\n([\s\S]*?)```/);
+                if (!cardMatch) continue;
+                
+                const cardContent = cardMatch[2];
+                const cardData = this.plugin.parseYaml(cardContent);
+                
+                // 如果有元数据，收集所有键
+                if (cardData.meta && typeof cardData.meta === 'object') {
+                    Object.keys(cardData.meta).forEach(key => metaFields.add(key));
+                }
+            }
+            
+            // 添加收集到的元数据字段到下拉选择框
+            Array.from(metaFields).sort().forEach(field => {
+                selectElement.createEl('option', {
+                    value: field,
+                    text: field
+                });
+            });
+            
+            // 如果没有找到任何元数据字段，添加提示
+            if (metaFields.size === 0) {
+                const option = selectElement.createEl('option', {
+                    value: '',
+                    text: '未找到元数据',
+                    attr: { disabled: true }
+                });
+            }
+            
+        } catch (error) {
+            console.error('加载元数据字段失败:', error);
+            // 添加错误提示选项
+            selectElement.createEl('option', {
+                value: '',
+                text: '加载失败',
+                attr: { disabled: true }
+            });
+        }
+    }
+    
+    /**
+     * 更新筛选面板UI显示
+     */
+    private updateFilterDisplayUI(): void {
+        const activeFiltersContainer = this.containerEl.querySelector('.active-filters');
+        if (!activeFiltersContainer) return;
+        
+        // 清空现有内容
+        activeFiltersContainer.empty();
+        
+        // 移除旧的清除按钮（如果存在）
+        const oldClearButton = this.containerEl.querySelector('.filter-clear-all-button');
+        if (oldClearButton) {
+            oldClearButton.remove();
+        }
+        
+        // 在筛选设置标题后添加清除全部筛选按钮
+        if (this.filterDefinition.conditions.length > 0) {
+            const modalTitle = this.containerEl.querySelector('.filter-modal .modal-title');
+            if (modalTitle) {
+                const clearAllButton = modalTitle.createEl('button', { 
+                    text: '清除全部', 
+                    cls: 'filter-clear-all-button' 
+                });
+                clearAllButton.addEventListener('click', () => {
+                    this.filterDefinition.conditions = [];
+                    this.plugin.settings.gallerySettings.filterDefinition = this.filterDefinition;
+                    this.plugin.saveSettings();
+                    this.renderCards();
+                    this.updateFilterDisplayUI();
+                    
+                    // 更新状态选择框
+                    const statusSelect = this.containerEl.querySelector('.status-select') as HTMLSelectElement;
+                    if (statusSelect) {
+                        statusSelect.value = '';
+                    }
+                    
+                    new Notice('已清除所有筛选条件', 2000);
+                });
+            }
+        }
+        
+        // 重新获取筛选字段定义
+        const filterFields = [
+            { field: 'year', text: '年份' },
+            { field: 'rating', text: '评分' },
+            { field: 'lastUpdate', text: '更新时间' },
+            { field: 'title', text: '标题' },
+            { field: 'description', text: '描述' },
+            { field: 'collection_date', text: '收录时间' },
+            { field: 'tags', text: '标签' }
+        ];
+        
+        // 重新添加筛选条件标签
+        this.filterDefinition.conditions.forEach((condition, index) => {
+            // 跳过阅读状态筛选条件，因为它有专门的下拉框
+            if (condition.field === 'status') return;
+            
+            // 处理元数据字段显示
+            let fieldText = '';
+            if (condition.field.startsWith('meta.')) {
+                const metaKey = condition.field.split('.')[1];
+                fieldText = `元数据:${metaKey}`;
+            } else {
+                const field = filterFields.find(f => f.field === condition.field);
+                fieldText = field?.text || condition.field;
+            }
+            
+            const filterTag = activeFiltersContainer.createDiv({ cls: 'filter-tag' });
+            const checkbox = filterTag.createEl('input', {
+                type: 'checkbox',
+                cls: 'filter-enable-toggle',
+                attr: { checked: condition.enabled }
+            });
+            
+            checkbox.addEventListener('change', () => {
+                condition.enabled = checkbox.checked;
+                this.plugin.settings.gallerySettings.filterDefinition = this.filterDefinition;
+                this.plugin.saveSettings();
+                this.renderCards();
+            });
+            
+            filterTag.createSpan({ text: `${fieldText} ${condition.operator} ${condition.value}` });
+            const removeButton = filterTag.createEl('button', { cls: 'remove-filter' });
+            
+            // 使用闭包保存正确的索引
+            const currentIndex = index;
+            removeButton.addEventListener('click', () => {
+                this.filterDefinition.conditions.splice(currentIndex, 1);
+                this.plugin.settings.gallerySettings.filterDefinition = this.filterDefinition;
+                this.plugin.saveSettings();
+                this.renderCards();
+                this.updateFilterDisplayUI();
+            });
+        });
     }
 }
