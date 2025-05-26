@@ -92,16 +92,35 @@ export class CardUtils {
   }
 
   static async saveCardIndex(vault: any, index: CardIndex): Promise<void> {
-    try {
-      const content = JSON.stringify(index, null, 2);
-      const indexFile = vault.getAbstractFileByPath('card-index.json');
-      if (indexFile instanceof TFile) {
-        await vault.modify(indexFile, content);
-      } else {
-        await vault.create('card-index.json', content);
+    const maxRetries = 3;
+    let retryCount = 0;
+    
+    while (retryCount < maxRetries) {
+      try {
+        const content = JSON.stringify(index, null, 2);
+        const indexFile = vault.getAbstractFileByPath('card-index.json');
+        
+        if (indexFile instanceof TFile) {
+          await vault.modify(indexFile, content);
+          console.log(`卡片索引已成功保存，条目数量: ${Object.keys(index).length}`);
+        } else {
+          await vault.create('card-index.json', content);
+          console.log(`卡片索引文件已成功创建，条目数量: ${Object.keys(index).length}`);
+        }
+        
+        return; // 成功保存，退出函数
+      } catch (error) {
+        retryCount++;
+        console.error(`保存卡片索引失败 (尝试 ${retryCount}/${maxRetries}):`, error);
+        
+        if (retryCount >= maxRetries) {
+          console.error('达到最大重试次数，无法保存卡片索引');
+          throw new Error(`保存卡片索引失败: ${error.message}`);
+        }
+        
+        // 等待一段时间后重试
+        await new Promise(resolve => setTimeout(resolve, 1000));
       }
-    } catch (error) {
-      console.error('Failed to save card index:', error);
     }
   }
 
@@ -232,19 +251,42 @@ export class CardUtils {
 
   static async removeCardsByPath(vault: any, path: string): Promise<void> {
     const index = await this.loadCardIndex(vault);
+    let removedCount = 0;
+    let modifiedCount = 0;
     
-    // 遍历所有卡片
-    for (const cid in index) {
-      const card = index[cid];
-      // 移除指定路径下的所有位置
-      card.locations = card.locations.filter(loc => loc.path !== path);
-      
-      // 如果卡片不再有任何位置引用，则删除该卡片
-      if (card.locations.length === 0) {
-        delete index[cid];
+    console.log(`开始清理路径 ${path} 的卡片索引...`);
+    
+    try {
+      // 遍历所有卡片
+      for (const cid in index) {
+        const card = index[cid];
+        const originalLocationsCount = card.locations.length;
+        
+        // 移除指定路径下的所有位置
+        card.locations = card.locations.filter(loc => loc.path !== path);
+        
+        // 如果过滤后位置数量减少，记录被修改的卡片
+        if (card.locations.length < originalLocationsCount) {
+          modifiedCount++;
+          
+          // 如果卡片不再有任何位置引用，则删除该卡片
+          if (card.locations.length === 0) {
+            delete index[cid];
+            removedCount++;
+            console.log(`已删除卡片索引: ${cid}`);
+          } else {
+            console.log(`已从卡片 ${cid} 中移除路径 ${path} 的位置引用`);
+          }
+        }
       }
+      
+      console.log(`清理完成，共修改 ${modifiedCount} 个卡片索引，完全删除 ${removedCount} 个卡片索引`);
+      
+      // 保存索引
+      await this.saveCardIndex(vault, index);
+    } catch (error) {
+      console.error(`清理路径 ${path} 的卡片索引时出错:`, error);
+      throw error; // 抛出错误以便上层处理
     }
-
-    await this.saveCardIndex(vault, index);
   }
 }
