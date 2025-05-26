@@ -3,9 +3,8 @@
   padding: 20px;
   height: 100%;
   overflow-y: auto;
-  /* 使用主题背景色 */
-  background: var(--titlebar-background-focused); /* 改为次要背景色以融入主题 */
-  color: var(--text-normal); /* 使用主题文本颜色 */
+  background: var(--titlebar-background-focused);
+  color: var(--text-normal);
 }
 
 
@@ -25,7 +24,7 @@
   margin-bottom: 20px;
   padding-bottom: 10px;
   border-bottom: 1px solid var(--background-modifier-border);
-  color: var(--text-muted); /* 标题使用柔和的颜色 */
+  color: var(--text-muted);
 }
 
 .quick-note-type-selector {
@@ -39,7 +38,6 @@
   padding: 8px 16px;
   border: 1px solid var(--background-modifier-border);
   border-radius: 6px;
-  /* 按钮背景使用次要背景色 */
   background: var(--background-secondary);
   color: var(--text-muted); 
   cursor: pointer;
@@ -92,7 +90,6 @@
   padding: 10px 14px;
   border: 1px solid var(--background-modifier-border);
   border-radius: 6px;
-  /* 输入框使用主要背景色，保持清晰 */
   background: var(--background-primary);
   color: var(--text-normal);
   font-size: 14px;
@@ -158,7 +155,7 @@
   width: 150px; 
   height: 35px; 
   position: relative;
-  display: flex; 
+  display: flex;
   justify-content: center;
   align-items: center;
   box-sizing: border-box;
@@ -231,7 +228,6 @@
     position: relative;
     padding: 20px;
     height: 100%;
-    /* 允许内容垂直滚动 */
     overflow-y: auto;
 }
 
@@ -252,11 +248,11 @@
     padding: 6px 12px;
     border: 1px solid var(--background-modifier-border);
     border-radius: 4px;
-    /* 使用主题变量设置背景和文字颜色 */
     background: var(--background-primary);
     color: var(--text-normal);
     cursor: pointer;
 }
+
 /* 模态框基础样式 */
 .gallery-modal {
     display: none;
@@ -278,7 +274,6 @@
 
 /* 模态框内容区域样式 */
 .gallery-modal-content {
-    /* 使用主题变量设置背景色 */
     background: var(--background-primary);
     border-radius: 8px;
     padding: 20px;
@@ -288,12 +283,18 @@
     overflow-y: auto;
 }
 
+/* 刷新索引按钮样式 */
+.gallery-refresh-button {
+  position: absolute;
+  left: 20px;
+}
+
+
 /* 模态框标题栏样式 */
 .modal-title {
     display: flex;
     justify-content: space-between;
     align-items: center;
-    /* 设置下边距和边框 */
     margin-bottom: 20px;
     padding-bottom: 10px;
     border-bottom: 1px solid var(--background-modifier-border);
@@ -301,20 +302,17 @@
 
 /* 条件组合容器样式 */
 .conjunction-container {
-    /* 设置底部间距 */
     margin-bottom: 20px;
 }
 
 /* 条件组合标签样式 */
 .conjunction-container label {
-    /* 设置右侧间距 */
     margin-right: 15px;
 }
 
 /* 添加筛选和排序容器样式 */
 .add-filter-container,
 .add-sort-container {
-    /* 使用flex布局并设置间距 */
     display: flex;
     gap: 10px;
     margin-bottom: 20px;
@@ -326,27 +324,22 @@
 .value-input,
 .sort-field-select,
 .order-select {
-    /* 设置内边距和边框样式 */
     padding: 4px 8px;
     border: 1px solid var(--background-modifier-border);
     border-radius: 4px;
-    /* 使用主题变量设置背景和文字颜色 */
     background: var(--background-primary);
     color: var(--text-normal);
 }
 
 /* 值输入框样式 */
 .value-input {
-    /* 占据剩余空间 */
     flex: 1;
 }
 
 /* 添加筛选和排序按钮样式 */
 .add-filter-button,
 .add-sort-button {
-    /* 设置内边距和边框样式 */
     padding: 4px 12px;
-    /* 使用主题变量设置背景和文字颜色 */
     background: var(--interactive-accent);
     color: var(--text-on-accent);
     border: none;
@@ -370,7 +363,6 @@
     align-items: center;
     gap: 6px;
     padding: 4px 8px;
-    /* 使用主题变量设置背景色 */
     background: var(--background-modifier-border);
     border-radius: 4px;
 }
@@ -378,7 +370,6 @@
 /* 筛选和排序启用开关样式 */
 .filter-enable-toggle,
 .sort-enable-toggle {
-    /* 移除默认外边距 */
     margin: 0;
 }
 
@@ -388,10 +379,8 @@
 .move-sort-up {
     background: none;
     border: none;
-    /* 设置内边距和鼠标样式 */
     padding: 2px 6px;
     cursor: pointer;
-    /* 使用主题变量设置颜色 */
     color: var(--text-muted);
 }
 
@@ -496,32 +485,25 @@
 
 /* 卡片网格布局容器 */
 .gallery-cards-container {
-    /* 使用Grid布局 */
     display: grid;
-    /* 设置卡片间距 */
     gap: 20px;
-    /* 自动填充列，每列最小宽度500px */
     grid-template-columns: repeat(auto-fill, minmax(500px, 1fr));
-    /* 紧密排列，避免空隙 */
     grid-auto-flow: dense;
     justify-content: start;
 }
 
 /* 3列布局样式 */
 .cards-gallery-container[data-columns="3"] .gallery-cards-container {
-    /* 固定3列等宽布局 */
     grid-template-columns: repeat(3, 1fr);
 }
 
 /* 4列布局样式 */
 .cards-gallery-container[data-columns="4"] .gallery-cards-container {
-    /* 固定4列等宽布局 */
     grid-template-columns: repeat(4, 1fr);
 }
 
 /* 卡片容器在网格中的适配样式 */
 .gallery-cards-container .new-cards-container {
-    /* 确保卡片填满网格单元格 */
     width: auto;
     margin: 0;
     height: 100%;
@@ -531,7 +513,6 @@
 /* 响应式布局断点设置 */
 /* 大屏幕布局（宽度小于1200px时） */
 @media screen and (max-width: 1200px) {
-    /* 4列布局改为3列 */
     .cards-gallery-container[data-columns="4"] .gallery-cards-container {
         grid-template-columns: repeat(3, 1fr);
     }
@@ -539,7 +520,6 @@
 
 /* 中等屏幕布局（宽度小于900px时） */
 @media screen and (max-width: 900px) {
-    /* 3列和4列布局都改为2列 */
     .cards-gallery-container[data-columns="3"] .gallery-cards-container,
     .cards-gallery-container[data-columns="4"] .gallery-cards-container {
         grid-template-columns: repeat(2, 1fr);
@@ -548,7 +528,6 @@
 
 /* 小屏幕布局（宽度小于600px时） */
 @media screen and (max-width: 600px) {
-    /* 所有布局改为单列 */
     .gallery-cards-container {
         grid-template-columns: 1fr !important;
     }
@@ -556,27 +535,18 @@
 
 /* 卡片基础容器样式 */
 .new-cards-container {
-  /* 添加过渡动画效果 */
   transition: all 0.3s ease;
   cursor: default;
-  /* 使用flex布局排列卡片内容 */
   display: flex;
-  /* 设置内边距和外边距 */
   padding: 16px;
   margin: 12px 0;
   margin-left: 10%;
-  /* 边框和圆角 */
   border: 1px solid var(--background-modifier-border);
   border-radius: 8px;
-  /* 添加阴影效果 */
   box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
-  /* 使用主题变量设置背景色 */
   background-color: var(--background-primary);
-  /* 相对定位用于内部元素定位 */
   position: relative;
-  /* 隐藏溢出内容 */
   overflow: hidden;
-  /* 设置卡片宽度 */
   width: 500px;
 }
 
@@ -636,7 +606,7 @@
 }
 
 .new-cards-container.quote-card::before {
-  content: '”';
+  content: '"';
   position: absolute;
   top: 0px;
   left: 25px;
@@ -856,19 +826,15 @@
 
 /* 卡片ID样式 */
 .new-cards-container .card-id {
-  /* 绝对定位到卡片右上角 */
   position: absolute;
   top: -3px;
-  right: 37%; /* 为评分徽章留出空间 */
-  /* 设置字体大小和颜色 */
+  right: 37%;
   font-size: 0.8em;
   color: rgba(245, 216, 179, 0);
   background-color: transparent;
   padding: 4px 8px;
   border-radius: 4px;
-  /* 确保显示在其他元素之上 */
   z-index: 2;
-  /* 添加过渡动画 */
   transition: all 0.3s ease;
   cursor: pointer;
 }
@@ -981,19 +947,16 @@
 
 /* 鼠标悬停时显示卡片ID */
 .new-cards-container:hover .card-id {
-  /* 增加不透明度使ID可见 */
   color: rgba(245, 216, 179, 0.8);
 }
 
 /* 卡片背景容器样式 */
 .new-cards-container .background-container {
-  /* 绝对定位并略微放大以覆盖边缘 */
   position: absolute;
   width: 110%;
   height: 110%;
   top: -5%;
   left: -5%;
-  /* 置于最底层 */
   z-index: 0;
   opacity: 1;
 }
@@ -1003,7 +966,6 @@
   width: 100%;
   height: 100%;
   object-fit: cover;
-  /* 添加模糊和暗化效果 */
   filter: blur(0.8rem) brightness(0.8) saturate(0.9) contrast(0.95);
   background-position: center;
   background-size: cover;
@@ -1012,23 +974,18 @@
 /* 封面和信息容器的共同样式 */
 .new-cards-container .cover-container,
 .new-cards-container .info-container {
-  /* 相对定位并确保显示在背景之上 */
   position: relative;
   z-index: 1;
 }
 
 /* 封面容器样式 */
 .new-cards-container .cover-container {
-  /* 固定宽度且不允许缩放 */
   flex: 0 0 100px;
-  /* 居中显示封面内容 */
   display: flex;
   align-items: center;
   justify-content: center;
   margin-right: 16px;
-  /* 限制最大高度 */
   max-height: 200px;
-  /* 在父容器中垂直居中 */
   align-self: center;
 }
 
@@ -1059,31 +1016,21 @@
 }
 
 .new-cards-container .info-container {
-  /* 使用flex布局占据剩余空间，确保信息区域填充封面图右侧的所有空间 */
   flex: 1;
-  /* 使用flex布局并设置为垂直方向，使内容元素垂直堆叠 */
   display: flex;
   flex-direction: column;
-  /* 内容垂直居中，在卡片高度范围内实现视觉平衡 */
   justify-content: center;
-  /* 确保所有子元素都能正确继承flex布局特性 */
   align-items: flex-start;
 }
 
 .new-cards-container .card-info-title {
-  /* 设置标题外边距，顶部对齐，底部留出12px间隔与其他内容分隔 */
-  margin: 0 0 12px;
-  /* 设置标题字体大小为1.2倍基准大小，采用适中的字重以保持清晰度 */
+  margin: 0 0 7px;
   font-size: 1.2em;
   font-weight: 400;
-  /* 使用主题变量设置标题颜色，确保在不同主题下保持一致的视觉效果 */
   color: var(--card-title-color);
-  /* 设置较小的行高使标题更紧凑，适当的字间距提高可读性 */
   line-height: 0.8;
   letter-spacing: 0.02em;
-  /* 添加文字阴影效果增强在不同背景下的可读性，半透明阴影柔化视觉效果 */
   text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.5);
-  /* 确保标题文本不会溢出容器 */
   max-width: 100%;
   word-wrap: break-word;
 }
@@ -1091,80 +1038,63 @@
 .new-cards-container .artist,
 .new-cards-container .author,
 .new-cards-container .director {
-  /* 设置创作者信息字体大小为0.9倍基准大小，保持适度的视觉层级 */
   font-size: 0.9em;
-  /* 使用主题变量设置创作者信息颜色，确保在不同主题下的一致性 */
   color: var(--card-creator-color);
-  /* 添加适当的行高确保多行文本的可读性 */
   text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.5);
   line-height: 1.2;
-  /* 设置底部边距，与其他元素保持适当间距 */
   margin-bottom: 4px;
 }
 
 .new-cards-container .year {
-  /* 设置年份信息字体大小为0.8倍基准大小，作为次要信息显示 */
   font-size: 13px;
-  /* 使用主题变量设置年份颜色，保持与主题的视觉统一 */
   color: var(--card-year-color);
-  /* 设置8px的底部间距，与描述文本保持适当的视觉分隔 */
   text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.5);
-  margin-bottom: 8px;
-  /* 添加字重设置，使年份信息更加突出 */
+  margin-bottom: 3px;
   font-weight: 600;
-  /* 设置不透明度，增加与其他元素的视觉层次 */
   opacity: 0.85;
   font-family: auto;
 }
 
 .new-cards-container .card-info-description {
-  /* 设置描述文本字体大小为0.9倍基准大小，保持与其他次要信息一致 */
-  font-size: 0.9em;
-  /* 使用主题变量设置描述文本颜色，确保在不同主题下的可读性 */
-  color: var(--card-description-color);
-  text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.5);
-  /* 设置上下外边距，与其他元素保持适当的视觉间距 */
-  margin: 0 0 8px;
-  /* 设置1.4倍行高提高长文本的可读性和视觉舒适度 */
-  line-height: 1.4;
-  /* 限制描述文本最大显示行数，避免内容过长影响卡片布局 */
+  max-height: 2.8em; /* 2行，假设行高1.4em */
+  overflow-y: auto;
   display: -webkit-box;
-  -webkit-line-clamp: 3;
+  -webkit-line-clamp: 2;
   -webkit-box-orient: vertical;
-  overflow: hidden;
-  /* 确保文本两端对齐，提升排版美观度 */
-  text-align: justify;
+  line-clamp: 2;
+  line-height: 1.4em;
+  height: 2.8em;
+  text-overflow: ellipsis;
+  word-break: break-all;
+  white-space: normal;
+  /* 隐藏滚动条 */
+  scrollbar-width: none; /* Firefox */
+  margin-block-start: 0px;
+  margin-block-end: 6px;
+}
+.card-info-description::-webkit-scrollbar {
+  display: none;
 }
 
 /* 标签容器样式 */
 .new-cards-container .card-tags-container {
-  /* 移除顶部边距 */
   margin-top: 0;
-  /* 使用flex布局实现标签的流式排列 */
   display: flex;
   flex-wrap: wrap;
   align-items: center;
-  /* 设置标签之间的间距 */
   gap: 6px;
-  /* 容器宽度自适应内容 */
   width: fit-content;
-  /* 设置透明背景 */
   background-color: transparent;
 }
 
 /* 单个标签样式 */
 .new-cards-container .tag {
-  /* 使用CSS变量控制标签字体大小和颜色 */
   font-size: var(--tag-size);
   color: var(--tag-color);
-  /* 移除下划线 */
   text-decoration: none;
-  /* 设置内边距和圆角 */
   padding: 2px 4px;
   border-radius: 4px;
-  /* 设置标签背景色 */
   background-color: rgb(240, 238, 236);
-  /* 添加过渡动画效果 */
   transition: all 0.2s ease;
 }
 
@@ -1187,30 +1117,31 @@
 
 /* 元数据容器样式 */
 .new-cards-container .meta-container {
-  /* 设置字体大小和颜色 */
+ 
   font-size: 0.9em;
   color: var(--card-meta-color);
-  /* 设置外边距和行高 */
   margin: 0 0 3px;
   line-height: 1.4; 
-  /* 确保元数据文本清晰可读 */
+  display: inline-flex;
 }
+
+.meta-container .meta-item {
+  margin-right: 20px;
+}
+
 /* 音乐卡片特定样式 */
 .music-card .cover-container svg {
-  /* 为音乐卡片的SVG图标设置较大内边距，突出音乐图标的特征 */
   padding: 12px;
 }
 
 /* 书籍卡片特定样式 */
 .book-card .cover-container svg {
-  /* 为书籍卡片的SVG图标设置中等内边距，保持书籍图标的清晰度 */
   padding: 8px;
 }
 
 .movie-card .cover-container svg,
 .tv-card .cover-container svg,
 .anime-card .cover-container svg {
-  /* 为电影卡片的SVG图标设置较小内边距，使图标更加紧凑 */
   padding: 6px;
 }
 
@@ -1219,11 +1150,11 @@
 @keyframes wakeup {
   0% {
     height: 28px;
-    border-radius: 70px 70px 40px 40px / 48px 48px 30px 30px; /* --border-radius2 */
+    border-radius: 70px 70px 40px 40px / 48px 48px 30px 30px;
   }
   100% {
     height: 40px;
-    border-radius: 40px 40px 40px 40px / 48px 48px 30px 30px; /* --border-radius3 */
+    border-radius: 40px 40px 40px 40px / 48px 48px 30px 30px;
   }
 }
 
@@ -1357,11 +1288,11 @@
 @keyframes sleep {
   0% {
     height: 30px;
-    border-radius: 60px 60px 40px 40px / 48px 48px 30px 30px; /* --border-radius1 */
+    border-radius: 60px 60px 40px 40px / 48px 48px 30px 30px;
   }
   100% {
     height: 26px;
-    border-radius: 70px 70px 40px 40px / 48px 48px 30px 30px; /* --border-radius2 */
+    border-radius: 70px 70px 40px 40px / 48px 48px 30px 30px;
   }
 }
 
@@ -1452,4 +1383,429 @@
   position: relative;
   animation: sleep 1s ease infinite alternate;
 }
+
+/* 自定义元数据字段样式 */
+.meta-header-container {
+    display: flex;
+    flex-direction: row;
+    align-items: center;
+    justify-content: flex-start;
+    gap: 15px;
+    margin-top: 20px;
+    margin-bottom: 12px;
+}
+
+.meta-section-title {
+    margin: 0;
+    font-size: 1.2em;
+    color: var(--text-normal);
+}
+
+.meta-fields-container {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    margin-bottom: 15px;
+}
+
+.meta-field-group {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+.meta-key-input,
+.meta-value-input {
+    padding: 8px;
+    border: 1px solid var(--background-modifier-border);
+    border-radius: 4px;
+    background-color: var(--background-primary);
+    color: var(--text-normal);
+}
+
+.meta-key-input {
+    flex: 1;
+    max-width: 150px;
+}
+
+.meta-value-input {
+    flex: 2;
+}
+
+.meta-remove-button {
+    background-color: var(--background-modifier-error);
+    color: white;
+    border: none;
+    border-radius: 50%;
+    width: 24px;
+    height: 24px;
+    font-size: 16px;
+    line-height: 1;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    padding: 0;
+}
+
+.meta-remove-button:hover {
+    background-color: var(--text-error);
+}
+
+.meta-add-button {
+    background-color: var(--interactive-accent);
+    color: var(--text-on-accent);
+    border: none;
+    border-radius: 4px;
+    padding: 6px 12px;
+    font-size: 14px;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+}
+
+.meta-add-button::before {
+    content: "+";
+    margin-right: 5px;
+    font-size: 16px;
+    font-weight: bold;
+}
+
+.meta-add-button:hover {
+    background-color: var(--interactive-accent-hover);
+}
+
+/* 快速记录表单行样式 */
+.form-row {
+    display: flex;
+    flex-direction: row;
+    gap: 20px;
+    width: 100%;
+}
+
+.form-row .form-group-inline {
+    flex: 1;
+    min-width: 0;
+    margin-bottom: 0;
+}
+
+.form-row label {
+    min-width: 38px;
+    display: inline-block;
+}
+
+.form-row input,
+.form-row select {
+    width: 100%;
+}
+
+/* 优化现有表单样式 */
+.form-group-inline {
+    display: flex;
+    align-items: center;
+}
+
+/* 清除全部筛选按钮样式 */
+
+.filter-clear-all-button {
+  background-color: var(--text-error);
+  color: white;
+  border: none;
+  border-radius: 4px;
+  padding: 4px 8px;
+  margin-left: 10px;
+  font-size: 12px;
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  transition: background-color 0.2s ease;
+}
+
+.filter-clear-all-button:hover {
+  background-color: var(--text-error-hover);
+}
+
+.filter-clear-all-button::before {
+  content: "×";
+  margin-right: 3px;
+  font-size: 14px;
+  font-weight: bold;
+}
+
+/* 元数据筛选样式 */
+.meta-filter-container {
+  margin-top: 20px;
+  padding-top: 15px;
+  padding-bottom: 5px;
+  border-top: 1px dashed var(--background-modifier-border);
+  opacity: 0.9;
+}
+
+.meta-filter-title {
+  font-size: 14px;
+  margin: 0 0 10px 0;
+  color: var(--text-muted);
+  font-weight: normal;
+}
+
+.meta-field-container {
+  display: flex;
+  gap: 8px;
+  margin-bottom: 15px;
+  align-items: center;
+}
+
+.meta-field-select,
+.meta-operator-select {
+  padding: 4px 8px;
+  border: 1px solid var(--background-modifier-border);
+  border-radius: 4px;
+  background: var(--background-secondary);
+  color: var(--text-normal);
+  flex: 1;
+  font-size: 13px;
+}
+
+.meta-field-select {
+  max-width: 150px;
+}
+
+.meta-operator-select {
+  max-width: 100px;
+}
+
+.meta-value-input {
+  padding: 4px 8px;
+  border: 1px solid var(--background-modifier-border);
+  border-radius: 4px;
+  background: var(--background-secondary);
+  color: var(--text-normal);
+  flex: 2;
+  font-size: 13px;
+}
+
+.add-meta-filter-button {
+  padding: 4px 8px;
+  background-color: var(--background-modifier-border);
+  color: var(--text-normal);
+  border: none;
+  border-radius: 4px;
+  cursor: pointer;
+  transition: background-color 0.2s ease;
+  font-size: 13px;
+}
+
+.add-meta-filter-button:hover {
+  background-color: var(--background-modifier-hover);
+}
+
+/* 自定义元数据标签样式 */
+.filter-tag span:has(+ .remove-filter):contains("元数据:") {
+  color: var(--text-muted);
+  font-style: italic;
+}
+
+/* 豆瓣搜索按钮样式 */
+.douban-search-button-container {
+    margin-left: 10px;
+    display: flex;
+    align-items: center;
+}
+
+.douban-search-button {
+    background-color: #00b51d;
+    color: white;
+    border: none;
+    border-radius: 4px;
+    padding: 6px 12px;
+    cursor: pointer;
+    font-size: 12px;
+    transition: background-color 0.3s;
+}
+
+.douban-search-button:hover {
+    background-color: #00a01a;
+}
+
+.douban-search-button:disabled {
+    background-color: #cccccc;
+    cursor: not-allowed;
+}
+
+/* 豆瓣搜索结果弹窗样式 */
+.douban-search-modal {
+    position: fixed;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    width: 80%;
+    max-width: 600px;
+    max-height: 80vh;
+    background-color: var(--background-primary);
+    border-radius: 8px;
+    box-shadow: 0 4px 20px rgba(0, 0, 0, 0.15);
+    z-index: 1000;
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+}
+
+.douban-modal-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 12px 16px;
+    border-bottom: 1px solid var(--background-modifier-border);
+    background-color: var(--background-secondary);
+}
+
+.douban-modal-header h3 {
+    margin: 0;
+    font-size: 16px;
+    font-weight: 600;
+}
+
+.douban-modal-close {
+    background: none;
+    border: none;
+    font-size: 20px;
+    cursor: pointer;
+    color: var(--text-muted);
+    padding: 0 4px;
+}
+
+.douban-modal-close:hover {
+    color: var(--text-normal);
+}
+
+.douban-results-list {
+    overflow-y: auto;
+    padding: 12px;
+    max-height: calc(80vh - 50px);
+}
+
+.douban-result-item {
+    display: flex;
+    padding: 12px;
+    border-bottom: 1px solid var(--background-modifier-border);
+    align-items: center;
+    transition: background-color 0.2s;
+}
+
+.douban-result-item:last-child {
+    border-bottom: none;
+}
+
+.douban-result-item:hover {
+    background-color: var(--background-modifier-hover);
+}
+
+.douban-result-cover {
+    width: 60px;
+    height: 84px;
+    object-fit: cover;
+    border-radius: 4px;
+    margin-right: 16px;
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+}
+
+.douban-result-cover-placeholder {
+    width: 60px;
+    height: 84px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background-color: var(--background-secondary);
+    border-radius: 4px;
+    margin-right: 16px;
+    color: var(--text-muted);
+    font-size: 12px;
+    text-align: center;
+}
+
+.douban-result-info {
+    flex: 1;
+}
+
+.douban-result-info h4 {
+    margin: 0 0 8px 0;
+    font-size: 16px;
+    font-weight: 500;
+    display: flex;
+    align-items: center;
+    flex-wrap: wrap;
+}
+
+.douban-result-id {
+    font-size: 12px;
+    font-weight: normal;
+    color: var(--text-muted);
+    background-color: var(--background-secondary);
+    padding: 2px 6px;
+    border-radius: 4px;
+    margin-left: 8px;
+}
+
+.douban-result-subinfo {
+    font-size: 13px;
+    color: var(--text-muted);
+    margin-bottom: 8px;
+}
+
+.douban-result-link-container {
+    margin-top: 8px;
+}
+
+.douban-result-link {
+    font-size: 12px;
+    color: var(--text-accent);
+    text-decoration: none;
+}
+
+.douban-result-link:hover {
+    text-decoration: underline;
+}
+
+.douban-no-results {
+    padding: 20px;
+    text-align: center;
+    color: var(--text-muted);
+    font-style: italic;
+}
+
+.douban-result-select {
+    background-color: var(--interactive-accent);
+    color: var(--text-on-accent);
+    border: none;
+    border-radius: 4px;
+    padding: 6px 12px;
+    cursor: pointer;
+    font-size: 12px;
+    margin-left: 12px;
+    transition: background-color 0.3s;
+    white-space: nowrap;
+}
+
+.douban-result-select:hover {
+    background-color: var(--interactive-accent-hover);
+}
+
+/* 表单行样式 
+.form-row {
+    display: flex;
+    margin-bottom: 10px;
+    align-items: flex-start;
+}
+
+.form-group-inline {
+    flex: 1;
+    margin-right: 10px;
+    display: flex;
+    flex-direction: column;
+}
+
+.form-group-inline:last-child {
+    margin-right: 0;
+}
+    */
 
