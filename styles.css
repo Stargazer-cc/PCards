@@ -1071,6 +1071,7 @@
   scrollbar-width: none; /* Firefox */
   margin-block-start: 0px;
   margin-block-end: 6px;
+  text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.5);
 }
 .card-info-description::-webkit-scrollbar {
   display: none;
@@ -1819,5 +1820,6 @@
   text-overflow: ellipsis;
   display: -webkit-box;
   -webkit-box-orient: vertical;
+  text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.5);
 }
 
