@@ -1,6 +1,6 @@
 {
   "name": " PCards ",
-  "version": "1.1.12",
+  "version": "1.4.3",
   "description": "为笔记内容提供更美观的卡片呈现方式，支持卡片整体快捷插入、全体卡片总览。",
   "main": "main.js",
   "scripts": {
