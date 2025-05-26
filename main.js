@@ -6591,7 +6591,7 @@ __export(main_exports, {
   default: () => NewCardsPlugin
 });
 module.exports = __toCommonJS(main_exports);
-var import_obsidian4 = require("obsidian");
+var import_obsidian5 = require("obsidian");
 
 // src/utils.ts
 var import_crypto_js = __toESM(require_crypto_js());
@@ -6655,16 +6655,29 @@ var CardUtils = class {
     return {};
   }
   static async saveCardIndex(vault, index) {
-    try {
-      const content = JSON.stringify(index, null, 2);
-      const indexFile = vault.getAbstractFileByPath("card-index.json");
-      if (indexFile instanceof import_obsidian.TFile) {
-        await vault.modify(indexFile, content);
-      } else {
-        await vault.create("card-index.json", content);
+    const maxRetries = 3;
+    let retryCount = 0;
+    while (retryCount < maxRetries) {
+      try {
+        const content = JSON.stringify(index, null, 2);
+        const indexFile = vault.getAbstractFileByPath("card-index.json");
+        if (indexFile instanceof import_obsidian.TFile) {
+          await vault.modify(indexFile, content);
+          console.log(`\u5361\u7247\u7D22\u5F15\u5DF2\u6210\u529F\u4FDD\u5B58\uFF0C\u6761\u76EE\u6570\u91CF: ${Object.keys(index).length}`);
+        } else {
+          await vault.create("card-index.json", content);
+          console.log(`\u5361\u7247\u7D22\u5F15\u6587\u4EF6\u5DF2\u6210\u529F\u521B\u5EFA\uFF0C\u6761\u76EE\u6570\u91CF: ${Object.keys(index).length}`);
+        }
+        return;
+      } catch (error) {
+        retryCount++;
+        console.error(`\u4FDD\u5B58\u5361\u7247\u7D22\u5F15\u5931\u8D25 (\u5C1D\u8BD5 ${retryCount}/${maxRetries}):`, error);
+        if (retryCount >= maxRetries) {
+          console.error("\u8FBE\u5230\u6700\u5927\u91CD\u8BD5\u6B21\u6570\uFF0C\u65E0\u6CD5\u4FDD\u5B58\u5361\u7247\u7D22\u5F15");
+          throw new Error(`\u4FDD\u5B58\u5361\u7247\u7D22\u5F15\u5931\u8D25: ${error.message}`);
+        }
+        await new Promise((resolve) => setTimeout(resolve, 1e3));
       }
-    } catch (error) {
-      console.error("Failed to save card index:", error);
     }
   }
   static isLocationInCard(location, cardLocation) {
@@ -6761,14 +6774,31 @@ var CardUtils = class {
   }
   static async removeCardsByPath(vault, path) {
     const index = await this.loadCardIndex(vault);
-    for (const cid in index) {
-      const card = index[cid];
-      card.locations = card.locations.filter((loc) => loc.path !== path);
-      if (card.locations.length === 0) {
-        delete index[cid];
+    let removedCount = 0;
+    let modifiedCount = 0;
+    console.log(`\u5F00\u59CB\u6E05\u7406\u8DEF\u5F84 ${path} \u7684\u5361\u7247\u7D22\u5F15...`);
+    try {
+      for (const cid in index) {
+        const card = index[cid];
+        const originalLocationsCount = card.locations.length;
+        card.locations = card.locations.filter((loc) => loc.path !== path);
+        if (card.locations.length < originalLocationsCount) {
+          modifiedCount++;
+          if (card.locations.length === 0) {
+            delete index[cid];
+            removedCount++;
+            console.log(`\u5DF2\u5220\u9664\u5361\u7247\u7D22\u5F15: ${cid}`);
+          } else {
+            console.log(`\u5DF2\u4ECE\u5361\u7247 ${cid} \u4E2D\u79FB\u9664\u8DEF\u5F84 ${path} \u7684\u4F4D\u7F6E\u5F15\u7528`);
+          }
+        }
       }
+      console.log(`\u6E05\u7406\u5B8C\u6210\uFF0C\u5171\u4FEE\u6539 ${modifiedCount} \u4E2A\u5361\u7247\u7D22\u5F15\uFF0C\u5B8C\u5168\u5220\u9664 ${removedCount} \u4E2A\u5361\u7247\u7D22\u5F15`);
+      await this.saveCardIndex(vault, index);
+    } catch (error) {
+      console.error(`\u6E05\u7406\u8DEF\u5F84 ${path} \u7684\u5361\u7247\u7D22\u5F15\u65F6\u51FA\u9519:`, error);
+      throw error;
     }
-    await this.saveCardIndex(vault, index);
   }
 };
 CardUtils.base62Chars = "0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz";
@@ -6977,40 +7007,9 @@ var CardsGalleryView = class extends import_obsidian2.ItemView {
       { field: "lastUpdate", text: "\u66F4\u65B0\u65F6\u95F4" },
       { field: "title", text: "\u6807\u9898" },
       { field: "description", text: "\u63CF\u8FF0" },
-      { field: "collection_date", text: "\u6536\u5F55\u65F6\u95F4" }
+      { field: "collection_date", text: "\u6536\u5F55\u65F6\u95F4" },
+      { field: "tags", text: "\u6807\u7B7E" }
     ];
-    const statusFilterContainer = filterModalContent.createDiv({ cls: "status-filter-container" });
-    statusFilterContainer.createSpan({ text: "\u9605\u8BFB\u72B6\u6001\uFF1A" });
-    const statusSelect = statusFilterContainer.createEl("select", { cls: "status-select" });
-    statusSelect.createEl("option", {
-      value: "",
-      text: "\u5168\u90E8"
-    });
-    ["\u5DF2\u9605", "\u5F85\u9605"].forEach((status) => {
-      statusSelect.createEl("option", {
-        value: status,
-        text: status
-      });
-    });
-    const statusCondition = this.filterDefinition.conditions.find((c) => c.field === "status");
-    if (statusCondition) {
-      statusSelect.value = statusCondition.value;
-    }
-    statusSelect.addEventListener("change", () => {
-      this.filterDefinition.conditions = this.filterDefinition.conditions.filter((c) => c.field !== "status");
-      if (statusSelect.value) {
-        this.filterDefinition.conditions.push({
-          field: "status",
-          operator: "equals",
-          value: statusSelect.value,
-          enabled: true
-        });
-      }
-      this.plugin.settings.gallerySettings.filterDefinition = this.filterDefinition;
-      this.plugin.saveSettings();
-      this.renderCards();
-      updateFilterDisplay();
-    });
     const addFilterContainer = filterModalContent.createDiv({ cls: "add-filter-container" });
     const fieldSelect = addFilterContainer.createEl("select", { cls: "field-select" });
     filterFields.forEach((field) => {
@@ -7051,14 +7050,14 @@ var CardsGalleryView = class extends import_obsidian2.ItemView {
       this.plugin.settings.gallerySettings.filterDefinition = this.filterDefinition;
       this.plugin.saveSettings();
       this.renderCards();
-      updateFilterDisplay();
+      this.updateFilterDisplayUI();
     };
     const removeFilterCondition = (index) => {
       this.filterDefinition.conditions.splice(index, 1);
       this.plugin.settings.gallerySettings.filterDefinition = this.filterDefinition;
       this.plugin.saveSettings();
       this.renderCards();
-      updateFilterDisplay();
+      this.updateFilterDisplayUI();
     };
     addButton.addEventListener("click", () => {
       const field = fieldSelect.value;
@@ -7071,30 +7070,95 @@ var CardsGalleryView = class extends import_obsidian2.ItemView {
     });
     const activeFiltersContainer = filterModalContent.createDiv({ cls: "active-filters" });
     const updateFilterDisplay = () => {
-      activeFiltersContainer.empty();
-      this.filterDefinition.conditions.forEach((condition, index) => {
-        if (condition.field === "status") return;
-        const field = filterFields.find((f) => f.field === condition.field);
-        const filterTag = activeFiltersContainer.createDiv({ cls: "filter-tag" });
-        const checkbox = filterTag.createEl("input", {
-          type: "checkbox",
-          cls: "filter-enable-toggle",
-          attr: { checked: condition.enabled }
-        });
-        checkbox.addEventListener("change", () => {
-          condition.enabled = checkbox.checked;
-          this.plugin.settings.gallerySettings.filterDefinition = this.filterDefinition;
-          this.plugin.saveSettings();
-          this.renderCards();
-        });
-        filterTag.createSpan({ text: `${field?.text || condition.field} ${condition.operator} ${condition.value}` });
-        const removeButton = filterTag.createEl("button", { cls: "remove-filter" });
-        removeButton.addEventListener("click", () => removeFilterCondition(index));
-      });
+      this.updateFilterDisplayUI();
     };
     updateFilterDisplay();
+    const metaFilterContainer = filterModalContent.createDiv({ cls: "meta-filter-container" });
+    const metaFilterTitle = metaFilterContainer.createEl("h3", {
+      text: "\u5143\u6570\u636E\u7B5B\u9009",
+      cls: "meta-filter-title"
+    });
+    const metaFieldContainer = metaFilterContainer.createDiv({ cls: "meta-field-container" });
+    const metaFieldSelect = metaFieldContainer.createEl("select", {
+      cls: "meta-field-select",
+      attr: { placeholder: "\u9009\u62E9\u5143\u6570\u636E\u5B57\u6BB5" }
+    });
+    metaFieldSelect.createEl("option", {
+      value: "",
+      text: "\u9009\u62E9\u5143\u6570\u636E\u5B57\u6BB5",
+      attr: { selected: true, disabled: true }
+    });
+    this.loadMetaFields(metaFieldSelect);
+    const metaOperatorSelect = metaFieldContainer.createEl("select", { cls: "meta-operator-select" });
+    const metaOperators = [
+      { value: "contains", text: "\u5305\u542B" },
+      { value: "equals", text: "\u7B49\u4E8E" },
+      { value: "greater", text: "\u5927\u4E8E" },
+      { value: "less", text: "\u5C0F\u4E8E" }
+    ];
+    metaOperators.forEach((op) => {
+      metaOperatorSelect.createEl("option", {
+        value: op.value,
+        text: op.text
+      });
+    });
+    const metaValueInput = metaFieldContainer.createEl("input", {
+      type: "text",
+      cls: "meta-value-input",
+      placeholder: "\u8F93\u5165\u503C"
+    });
+    const addMetaFilterButton = metaFieldContainer.createEl("button", {
+      text: "\u6DFB\u52A0",
+      cls: "add-meta-filter-button"
+    });
+    addMetaFilterButton.addEventListener("click", () => {
+      const metaField = metaFieldSelect.value;
+      const operator = metaOperatorSelect.value;
+      const value = metaValueInput.value;
+      if (metaField && operator && value) {
+        const fullField = `meta.${metaField}`;
+        addFilterCondition(fullField, operator, value);
+        metaValueInput.value = "";
+      }
+    });
+    const statusFilterContainer = filterModalContent.createDiv({ cls: "status-filter-container" });
+    statusFilterContainer.createSpan({ text: "\u9605\u8BFB\u72B6\u6001\uFF1A" });
+    const statusSelect = statusFilterContainer.createEl("select", { cls: "status-select" });
+    statusSelect.createEl("option", {
+      value: "",
+      text: "\u5168\u90E8"
+    });
+    ["\u5DF2\u9605", "\u5F85\u9605"].forEach((status) => {
+      statusSelect.createEl("option", {
+        value: status,
+        text: status
+      });
+    });
+    const statusCondition = this.filterDefinition.conditions.find((c) => c.field === "status");
+    if (statusCondition) {
+      statusSelect.value = statusCondition.value;
+    }
+    statusSelect.addEventListener("change", () => {
+      this.filterDefinition.conditions = this.filterDefinition.conditions.filter((c) => c.field !== "status");
+      if (statusSelect.value) {
+        this.filterDefinition.conditions.push({
+          field: "status",
+          operator: "equals",
+          value: statusSelect.value,
+          enabled: true
+        });
+      }
+      this.plugin.settings.gallerySettings.filterDefinition = this.filterDefinition;
+      this.plugin.saveSettings();
+      this.renderCards();
+      this.updateFilterDisplayUI();
+    });
     filterToggle.addEventListener("click", () => {
       filterModal.classList.add("show");
+      const metaFieldSelect2 = this.containerEl.querySelector(".meta-field-select");
+      if (metaFieldSelect2) {
+        this.loadMetaFields(metaFieldSelect2);
+      }
     });
     filterModal.addEventListener("click", (e) => {
       if (e.target === filterModal) {
@@ -7264,6 +7328,23 @@ var CardsGalleryView = class extends import_obsidian2.ItemView {
                 continue;
               }
             }
+          }
+          return false;
+        }
+        if (condition.field === "tags") {
+          const cardTags = card.data?.tags || [];
+          const normalizedTags = Array.isArray(cardTags) ? cardTags.map((tag) => typeof tag === "string" ? tag.replace(/^#/, "") : String(tag).replace(/^#/, "")) : String(cardTags).split(/[\s,]+/).map((tag) => tag.replace(/^#/, ""));
+          const searchTag = condition.value.replace(/^#/, "");
+          if (condition.operator === "contains") {
+            if (!normalizedTags.some((tag) => tag.toLowerCase().includes(searchTag.toLowerCase()))) {
+              return false;
+            }
+            continue;
+          } else if (condition.operator === "equals") {
+            if (!normalizedTags.some((tag) => tag.toLowerCase() === searchTag.toLowerCase())) {
+              return false;
+            }
+            continue;
           }
           return false;
         }
@@ -7459,15 +7540,997 @@ ${content}`;
     this.saveSettings();
     this.container.empty();
   }
+  /**
+   * 添加标签筛选条件
+   * @param tag 要筛选的标签值
+   */
+  addTagFilter(tag) {
+    const existingCondition = this.filterDefinition.conditions.find(
+      (c) => c.field === "tags" && c.value === tag
+    );
+    if (existingCondition) {
+      existingCondition.enabled = true;
+      this.plugin.settings.gallerySettings.filterDefinition = this.filterDefinition;
+      this.plugin.saveSettings();
+      this.renderCards();
+      const filterModal2 = this.containerEl.querySelector(".gallery-modal.filter-modal");
+      if (filterModal2) {
+        filterModal2.classList.add("show");
+        this.updateFilterDisplayUI();
+      }
+      return;
+    }
+    this.filterDefinition.conditions.push({
+      field: "tags",
+      operator: "equals",
+      // 使用精确匹配
+      value: tag,
+      enabled: true
+    });
+    this.plugin.settings.gallerySettings.filterDefinition = this.filterDefinition;
+    this.plugin.saveSettings();
+    this.renderCards();
+    const filterModal = this.containerEl.querySelector(".gallery-modal.filter-modal");
+    if (filterModal) {
+      filterModal.classList.add("show");
+      this.updateFilterDisplayUI();
+    }
+    new import_obsidian2.Notice(`\u5DF2\u6DFB\u52A0\u6807\u7B7E\u7B5B\u9009\uFF1A${tag}`, 2e3);
+  }
+  /**
+   * 从所有卡片中加载元数据字段
+   */
+  async loadMetaFields(selectElement) {
+    try {
+      while (selectElement.options.length > 1) {
+        selectElement.remove(1);
+      }
+      const index = await CardUtils.loadCardIndex(this.plugin.app.vault);
+      const metaFields = /* @__PURE__ */ new Set();
+      for (const cardId in index) {
+        const cardInfo = index[cardId];
+        if (!cardInfo || !cardInfo.content) continue;
+        const cardMatch = cardInfo.content.match(/```(.*?)\n([\s\S]*?)```/);
+        if (!cardMatch) continue;
+        const cardContent = cardMatch[2];
+        const cardData = this.plugin.parseYaml(cardContent);
+        if (cardData.meta && typeof cardData.meta === "object") {
+          Object.keys(cardData.meta).forEach((key) => metaFields.add(key));
+        }
+      }
+      Array.from(metaFields).sort().forEach((field) => {
+        selectElement.createEl("option", {
+          value: field,
+          text: field
+        });
+      });
+      if (metaFields.size === 0) {
+        const option = selectElement.createEl("option", {
+          value: "",
+          text: "\u672A\u627E\u5230\u5143\u6570\u636E",
+          attr: { disabled: true }
+        });
+      }
+    } catch (error) {
+      console.error("\u52A0\u8F7D\u5143\u6570\u636E\u5B57\u6BB5\u5931\u8D25:", error);
+      selectElement.createEl("option", {
+        value: "",
+        text: "\u52A0\u8F7D\u5931\u8D25",
+        attr: { disabled: true }
+      });
+    }
+  }
+  /**
+   * 更新筛选面板UI显示
+   */
+  updateFilterDisplayUI() {
+    const activeFiltersContainer = this.containerEl.querySelector(".active-filters");
+    if (!activeFiltersContainer) return;
+    activeFiltersContainer.empty();
+    const oldClearButton = this.containerEl.querySelector(".filter-clear-all-button");
+    if (oldClearButton) {
+      oldClearButton.remove();
+    }
+    if (this.filterDefinition.conditions.length > 0) {
+      const modalTitle = this.containerEl.querySelector(".filter-modal .modal-title");
+      if (modalTitle) {
+        const clearAllButton = modalTitle.createEl("button", {
+          text: "\u6E05\u9664\u5168\u90E8",
+          cls: "filter-clear-all-button"
+        });
+        clearAllButton.addEventListener("click", () => {
+          this.filterDefinition.conditions = [];
+          this.plugin.settings.gallerySettings.filterDefinition = this.filterDefinition;
+          this.plugin.saveSettings();
+          this.renderCards();
+          this.updateFilterDisplayUI();
+          const statusSelect = this.containerEl.querySelector(".status-select");
+          if (statusSelect) {
+            statusSelect.value = "";
+          }
+          new import_obsidian2.Notice("\u5DF2\u6E05\u9664\u6240\u6709\u7B5B\u9009\u6761\u4EF6", 2e3);
+        });
+      }
+    }
+    const filterFields = [
+      { field: "year", text: "\u5E74\u4EFD" },
+      { field: "rating", text: "\u8BC4\u5206" },
+      { field: "lastUpdate", text: "\u66F4\u65B0\u65F6\u95F4" },
+      { field: "title", text: "\u6807\u9898" },
+      { field: "description", text: "\u63CF\u8FF0" },
+      { field: "collection_date", text: "\u6536\u5F55\u65F6\u95F4" },
+      { field: "tags", text: "\u6807\u7B7E" }
+    ];
+    this.filterDefinition.conditions.forEach((condition, index) => {
+      if (condition.field === "status") return;
+      let fieldText = "";
+      if (condition.field.startsWith("meta.")) {
+        const metaKey = condition.field.split(".")[1];
+        fieldText = `\u5143\u6570\u636E:${metaKey}`;
+      } else {
+        const field = filterFields.find((f) => f.field === condition.field);
+        fieldText = field?.text || condition.field;
+      }
+      const filterTag = activeFiltersContainer.createDiv({ cls: "filter-tag" });
+      const checkbox = filterTag.createEl("input", {
+        type: "checkbox",
+        cls: "filter-enable-toggle",
+        attr: { checked: condition.enabled }
+      });
+      checkbox.addEventListener("change", () => {
+        condition.enabled = checkbox.checked;
+        this.plugin.settings.gallerySettings.filterDefinition = this.filterDefinition;
+        this.plugin.saveSettings();
+        this.renderCards();
+      });
+      filterTag.createSpan({ text: `${fieldText} ${condition.operator} ${condition.value}` });
+      const removeButton = filterTag.createEl("button", { cls: "remove-filter" });
+      const currentIndex = index;
+      removeButton.addEventListener("click", () => {
+        this.filterDefinition.conditions.splice(currentIndex, 1);
+        this.plugin.settings.gallerySettings.filterDefinition = this.filterDefinition;
+        this.plugin.saveSettings();
+        this.renderCards();
+        this.updateFilterDisplayUI();
+      });
+    });
+  }
 };
 
-// src/QuickNoteView.ts
+// src/DoubanAPI.ts
 var import_obsidian3 = require("obsidian");
+var DoubanAPI = class {
+  // 设置豆瓣Cookie
+  static setCookie(cookie) {
+    this.cookie = cookie;
+    console.log("\u5DF2\u8BBE\u7F6E\u8C46\u74E3Cookie");
+  }
+  // 获取豆瓣Cookie
+  static getCookie() {
+    return this.cookie;
+  }
+  // 搜索豆瓣上的内容
+  static async search(keyword, type) {
+    try {
+      const encodedKeyword = encodeURIComponent(keyword);
+      let searchUrl;
+      if (type === "book") {
+        searchUrl = `https://search.douban.com/book/subject_search?search_text=${encodedKeyword}`;
+      } else {
+        searchUrl = `https://search.douban.com/movie/subject_search?search_text=${encodedKeyword}`;
+      }
+      console.log(`\u6B63\u5728\u641C\u7D22\u8C46\u74E3: ${searchUrl}`);
+      await new Promise((resolve) => setTimeout(resolve, 100 + Math.random() * 200));
+      const headers = {
+        "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36",
+        "Accept": "text/html,application/xhtml+xml,application/xml;q=0.9,image/webp,*/*;q=0.8",
+        "Accept-Language": "zh-CN,zh;q=0.9,en-US;q=0.8,en;q=0.7",
+        "Referer": type === "book" ? "https://book.douban.com/" : "https://movie.douban.com/",
+        "Cache-Control": "no-cache",
+        "Pragma": "no-cache",
+        "Connection": "keep-alive",
+        "Upgrade-Insecure-Requests": "1",
+        "Sec-Fetch-Dest": "document",
+        "Sec-Fetch-Mode": "navigate",
+        "Sec-Fetch-Site": "same-site",
+        "Sec-Fetch-User": "?1"
+      };
+      if (this.cookie) {
+        headers["Cookie"] = this.cookie;
+        console.log("\u4F7F\u7528\u7528\u6237\u63D0\u4F9B\u7684Cookie\u8FDB\u884C\u641C\u7D22");
+      } else {
+        console.log("\u672A\u4F7F\u7528Cookie\u8FDB\u884C\u641C\u7D22");
+      }
+      let response;
+      let retries = 0;
+      const maxRetries = 3;
+      while (retries < maxRetries) {
+        try {
+          response = await (0, import_obsidian3.requestUrl)({
+            url: searchUrl,
+            method: "GET",
+            headers
+          });
+          break;
+        } catch (error) {
+          retries++;
+          console.log(`\u8BF7\u6C42\u5931\u8D25\uFF0C\u7B2C${retries}\u6B21\u91CD\u8BD5...`);
+          if (retries >= maxRetries) {
+            throw error;
+          }
+          await new Promise((resolve) => setTimeout(resolve, 500 + Math.random() * 500 * retries));
+        }
+      }
+      if (!response) {
+        throw new Error("\u8BF7\u6C42\u5931\u8D25\uFF0C\u65E0\u6CD5\u83B7\u53D6\u54CD\u5E94");
+      }
+      const html = response.text;
+      console.log(`\u83B7\u53D6\u5230\u7684HTML\u957F\u5EA6: ${html.length}`);
+      const subjectMatch = html.match(/<link\s+rel="canonical"\s+href="[^"]*\/subject\/(\d+)/);
+      if (subjectMatch && subjectMatch[1]) {
+        const id = subjectMatch[1];
+        console.log(`\u68C0\u6D4B\u5230\u76F4\u63A5\u91CD\u5B9A\u5411\u5230\u6761\u76EE: ${id}`);
+        const titleMatch = html.match(/<title>([^<]+)<\/title>/);
+        const title = titleMatch ? titleMatch[1].replace(/\(豆瓣\)$/, "").trim() : `\u8C46\u74E3${type === "movie" ? "\u7535\u5F71" : "\u56FE\u4E66"} #${id}`;
+        let coverUrl = "";
+        const coverMatch = html.match(/<img[^>]*src="([^"@]+(@|\.jpg|\.png|\.webp))[^"]*"[^>]*title="点击看更多海报"/);
+        if (coverMatch && coverMatch[1]) {
+          coverUrl = coverMatch[1].split("@")[0];
+        }
+        return {
+          success: true,
+          data: [{
+            id,
+            title,
+            cover: coverUrl,
+            type,
+            url: type === "movie" ? `https://movie.douban.com/subject/${id}/` : `https://book.douban.com/subject/${id}/`,
+            year: "",
+            creator: "",
+            rating: "",
+            description: "\u901A\u8FC7\u91CD\u5B9A\u5411\u627E\u5230\u7684\u552F\u4E00\u7ED3\u679C"
+          }]
+        };
+      }
+      if (html.includes("\u9875\u9762\u4E0D\u5B58\u5728") || html.includes("\u9519\u8BEF")) {
+        console.log("\u8C46\u74E3\u8FD4\u56DE\u4E86\u9519\u8BEF\u9875\u9762");
+        return {
+          success: false,
+          error: "\u8C46\u74E3\u8FD4\u56DE\u4E86\u9519\u8BEF\u9875\u9762\uFF0C\u8BF7\u7A0D\u540E\u518D\u8BD5"
+        };
+      }
+      if (html.includes("\u767B\u5F55") && html.includes("\u6CE8\u518C") && !html.includes("search_results") && !html.includes("item-root") && !html.includes("subject-item")) {
+        console.log("\u8C46\u74E3\u9700\u8981\u767B\u5F55");
+        return {
+          success: false,
+          error: "\u8C46\u74E3\u9700\u8981\u767B\u5F55\u624D\u80FD\u641C\u7D22\uFF0C\u8BF7\u5728\u8BBE\u7F6E\u4E2D\u6DFB\u52A0Cookie"
+        };
+      }
+      console.log("HTML\u7247\u6BB5:");
+      console.log(html.substring(0, 1e3));
+      if (html.includes("window.__DATA__") || html.includes("application/json")) {
+        console.log("\u68C0\u6D4B\u5230JSON\u683C\u5F0F\u7684\u641C\u7D22\u7ED3\u679C");
+        const data = this.extractJsonFromHtml(html);
+        if (data) {
+          console.log("\u6210\u529F\u63D0\u53D6JSON\u6570\u636E");
+        } else {
+          console.log("\u672A\u80FD\u63D0\u53D6JSON\u6570\u636E");
+        }
+      }
+      if (html.includes("search_results") || html.includes("subject-item") || html.includes("item-root")) {
+        console.log("\u627E\u5230\u641C\u7D22\u7ED3\u679C\u6807\u8BB0");
+      } else {
+        console.log("\u672A\u627E\u5230\u641C\u7D22\u7ED3\u679C\u6807\u8BB0\uFF0C\u53EF\u80FD\u662F\u88AB\u91CD\u5B9A\u5411\u5230\u4E86\u4E3B\u9875");
+      }
+      const results = await this.parseSearchResults(html, type);
+      console.log(`\u89E3\u6790\u5230${results.length}\u4E2A\u641C\u7D22\u7ED3\u679C`);
+      if (results.length === 0) {
+        if (html.includes("window.location.href") || html.includes("location.replace")) {
+          console.log("\u68C0\u6D4B\u5230\u9875\u9762\u91CD\u5B9A\u5411");
+          const redirectMatch = html.match(/(?:window\.location\.href|location\.replace)\s*=\s*["']([^"']+)["']/);
+          if (redirectMatch && redirectMatch[1]) {
+            const redirectUrl = redirectMatch[1];
+            console.log(`\u63D0\u53D6\u5230\u91CD\u5B9A\u5411URL: ${redirectUrl}`);
+            const subjectMatch2 = redirectUrl.match(/\/subject\/(\d+)/);
+            if (subjectMatch2 && subjectMatch2[1]) {
+              const id = subjectMatch2[1];
+              console.log(`\u91CD\u5B9A\u5411\u5230\u6761\u76EE: ${id}`);
+              return {
+                success: true,
+                data: [{
+                  id,
+                  title: `\u8C46\u74E3${type === "movie" ? "\u7535\u5F71" : "\u56FE\u4E66"} #${id}`,
+                  cover: "",
+                  type,
+                  url: redirectUrl.startsWith("http") ? redirectUrl : `https://${type}.douban.com${redirectUrl}`,
+                  year: "",
+                  creator: "",
+                  rating: "",
+                  description: "\u901A\u8FC7\u91CD\u5B9A\u5411\u627E\u5230\u7684\u552F\u4E00\u7ED3\u679C"
+                }]
+              };
+            }
+            return {
+              success: false,
+              error: "\u8C46\u74E3\u641C\u7D22\u88AB\u91CD\u5B9A\u5411\uFF0C\u8BF7\u5C1D\u8BD5\u6DFB\u52A0Cookie\u6216\u7A0D\u540E\u518D\u8BD5"
+            };
+          }
+        }
+        if (html.includes("\u9A8C\u8BC1\u7801") || html.includes("captcha")) {
+          console.log("\u68C0\u6D4B\u5230\u9A8C\u8BC1\u7801");
+          return {
+            success: false,
+            error: "\u8C46\u74E3\u9700\u8981\u9A8C\u8BC1\u7801\uFF0C\u8BF7\u5728\u6D4F\u89C8\u5668\u4E2D\u8BBF\u95EE\u8C46\u74E3\u5E76\u5B8C\u6210\u9A8C\u8BC1\u540E\u518D\u8BD5"
+          };
+        }
+        return {
+          success: false,
+          error: "\u672A\u627E\u5230\u641C\u7D22\u7ED3\u679C\uFF0C\u8BF7\u5C1D\u8BD5\u5176\u4ED6\u5173\u952E\u8BCD\u6216\u6DFB\u52A0Cookie"
+        };
+      }
+      return {
+        success: true,
+        data: results
+      };
+    } catch (error) {
+      console.error("\u8C46\u74E3\u641C\u7D22\u5931\u8D25:", error);
+      return {
+        success: false,
+        error: error.message
+      };
+    }
+  }
+  // 从HTML中提取JSON数据
+  static extractJsonFromHtml(html) {
+    try {
+      const dataMatch = html.match(/window\.__DATA__ = "([^"]+)"/);
+      if (dataMatch && dataMatch[1]) {
+        const jsonStr = dataMatch[1].replace(/\\/g, "");
+        try {
+          return JSON.parse(jsonStr);
+        } catch (e) {
+          console.error("\u6807\u51C6JSON\u89E3\u6790\u5931\u8D25:", e);
+        }
+      }
+      const altDataMatch = html.match(/window\.__DATA__\s*=\s*({[^<]+})/);
+      if (altDataMatch && altDataMatch[1]) {
+        try {
+          return JSON.parse(altDataMatch[1]);
+        } catch (e) {
+          console.error("\u66FF\u4EE3JSON\u89E3\u6790\u5931\u8D25:", e);
+        }
+      }
+      const jsonScriptMatch = html.match(/<script[^>]*type="application\/json"[^>]*>([\s\S]*?)<\/script>/);
+      if (jsonScriptMatch && jsonScriptMatch[1]) {
+        try {
+          return JSON.parse(jsonScriptMatch[1]);
+        } catch (e) {
+          console.error("\u811A\u672CJSON\u89E3\u6790\u5931\u8D25:", e);
+        }
+      }
+      const apiDataMatch = html.match(/\{"payload":\{.*"total":\d+.*\}\}/);
+      if (apiDataMatch && apiDataMatch[0]) {
+        try {
+          return JSON.parse(apiDataMatch[0]);
+        } catch (e) {
+          console.error("API JSON\u89E3\u6790\u5931\u8D25:", e);
+        }
+      }
+      return null;
+    } catch (error) {
+      console.error("JSON\u63D0\u53D6\u5931\u8D25:", error);
+      return null;
+    }
+  }
+  // 从HTML中直接提取电影/书籍ID
+  static extractIdsFromHtml(html, type) {
+    const ids = [];
+    const seenIds = /* @__PURE__ */ new Set();
+    try {
+      const idPattern = type === "movie" ? /(?:movie|subject)\.douban\.com\/subject\/(\d+)/g : /(?:book|subject)\.douban\.com\/subject\/(\d+)/g;
+      let match;
+      while ((match = idPattern.exec(html)) !== null) {
+        const id = match[1];
+        if (!seenIds.has(id)) {
+          seenIds.add(id);
+          ids.push(id);
+        }
+      }
+      const relativePattern = /href="\/subject\/(\d+)/g;
+      while ((match = relativePattern.exec(html)) !== null) {
+        const id = match[1];
+        if (!seenIds.has(id)) {
+          seenIds.add(id);
+          ids.push(id);
+        }
+      }
+      console.log(`\u4ECEHTML\u4E2D\u76F4\u63A5\u63D0\u53D6\u5230${ids.length}\u4E2AID`);
+    } catch (error) {
+      console.error("\u63D0\u53D6ID\u5931\u8D25:", error);
+    }
+    return ids;
+  }
+  // 解析搜索结果HTML
+  static async parseSearchResults(html, type) {
+    const results = [];
+    try {
+      console.log("\u5F00\u59CB\u89E3\u6790\u641C\u7D22\u7ED3\u679C");
+      if (html.includes("window.__DATA__") || html.includes("application/json")) {
+        console.log("\u68C0\u6D4B\u5230\u65B0\u7248\u641C\u7D22\u7ED3\u679C\u9875\u9762\uFF0C\u5C1D\u8BD5\u63D0\u53D6JSON\u6570\u636E");
+        const data = this.extractJsonFromHtml(html);
+        if (data) {
+          console.log("\u6210\u529F\u63D0\u53D6JSON\u6570\u636E");
+          if (data.payload && data.payload.items && data.payload.items.length > 0) {
+            console.log(`\u4ECEJSON\u4E2D\u627E\u5230${data.payload.items.length}\u4E2A\u7ED3\u679C`);
+            data.payload.items.forEach((item) => {
+              if (!item.id) return;
+              const id = item.id;
+              const title = item.title;
+              const cover = item.cover_url;
+              const url = item.url;
+              let year = "";
+              let creator = "";
+              let rating = "";
+              let description = "";
+              if (item.year) {
+                year = item.year;
+              }
+              if (type === "movie") {
+                if (item.directors && item.directors.length > 0) {
+                  creator = item.directors[0].name;
+                }
+              } else {
+                if (item.authors && item.authors.length > 0) {
+                  creator = item.authors[0];
+                }
+              }
+              if (item.rating && item.rating.value) {
+                rating = item.rating.value.toString();
+              }
+              if (item.abstract) {
+                description = item.abstract;
+              }
+              results.push({
+                id,
+                title,
+                cover,
+                type,
+                year,
+                creator,
+                rating,
+                description,
+                url
+              });
+            });
+            if (results.length > 0) {
+              return results;
+            }
+          } else {
+            console.log("JSON\u4E2D\u672A\u627E\u5230\u641C\u7D22\u7ED3\u679C");
+          }
+        }
+      }
+      console.log("\u5C1D\u8BD5\u4F7F\u7528\u6B63\u5219\u8868\u8FBE\u5F0F\u89E3\u6790\u641C\u7D22\u7ED3\u679C");
+      let foundResults = false;
+      if (type === "movie") {
+        const itemRegexPatterns = [
+          /<div class="item-root"[^>]*>[\s\S]*?<a[^>]*href="([^"]*?subject\/(\d+)[^"]*)"[^>]*>[\s\S]*?<img[^>]*src="([^"]+)"[^>]*>[\s\S]*?<div class="title">([^<]+)<\/div>[\s\S]*?(?:<div class="rating">[\s\S]*?<span class="rating_nums">([^<]*)<\/span>)?[\s\S]*?(?:<div class="abstract">([^<]*)<\/div>)?/g,
+          /<div[^>]*class="root"[^>]*>[\s\S]*?<a[^>]*href="([^"]*?subject\/(\d+)[^"]*)"[^>]*>[\s\S]*?<img[^>]*src="([^"]+)"[^>]*>[\s\S]*?<div[^>]*>([^<]+)<\/div>[\s\S]*?(?:<span[^>]*>(\d\.\d)<\/span>)?[\s\S]*?(?:<div[^>]*>([^<]*)<\/div>)?/g
+        ];
+        for (const itemRegex of itemRegexPatterns) {
+          let match;
+          let matchCount = 0;
+          while ((match = itemRegex.exec(html)) !== null) {
+            const url = match[1];
+            const id = match[2];
+            const cover = match[3];
+            const title = match[4].trim();
+            const rating = match[5] ? match[5].trim() : "";
+            const abstract = match[6] ? match[6].trim() : "";
+            console.log(`\u627E\u5230\u7535\u5F71: ${title}, ID: ${id}`);
+            foundResults = true;
+            matchCount++;
+            let director = "";
+            let year = "";
+            const directorMatch = abstract.match(/导演[:：\s]*([^\/\n]+)/);
+            if (directorMatch) {
+              director = directorMatch[1].trim();
+            }
+            const yearMatch = abstract.match(/(\d{4})/);
+            if (yearMatch) {
+              year = yearMatch[1];
+            }
+            results.push({
+              id,
+              title,
+              cover,
+              type,
+              year,
+              creator: director,
+              rating,
+              description: abstract,
+              url: url.startsWith("http") ? url : `https://movie.douban.com${url}`
+            });
+            if (results.length >= 10) {
+              break;
+            }
+          }
+          if (matchCount > 0) {
+            console.log(`\u4F7F\u7528\u6A21\u5F0F\u5339\u914D\u5230${matchCount}\u4E2A\u7ED3\u679C`);
+            break;
+          }
+        }
+      } else {
+        const itemRegexPatterns = [
+          /<li class="subject-item"[^>]*>[\s\S]*?<div class="pic"[^>]*>[\s\S]*?<a[^>]*href="([^"]*?subject\/(\d+)[^"]*)"[^>]*>[\s\S]*?<img[^>]*src="([^"]+)"[^>]*>[\s\S]*?<div class="info">[\s\S]*?<a[^>]*>([^<]+)<\/a>[\s\S]*?(?:<div class="pub">([^<]*)<\/div>)?[\s\S]*?(?:<span class="rating_nums">([^<]*)<\/span>)?/g,
+          /<div[^>]*class="root"[^>]*>[\s\S]*?<a[^>]*href="([^"]*?subject\/(\d+)[^"]*)"[^>]*>[\s\S]*?<img[^>]*src="([^"]+)"[^>]*>[\s\S]*?<div[^>]*>([^<]+)<\/div>[\s\S]*?(?:<span[^>]*>(\d\.\d)<\/span>)?[\s\S]*?(?:<div[^>]*>([^<]*)<\/div>)?/g
+        ];
+        for (const itemRegex of itemRegexPatterns) {
+          let match;
+          let matchCount = 0;
+          while ((match = itemRegex.exec(html)) !== null) {
+            const url = match[1];
+            const id = match[2];
+            const cover = match[3];
+            const title = match[4].trim();
+            const pubInfo = match[5] ? match[5].trim() : "";
+            const rating = match[6] ? match[6].trim() : "";
+            console.log(`\u627E\u5230\u4E66\u7C4D: ${title}, ID: ${id}`);
+            foundResults = true;
+            matchCount++;
+            let author = "";
+            let year = "";
+            const authorMatch = pubInfo.match(/^([^\/]+)/);
+            if (authorMatch) {
+              author = authorMatch[1].trim();
+            }
+            const yearMatch = pubInfo.match(/(\d{4})/);
+            if (yearMatch) {
+              year = yearMatch[1];
+            }
+            results.push({
+              id,
+              title,
+              cover,
+              type,
+              year,
+              creator: author,
+              rating,
+              description: pubInfo,
+              url: url.startsWith("http") ? url : `https://book.douban.com${url}`
+            });
+            if (results.length >= 10) {
+              break;
+            }
+          }
+          if (matchCount > 0) {
+            console.log(`\u4F7F\u7528\u6A21\u5F0F\u5339\u914D\u5230${matchCount}\u4E2A\u7ED3\u679C`);
+            break;
+          }
+        }
+      }
+      if (!foundResults) {
+        console.log("\u5C1D\u8BD5\u901A\u7528\u6A21\u5F0F\u63D0\u53D6\u641C\u7D22\u7ED3\u679C");
+        const linkPatterns = [
+          type === "movie" ? /href="(https?:\/\/movie\.douban\.com\/subject\/(\d+)[^"]*)"[^>]*>([^<]+)<\/a>/g : /href="(https?:\/\/book\.douban\.com\/subject\/(\d+)[^"]*)"[^>]*>([^<]+)<\/a>/g,
+          type === "movie" ? /href="(\/subject\/(\d+)[^"]*)"[^>]*>([^<]+)<\/a>/g : /href="(\/subject\/(\d+)[^"]*)"[^>]*>([^<]+)<\/a>/g
+        ];
+        const seenIds = /* @__PURE__ */ new Set();
+        for (const linkPattern of linkPatterns) {
+          let match;
+          let matchCount = 0;
+          while ((match = linkPattern.exec(html)) !== null) {
+            const urlPath = match[1];
+            const id = match[2];
+            const title = match[3].trim();
+            if (seenIds.has(id) || !title || title.length > 50 || title.includes("\u7684\u66F4\u591A") || title === "\u8C46\u74E3" || title === "\u767B\u5F55") {
+              continue;
+            }
+            seenIds.add(id);
+            console.log(`\u901A\u7528\u6A21\u5F0F\u627E\u5230\u7ED3\u679C: ${title}, ID: ${id}`);
+            matchCount++;
+            const url = urlPath.startsWith("http") ? urlPath : type === "movie" ? `https://movie.douban.com${urlPath}` : `https://book.douban.com${urlPath}`;
+            results.push({
+              id,
+              title,
+              cover: "",
+              type,
+              year: "",
+              creator: "",
+              rating: "",
+              description: "",
+              url
+            });
+            if (results.length >= 10) {
+              break;
+            }
+          }
+          if (matchCount > 0) {
+            console.log(`\u901A\u7528\u6A21\u5F0F\u5339\u914D\u5230${matchCount}\u4E2A\u7ED3\u679C`);
+            foundResults = true;
+            break;
+          }
+        }
+        if (!foundResults) {
+          console.log("\u5C1D\u8BD5\u6700\u540E\u7684\u5907\u7528\u65B9\u6848");
+          const ids = this.extractIdsFromHtml(html, type);
+          if (ids.length > 0) {
+            foundResults = true;
+            console.log(`\u5907\u7528\u65B9\u6848\u627E\u5230${ids.length}\u4E2AID\uFF0C\u5C1D\u8BD5\u6293\u53D6\u8BE6\u60C5...`);
+            const detailPromises = ids.slice(0, 10).map(
+              (id) => type === "movie" ? this.getMovieDetail(id) : this.getBookDetail(id)
+            );
+            const details = await Promise.all(detailPromises);
+            for (const detail of details) {
+              if (detail) {
+                results.push({
+                  id: detail.id,
+                  title: detail.title,
+                  cover: detail.cover || detail.cover_url,
+                  type,
+                  year: detail.year || "",
+                  creator: type === "movie" ? detail.director || "" : detail.author ? detail.author.join(", ") : "",
+                  rating: detail.rating?.value?.toString() || "",
+                  url: detail.url
+                });
+              }
+            }
+          }
+        }
+      }
+      console.log(`\u6700\u7EC8\u89E3\u6790\u5230${results.length}\u4E2A\u641C\u7D22\u7ED3\u679C`);
+      for (const result of results) {
+        console.log(`- ${result.title} (${result.id}): ${result.url}`);
+      }
+      if (results.length === 0) {
+        console.log("\u8C46\u74E3\u641C\u7D22\u672A\u8FD4\u56DE\u7ED3\u679C");
+      }
+    } catch (error) {
+      console.error("\u89E3\u6790\u641C\u7D22\u7ED3\u679C\u51FA\u9519:", error);
+    }
+    return results;
+  }
+  // 根据ID获取电影详情
+  static async getMovieDetail(doubanId) {
+    try {
+      const url = `https://movie.douban.com/subject/${doubanId}/`;
+      console.log(`\u83B7\u53D6\u7535\u5F71\u8BE6\u60C5: ${url}`);
+      const headers = {
+        "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36",
+        "Accept": "text/html,application/xhtml+xml,application/xml;q=0.9,image/webp,*/*;q=0.8",
+        "Accept-Language": "zh-CN,zh;q=0.9,en-US;q=0.8,en;q=0.7",
+        "Referer": "https://movie.douban.com/"
+      };
+      if (this.cookie) {
+        headers["Cookie"] = this.cookie;
+      }
+      const response = await (0, import_obsidian3.requestUrl)({
+        url,
+        method: "GET",
+        headers
+      });
+      const html = response.text;
+      console.log(`\u83B7\u53D6\u5230\u7684HTML\u957F\u5EA6: ${html.length}`);
+      return this.parseDesktopMovieDetail(html, url, doubanId);
+    } catch (error) {
+      console.error("\u83B7\u53D6\u7535\u5F71\u8BE6\u60C5\u5931\u8D25:", error);
+      return null;
+    }
+  }
+  // 根据ID获取书籍详情
+  static async getBookDetail(doubanId) {
+    try {
+      const url = `https://book.douban.com/subject/${doubanId}/`;
+      console.log(`\u83B7\u53D6\u4E66\u7C4D\u8BE6\u60C5: ${url}`);
+      const headers = {
+        "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36",
+        "Accept": "text/html,application/xhtml+xml,application/xml;q=0.9,image/webp,*/*;q=0.8",
+        "Accept-Language": "zh-CN,zh;q=0.9,en-US;q=0.8,en;q=0.7",
+        "Referer": "https://book.douban.com/"
+      };
+      if (this.cookie) {
+        headers["Cookie"] = this.cookie;
+      }
+      const response = await (0, import_obsidian3.requestUrl)({
+        url,
+        method: "GET",
+        headers
+      });
+      const html = response.text;
+      console.log(`\u83B7\u53D6\u5230\u7684HTML\u957F\u5EA6: ${html.length}`);
+      return this.parseDesktopBookDetail(html, url, doubanId);
+    } catch (error) {
+      console.error("\u83B7\u53D6\u4E66\u7C4D\u8BE6\u60C5\u5931\u8D25:", error);
+      return null;
+    }
+  }
+  // 解析桌面版电影详情HTML
+  static parseDesktopMovieDetail(html, url, doubanId) {
+    try {
+      console.log("\u5F00\u59CB\u89E3\u6790\u684C\u9762\u7248\u7535\u5F71\u8BE6\u60C5");
+      const detail = {
+        title: "",
+        url
+      };
+      const titlePatterns = [
+        /<span property="v:itemreviewed">([^<]+)<\/span>/,
+        /<title>([^<]+)(?:\s*\(豆瓣\))?<\/title>/,
+        /<h1>([^<]+)<\/h1>/
+      ];
+      for (const pattern of titlePatterns) {
+        const titleMatch = html.match(pattern);
+        if (titleMatch && titleMatch[1]) {
+          detail.title = titleMatch[1].trim().replace(/\(豆瓣\)$/, "");
+          console.log(`\u627E\u5230\u6807\u9898: ${detail.title}`);
+          break;
+        }
+      }
+      const originalTitlePatterns = [
+        /<span class="pl">原名:<\/span>\s*([^<]+)/,
+        /<span>原名:([^<]+)<\/span>/
+      ];
+      for (const pattern of originalTitlePatterns) {
+        const originalTitleMatch = html.match(pattern);
+        if (originalTitleMatch && originalTitleMatch[1]) {
+          detail.original_title = originalTitleMatch[1].trim();
+          console.log(`\u627E\u5230\u539F\u59CB\u6807\u9898: ${detail.original_title}`);
+          break;
+        }
+      }
+      const coverPatterns = [
+        /<img[^>]*src="([^"@]+(@|\.jpg|\.png|\.webp))[^"]*"[^>]*title="点击看更多海报"/,
+        /<img[^>]*src="([^"@]+(@|\.jpg|\.png|\.webp))[^"]*"[^>]*alt="[^"]*海报"[^>]*>/,
+        /<img[^>]*src="([^"@]+(@|\.jpg|\.png|\.webp))[^"]*"[^>]*class="[^"]*"[^>]*>/
+      ];
+      for (const pattern of coverPatterns) {
+        const coverMatch = html.match(pattern);
+        if (coverMatch && coverMatch[1]) {
+          detail.cover_url = coverMatch[1].split("@")[0];
+          console.log(`\u627E\u5230\u5C01\u9762: ${detail.cover_url}`);
+          break;
+        }
+      }
+      const yearPatterns = [
+        /<span class="year">\((\d{4})\)<\/span>/,
+        />(\d{4})年<\/span>/,
+        /(\d{4})年上映/
+      ];
+      for (const pattern of yearPatterns) {
+        const yearMatch = html.match(pattern);
+        if (yearMatch && yearMatch[1]) {
+          detail.year = yearMatch[1];
+          console.log(`\u627E\u5230\u5E74\u4EFD: ${detail.year}`);
+          break;
+        }
+      }
+      const directorPatterns = [
+        /<a[^>]*rel="v:directedBy"[^>]*>([^<]+)<\/a>/,
+        /<span class='pl'>导演:<\/span>\s*<a[^>]*>([^<]+)<\/a>/,
+        /导演:\s*<a[^>]*>([^<]+)<\/a>/
+      ];
+      for (const pattern of directorPatterns) {
+        const directorMatch = html.match(pattern);
+        if (directorMatch && directorMatch[1]) {
+          detail.director = directorMatch[1].trim();
+          console.log(`\u627E\u5230\u5BFC\u6F14: ${detail.director}`);
+          break;
+        }
+      }
+      const ratingPatterns = [
+        /<strong[^>]*class="ll rating_num"[^>]*>([^<]+)<\/strong>/,
+        /<strong[^>]*>(\d+\.\d+)<\/strong>/
+      ];
+      for (const pattern of ratingPatterns) {
+        const ratingMatch = html.match(pattern);
+        if (ratingMatch && ratingMatch[1]) {
+          detail.rating = {
+            value: parseFloat(ratingMatch[1])
+          };
+          const ratingCountPatterns = [
+            /<span property="v:votes">([^<]+)<\/span>/,
+            />(\d+)人评价</
+          ];
+          for (const countPattern of ratingCountPatterns) {
+            const ratingCountMatch = html.match(countPattern);
+            if (ratingCountMatch && ratingCountMatch[1]) {
+              detail.rating.count = parseInt(ratingCountMatch[1]);
+              break;
+            }
+          }
+          console.log(`\u627E\u5230\u8BC4\u5206: ${detail.rating.value} (${detail.rating.count || "\u672A\u77E5"}\u4EBA\u8BC4\u4EF7)`);
+          break;
+        }
+      }
+      const descPatterns = [
+        /<span property="v:summary"[^>]*>([\s\S]*?)<\/span>/,
+        /<span class="all hidden">([\s\S]*?)<\/span>/,
+        /<div class="indent"[^>]*>\s*<span>([\s\S]*?)<\/span>/
+      ];
+      for (const pattern of descPatterns) {
+        const descMatch = html.match(pattern);
+        if (descMatch && descMatch[1]) {
+          detail.description = descMatch[1].replace(/<[^>]+>/g, "").trim();
+          console.log(`\u627E\u5230\u7B80\u4ECB: ${detail.description.substring(0, 50)}...`);
+          break;
+        }
+      }
+      const tags = [];
+      const tagsPatterns = [
+        /<span class="tags-body">([\s\S]*?)<\/span>/,
+        /<div class="tags-body">([\s\S]*?)<\/div>/
+      ];
+      for (const pattern of tagsPatterns) {
+        const tagsMatch = html.match(pattern);
+        if (tagsMatch && tagsMatch[1]) {
+          const tagLinksRegex = /<a[^>]*>([^<]+)<\/a>/g;
+          let tagMatch;
+          while ((tagMatch = tagLinksRegex.exec(tagsMatch[1])) !== null) {
+            tags.push(tagMatch[1].trim());
+          }
+          if (tags.length > 0) break;
+        }
+      }
+      if (tags.length > 0) {
+        detail.tags = tags;
+        console.log(`\u627E\u5230\u6807\u7B7E: ${tags.join(", ")}`);
+      }
+      if (doubanId) detail.id = doubanId;
+      if (detail.cover_url) detail.cover = detail.cover_url;
+      if (!detail.url) detail.url = url;
+      if (detail.rating?.value) {
+        detail.rating.value = parseFloat(detail.rating.value.toString());
+      }
+      return detail;
+    } catch (error) {
+      console.error("\u89E3\u6790\u7535\u5F71\u8BE6\u60C5\u5931\u8D25:", error);
+      return null;
+    }
+  }
+  // 解析桌面版书籍详情HTML
+  static parseDesktopBookDetail(html, url, doubanId) {
+    try {
+      console.log("\u5F00\u59CB\u89E3\u6790\u684C\u9762\u7248\u4E66\u7C4D\u8BE6\u60C5");
+      const detail = {
+        title: "",
+        url
+      };
+      const titlePatterns = [
+        /<span property="v:itemreviewed">([^<]+)<\/span>/,
+        /<title>([^<]+)(?:\s*\(豆瓣\))?<\/title>/,
+        /<h1>([^<]+)<\/h1>/
+      ];
+      for (const pattern of titlePatterns) {
+        const titleMatch = html.match(pattern);
+        if (titleMatch && titleMatch[1]) {
+          detail.title = titleMatch[1].trim().replace(/\(豆瓣\)$/, "");
+          console.log(`\u627E\u5230\u6807\u9898: ${detail.title}`);
+          break;
+        }
+      }
+      const coverPatterns = [
+        /<a class="nbg"[^>]*>\s*<img[^>]*src="([^"@]+(@|\.jpg|\.png|\.webp))[^"]*"[^>]*>/,
+        /<img[^>]*src="([^"@]+(@|\.jpg|\.png|\.webp))[^"]*"[^>]*alt="[^"]*封面"[^>]*>/,
+        /<img[^>]*src="([^"@]+(@|\.jpg|\.png|\.webp))[^"]*"[^>]*id="mainpic"[^>]*>/
+      ];
+      for (const pattern of coverPatterns) {
+        const coverMatch = html.match(pattern);
+        if (coverMatch && coverMatch[1]) {
+          detail.cover_url = coverMatch[1].split("@")[0];
+          console.log(`\u627E\u5230\u5C01\u9762: ${detail.cover_url}`);
+          break;
+        }
+      }
+      const authorPatterns = [
+        /<span class="pl">作者:<\/span>[\s\S]*?<a[^>]*>([^<]+)<\/a>/,
+        /作者:[\s\S]*?<a[^>]*>([^<]+)<\/a>/,
+        /<span class="pl">作者:<\/span>([\s\S]*?)<br\s*\/?>/
+      ];
+      for (const pattern of authorPatterns) {
+        const authorMatch = html.match(pattern);
+        if (authorMatch && authorMatch[1]) {
+          const authorText = authorMatch[1].replace(/<[^>]+>/g, "").trim();
+          detail.author = [authorText];
+          console.log(`\u627E\u5230\u4F5C\u8005: ${authorText}`);
+          break;
+        }
+      }
+      const infoText = html.match(/<div id="info"[^>]*>([\s\S]*?)<\/div>/) || ["", html];
+      const infoContent = infoText[1];
+      const yearPatterns = [
+        /出版年份?:?\s*(\d{4})/,
+        /出版时间:?\s*(\d{4})/,
+        /出版日期:?\s*(\d{4})/,
+        /出版社:?[^<]*(\d{4})年/
+      ];
+      for (const pattern of yearPatterns) {
+        const yearMatch = infoContent.match(pattern);
+        if (yearMatch && yearMatch[1]) {
+          detail.year = yearMatch[1];
+          console.log(`\u627E\u5230\u5E74\u4EFD: ${detail.year}`);
+          break;
+        }
+      }
+      const ratingPatterns = [
+        /<strong class="ll rating_num"[^>]*>([^<]+)<\/strong>/,
+        /<strong[^>]*>(\d+\.\d+)<\/strong>/
+      ];
+      for (const pattern of ratingPatterns) {
+        const ratingMatch = html.match(pattern);
+        if (ratingMatch && ratingMatch[1]) {
+          detail.rating = {
+            value: parseFloat(ratingMatch[1])
+          };
+          const ratingCountPatterns = [
+            /<span property="v:votes">([^<]+)<\/span>/,
+            />(\d+)人评价</
+          ];
+          for (const countPattern of ratingCountPatterns) {
+            const ratingCountMatch = html.match(countPattern);
+            if (ratingCountMatch && ratingCountMatch[1]) {
+              detail.rating.count = parseInt(ratingCountMatch[1]);
+              break;
+            }
+          }
+          console.log(`\u627E\u5230\u8BC4\u5206: ${detail.rating.value} (${detail.rating.count || "\u672A\u77E5"}\u4EBA\u8BC4\u4EF7)`);
+          break;
+        }
+      }
+      const descPatterns = [
+        /<div class="intro">[\s\S]*?<p>([\s\S]*?)<\/p>/,
+        /<div class="indent"[^>]*>\s*<span>([\s\S]*?)<\/span>/,
+        /<span class="all hidden">([\s\S]*?)<\/span>/
+      ];
+      for (const pattern of descPatterns) {
+        const descMatch = html.match(pattern);
+        if (descMatch && descMatch[1]) {
+          detail.description = descMatch[1].replace(/<[^>]+>/g, "").trim();
+          console.log(`\u627E\u5230\u7B80\u4ECB: ${detail.description.substring(0, 50)}...`);
+          break;
+        }
+      }
+      const tags = [];
+      const tagsPatterns = [
+        /<a class="tag"[^>]*>([^<]+)<\/a>/g,
+        /<a[^>]*href="\/tag\/[^"]+"[^>]*>([^<]+)<\/a>/g
+      ];
+      for (const pattern of tagsPatterns) {
+        let tagMatch;
+        while ((tagMatch = pattern.exec(html)) !== null) {
+          const tag = tagMatch[1].trim();
+          if (!tags.includes(tag)) {
+            tags.push(tag);
+          }
+        }
+        if (tags.length > 0) break;
+      }
+      if (tags.length > 0) {
+        detail.tags = tags;
+        console.log(`\u627E\u5230\u6807\u7B7E: ${tags.join(", ")}`);
+      }
+      if (doubanId) detail.id = doubanId;
+      if (detail.cover_url) detail.cover = detail.cover_url;
+      if (!detail.url) detail.url = url;
+      if (detail.rating?.value) {
+        detail.rating.value = parseFloat(detail.rating.value.toString());
+      }
+      return detail;
+    } catch (error) {
+      console.error("\u89E3\u6790\u4E66\u7C4D\u8BE6\u60C5\u5931\u8D25:", error);
+      return null;
+    }
+  }
+};
+DoubanAPI.cookie = "";
+
+// src/QuickNoteView.ts
+var import_obsidian4 = require("obsidian");
 var VIEW_TYPE_QUICK_NOTE = "quick-note-view";
-var QuickNoteView = class extends import_obsidian3.ItemView {
+var QuickNoteView = class extends import_obsidian4.ItemView {
   constructor(leaf, plugin) {
     super(leaf);
     this.type = "idea";
+    this.doubanSearchResults = [];
+    this.doubanSearchModal = null;
     this.plugin = plugin;
   }
   getViewType() {
@@ -7537,7 +8600,7 @@ var QuickNoteView = class extends import_obsidian3.ItemView {
       case "idea":
         this.createFormGroup(form, "\u60F3\u6CD5", "content", true);
         this.createFormGroup(form, "\u6807\u7B7E", "tags");
-        this.createFormGroup(form, "URL", "url");
+        this.createFormGroup(form, "\u94FE\u63A5", "url");
         this.createFormGroup(form, "\u611F\u4E8E", "source");
         this.createFormGroup(form, "\u65E5\u671F", "date", false, "text", "YYYY-MM-DD HH:mm:ss", currentDateTime);
         break;
@@ -7545,90 +8608,127 @@ var QuickNoteView = class extends import_obsidian3.ItemView {
         this.createFormGroup(form, "\u6458\u5F55", "content", true);
         this.createFormGroup(form, "\u6765\u6E90", "source");
         this.createFormGroup(form, "\u6807\u7B7E", "tags");
-        this.createFormGroup(form, "URL", "url");
+        this.createFormGroup(form, "\u94FE\u63A5", "url");
         this.createFormGroup(form, "\u65E5\u671F", "date", false, "text", "YYYY-MM-DD HH:mm:ss", currentDateTime);
         break;
       case "movie":
         this.createFormGroup(form, "\u5F71\u8BC4", "description", true);
-        this.createFormGroup(form, "\u540D\u79F0", "title");
+        const movieTitleRow = form.createDiv({ cls: "form-row" });
+        this.createInlineFormGroup(movieTitleRow, "\u540D\u79F0", "title");
+        this.addDoubanSearchButton(movieTitleRow, "movie");
         this.createFormGroup(form, "\u5BFC\u6F14", "director");
-        this.createFormGroup(form, "\u8BC4\u5206", "rating", false, "number");
+        const movieRatingYearRow = form.createDiv({ cls: "form-row" });
+        this.createInlineFormGroup(movieRatingYearRow, "\u8BC4\u5206", "rating", "number");
+        this.createInlineFormGroup(movieRatingYearRow, "\u5E74\u4EFD", "year", "text", "YYYY");
         this.createFormGroup(form, "\u5C01\u9762", "cover");
-        this.createFormGroup(form, "URL", "url");
+        this.createFormGroup(form, "\u94FE\u63A5", "url");
         this.createFormGroup(form, "\u6807\u7B7E", "tags");
-        this.createFormGroup(form, "\u5E74\u4EFD", "year", false, "text", "YYYY");
-        this.createFormGroup(form, "\u6536\u5F55\u65F6\u95F4", "collection_date", false, "text", "YY-MM-DD", collectionDate);
-        const movieStatusGroup = form.createDiv({ cls: "form-group form-group-inline" });
-        movieStatusGroup.createEl("label", { text: "\u72B6\u6001" });
+        const movieDateStatusRow = form.createDiv({ cls: "form-row" });
+        this.createInlineFormGroup(movieDateStatusRow, "\u6536\u5F55", "collection_date", "text", "YY-MM-DD", collectionDate);
+        const movieStatusGroup = movieDateStatusRow.createDiv({ cls: "form-group-inline" });
+        movieStatusGroup.createEl("label", { text: "\u72B6\u6001", attr: { for: "status" } });
         const movieStatusSelect = movieStatusGroup.createEl("select", { attr: { id: "status", name: "status" } });
         movieStatusSelect.createEl("option", { value: "unread", text: "\u5F85\u770B/\u5F85\u8BFB" });
         movieStatusSelect.createEl("option", { value: "read", text: "\u5DF2\u770B/\u5DF2\u8BFB" });
+        this.addMetaFieldsSection(form);
         break;
       case "book":
         this.createFormGroup(form, "\u4E66\u8BC4", "description", true);
-        this.createFormGroup(form, "\u4E66\u540D", "title");
+        const bookTitleRow = form.createDiv({ cls: "form-row" });
+        this.createInlineFormGroup(bookTitleRow, "\u4E66\u540D", "title");
+        this.addDoubanSearchButton(bookTitleRow, "book");
         this.createFormGroup(form, "\u4F5C\u8005", "author");
-        this.createFormGroup(form, "\u8BC4\u5206", "rating", false, "number");
+        const bookRatingYearRow = form.createDiv({ cls: "form-row" });
+        this.createInlineFormGroup(bookRatingYearRow, "\u8BC4\u5206", "rating", "number");
+        this.createInlineFormGroup(bookRatingYearRow, "\u5E74\u4EFD", "year", "text", "YYYY");
         this.createFormGroup(form, "\u5C01\u9762", "cover");
-        this.createFormGroup(form, "URL", "url");
+        this.createFormGroup(form, "\u94FE\u63A5", "url");
         this.createFormGroup(form, "\u6807\u7B7E", "tags");
-        this.createFormGroup(form, "\u5E74\u4EFD", "year", false, "text", "YYYY");
-        this.createFormGroup(form, "\u6536\u5F55\u65F6\u95F4", "collection_date", false, "text", "YY-MM-DD", collectionDate);
-        const bookStatusGroup = form.createDiv({ cls: "form-group form-group-inline" });
-        bookStatusGroup.createEl("label", { text: "\u72B6\u6001" });
+        const bookDateStatusRow = form.createDiv({ cls: "form-row" });
+        this.createInlineFormGroup(bookDateStatusRow, "\u6536\u5F55", "collection_date", "text", "YY-MM-DD", collectionDate);
+        const bookStatusGroup = bookDateStatusRow.createDiv({ cls: "form-group-inline" });
+        bookStatusGroup.createEl("label", { text: "\u72B6\u6001", attr: { for: "status" } });
         const bookStatusSelect = bookStatusGroup.createEl("select", { attr: { id: "status", name: "status" } });
         bookStatusSelect.createEl("option", { value: "unread", text: "\u5F85\u770B/\u5F85\u8BFB" });
         bookStatusSelect.createEl("option", { value: "read", text: "\u5DF2\u770B/\u5DF2\u8BFB" });
+        this.addMetaFieldsSection(form);
+        break;
+      case "tv":
+        this.createFormGroup(form, "\u5267\u8BC4", "description", true);
+        const tvTitleRow = form.createDiv({ cls: "form-row" });
+        this.createInlineFormGroup(tvTitleRow, "\u5267\u540D", "title");
+        this.addDoubanSearchButton(tvTitleRow, "movie");
+        this.createFormGroup(form, "\u5BFC\u6F14", "director");
+        const tvRatingYearRow = form.createDiv({ cls: "form-row" });
+        this.createInlineFormGroup(tvRatingYearRow, "\u8BC4\u5206", "rating", "number");
+        this.createInlineFormGroup(tvRatingYearRow, "\u5E74\u4EFD", "year", "text", "YYYY");
+        this.createFormGroup(form, "\u5C01\u9762", "cover");
+        this.createFormGroup(form, "\u94FE\u63A5", "url");
+        this.createFormGroup(form, "\u6807\u7B7E", "tags");
+        const tvDateStatusRow = form.createDiv({ cls: "form-row" });
+        this.createInlineFormGroup(tvDateStatusRow, "\u6536\u5F55", "collection_date", "text", "YY-MM-DD", collectionDate);
+        const tvStatusGroup = tvDateStatusRow.createDiv({ cls: "form-group-inline" });
+        tvStatusGroup.createEl("label", { text: "\u72B6\u6001", attr: { for: "status" } });
+        const tvStatusSelect = tvStatusGroup.createEl("select", { attr: { id: "status", name: "status" } });
+        tvStatusSelect.createEl("option", { value: "unread", text: "\u5F85\u770B/\u5F85\u8BFB" });
+        tvStatusSelect.createEl("option", { value: "read", text: "\u5DF2\u770B/\u5DF2\u8BFB" });
+        this.addMetaFieldsSection(form);
+        break;
+      case "anime":
+        this.createFormGroup(form, "\u8BC4\u8BBA", "description", true);
+        const animeTitleRow = form.createDiv({ cls: "form-row" });
+        this.createInlineFormGroup(animeTitleRow, "\u756A\u540D", "title");
+        this.addDoubanSearchButton(animeTitleRow, "movie");
+        this.createFormGroup(form, "\u5BFC\u6F14", "director");
+        const animeRatingYearRow = form.createDiv({ cls: "form-row" });
+        this.createInlineFormGroup(animeRatingYearRow, "\u8BC4\u5206", "rating", "number");
+        this.createInlineFormGroup(animeRatingYearRow, "\u5E74\u4EFD", "year", "text", "YYYY");
+        this.createFormGroup(form, "\u5C01\u9762", "cover");
+        this.createFormGroup(form, "\u94FE\u63A5", "url");
+        this.createFormGroup(form, "\u6807\u7B7E", "tags");
+        const animeDateStatusRow = form.createDiv({ cls: "form-row" });
+        this.createInlineFormGroup(animeDateStatusRow, "\u6536\u5F55", "collection_date", "text", "YY-MM-DD", collectionDate);
+        const animeStatusGroup = animeDateStatusRow.createDiv({ cls: "form-group-inline" });
+        animeStatusGroup.createEl("label", { text: "\u72B6\u6001", attr: { for: "status" } });
+        const animeStatusSelect = animeStatusGroup.createEl("select", { attr: { id: "status", name: "status" } });
+        animeStatusSelect.createEl("option", { value: "unread", text: "\u5F85\u770B/\u5F85\u8BFB" });
+        animeStatusSelect.createEl("option", { value: "read", text: "\u5DF2\u770B/\u5DF2\u8BFB" });
+        this.addMetaFieldsSection(form);
         break;
       case "music":
         this.createFormGroup(form, "\u4E50\u8BC4", "description", true);
         this.createFormGroup(form, "\u6B4C\u540D", "title");
         this.createFormGroup(form, "\u6B4C\u624B", "artist");
-        this.createFormGroup(form, "\u8BC4\u5206", "rating", false, "number");
+        const musicRatingYearRow = form.createDiv({ cls: "form-row" });
+        this.createInlineFormGroup(musicRatingYearRow, "\u8BC4\u5206", "rating", "number");
+        this.createInlineFormGroup(musicRatingYearRow, "\u5E74\u4EFD", "year", "text", "YYYY");
         this.createFormGroup(form, "\u5C01\u9762", "cover");
-        this.createFormGroup(form, "URL", "url");
+        this.createFormGroup(form, "\u94FE\u63A5", "url");
         this.createFormGroup(form, "\u6807\u7B7E", "tags");
-        this.createFormGroup(form, "\u5E74\u4EFD", "year", false, "text", "YYYY");
-        this.createFormGroup(form, "\u6536\u5F55\u65F6\u95F4", "collection_date", false, "text", "YY-MM-DD", collectionDate);
-        const musicStatusGroup = form.createDiv({ cls: "form-group form-group-inline" });
-        musicStatusGroup.createEl("label", { text: "\u72B6\u6001" });
+        const musicDateStatusRow = form.createDiv({ cls: "form-row" });
+        this.createInlineFormGroup(musicDateStatusRow, "\u6536\u5F55", "collection_date", "text", "YY-MM-DD", collectionDate);
+        const musicStatusGroup = musicDateStatusRow.createDiv({ cls: "form-group-inline" });
+        musicStatusGroup.createEl("label", { text: "\u72B6\u6001", attr: { for: "status" } });
         const musicStatusSelect = musicStatusGroup.createEl("select", { attr: { id: "status", name: "status" } });
         musicStatusSelect.createEl("option", { value: "unread", text: "\u5F85\u770B/\u5F85\u8BFB" });
         musicStatusSelect.createEl("option", { value: "read", text: "\u5DF2\u770B/\u5DF2\u8BFB" });
-        break;
-      case "tv":
-        this.createFormGroup(form, "\u5267\u8BC4", "description", true);
-        this.createFormGroup(form, "\u5267\u540D", "title");
-        this.createFormGroup(form, "\u5BFC\u6F14", "director");
-        this.createFormGroup(form, "\u8BC4\u5206", "rating", false, "number");
-        this.createFormGroup(form, "\u5C01\u9762", "cover");
-        this.createFormGroup(form, "URL", "url");
-        this.createFormGroup(form, "\u6807\u7B7E", "tags");
-        this.createFormGroup(form, "\u5E74\u4EFD", "year", false, "text", "YYYY");
-        this.createFormGroup(form, "\u6536\u5F55\u65F6\u95F4", "collection_date", false, "text", "YY-MM-DD", collectionDate);
-        const tvStatusGroup = form.createDiv({ cls: "form-group form-group-inline" });
-        tvStatusGroup.createEl("label", { text: "\u72B6\u6001" });
-        const tvStatusSelect = tvStatusGroup.createEl("select", { attr: { id: "status", name: "status" } });
-        tvStatusSelect.createEl("option", { value: "unread", text: "\u5F85\u770B/\u5F85\u8BFB" });
-        tvStatusSelect.createEl("option", { value: "read", text: "\u5DF2\u770B/\u5DF2\u8BFB" });
-        break;
-      case "anime":
-        this.createFormGroup(form, "\u8BC4\u8BBA", "description", true);
-        this.createFormGroup(form, "\u756A\u540D", "title");
-        this.createFormGroup(form, "\u5BFC\u6F14", "director");
-        this.createFormGroup(form, "\u8BC4\u5206", "rating", false, "number");
-        this.createFormGroup(form, "\u5C01\u9762", "cover");
-        this.createFormGroup(form, "URL", "url");
-        this.createFormGroup(form, "\u6807\u7B7E", "tags");
-        this.createFormGroup(form, "\u5E74\u4EFD", "year", false, "text", "YYYY");
-        this.createFormGroup(form, "\u6536\u5F55\u65F6\u95F4", "collection_date", false, "text", "YY-MM-DD", collectionDate);
-        const animeStatusGroup = form.createDiv({ cls: "form-group form-group-inline" });
-        animeStatusGroup.createEl("label", { text: "\u72B6\u6001" });
-        const animeStatusSelect = animeStatusGroup.createEl("select", { attr: { id: "status", name: "status" } });
-        animeStatusSelect.createEl("option", { value: "unread", text: "\u5F85\u770B/\u5F85\u8BFB" });
-        animeStatusSelect.createEl("option", { value: "read", text: "\u5DF2\u770B/\u5DF2\u8BFB" });
+        this.addMetaFieldsSection(form);
         break;
     }
+  }
+  // 添加一个新的辅助方法，用于创建内联表单组
+  createInlineFormGroup(parent, labelText, inputId, inputType = "text", placeholder, defaultValue) {
+    const group = parent.createDiv({ cls: "form-group-inline" });
+    group.createEl("label", { text: labelText, attr: { for: inputId } });
+    const input = group.createEl("input", {
+      attr: {
+        id: inputId,
+        name: inputId,
+        type: inputType,
+        placeholder: placeholder || ""
+      }
+    });
+    if (defaultValue) input.value = defaultValue;
   }
   // 新增方法：添加保存按钮及其逻辑
   addSaveButton(form) {
@@ -7668,6 +8768,62 @@ var QuickNoteView = class extends import_obsidian3.ItemView {
       const input = group.createEl("input", { attr: { id: inputId, name: inputId, type: inputType, placeholder: placeholder || "" } });
       if (defaultValue) input.value = defaultValue;
     }
+  }
+  // 添加自定义元数据字段区域
+  addMetaFieldsSection(form) {
+    const headerContainer = form.createDiv({ cls: "meta-header-container" });
+    headerContainer.createEl("h3", {
+      text: "\u81EA\u5B9A\u4E49\u5143\u6570\u636E",
+      cls: "meta-section-title"
+    });
+    const addButton = headerContainer.createEl("button", {
+      text: "\u6DFB\u52A0\u5143\u6570\u636E\u5B57\u6BB5",
+      cls: "meta-add-button",
+      attr: { type: "button" }
+    });
+    const metaFieldsContainer = form.createDiv({
+      cls: "meta-fields-container",
+      attr: { id: "meta-fields-container" }
+    });
+    metaFieldsContainer.style.display = "none";
+    addButton.addEventListener("click", () => {
+      if (metaFieldsContainer.style.display === "none") {
+        metaFieldsContainer.style.display = "flex";
+        if (metaFieldsContainer.children.length === 0) {
+          this.addNewMetaField(metaFieldsContainer);
+        }
+      } else {
+        this.addNewMetaField(metaFieldsContainer);
+      }
+    });
+  }
+  // 添加新的元数据字段
+  addNewMetaField(container) {
+    const metaFieldGroup = container.createDiv({ cls: "meta-field-group" });
+    const keyInput = metaFieldGroup.createEl("input", {
+      cls: "meta-key-input",
+      attr: {
+        type: "text",
+        placeholder: "\u5B57\u6BB5\u540D",
+        "data-meta-key": "true"
+      }
+    });
+    const valueInput = metaFieldGroup.createEl("input", {
+      cls: "meta-value-input",
+      attr: {
+        type: "text",
+        placeholder: "\u5B57\u6BB5\u503C",
+        "data-meta-value": "true"
+      }
+    });
+    const removeButton = metaFieldGroup.createEl("button", {
+      text: "\xD7",
+      cls: "meta-remove-button",
+      attr: { type: "button" }
+    });
+    removeButton.addEventListener("click", () => {
+      metaFieldGroup.remove();
+    });
   }
   async saveNote() {
     const content = this.container.querySelector("#content, #description")?.value;
@@ -7740,6 +8896,15 @@ var QuickNoteView = class extends import_obsidian3.ItemView {
 `;
         cardContent += `collection_date: ${this.container.querySelector("#collection_date")?.value || ""}
 `;
+        const metaFields = this.collectMetaFields();
+        if (Object.keys(metaFields).length > 0) {
+          for (const [key, value] of Object.entries(metaFields)) {
+            if (key && value) {
+              cardContent += `meta.${key}: ${value}
+`;
+            }
+          }
+        }
         break;
     }
     cardContent += "```";
@@ -7761,7 +8926,7 @@ status: ${status}
 `;
       if (!targetFile) {
         targetFile = await this.app.vault.create(fullPath, frontmatter + cardContent);
-      } else if (targetFile instanceof import_obsidian3.TFile) {
+      } else if (targetFile instanceof import_obsidian4.TFile) {
         await this.app.vault.modify(targetFile, frontmatter + cardContent);
       }
     } else {
@@ -7770,7 +8935,7 @@ status: ${status}
       if (!targetFile) {
         targetFile = await this.app.vault.create(targetFileName, "");
       }
-      if (targetFile instanceof import_obsidian3.TFile) {
+      if (targetFile instanceof import_obsidian4.TFile) {
         const currentContent = await this.app.vault.read(targetFile);
         await this.app.vault.modify(targetFile, currentContent + "\n" + cardContent);
       }
@@ -7779,12 +8944,253 @@ status: ${status}
     formInputs.forEach((input) => {
       input.value = "";
     });
+    const metaFieldsContainer = this.container.querySelector("#meta-fields-container");
+    if (metaFieldsContainer) {
+      metaFieldsContainer.empty();
+      this.addNewMetaField(metaFieldsContainer);
+    }
+  }
+  // 收集所有元数据字段
+  collectMetaFields() {
+    const metaFields = {};
+    const metaFieldGroups = this.container.querySelectorAll(".meta-field-group");
+    metaFieldGroups.forEach((group) => {
+      const keyInput = group.querySelector("[data-meta-key]");
+      const valueInput = group.querySelector("[data-meta-value]");
+      if (keyInput && valueInput && keyInput.value.trim() && valueInput.value.trim()) {
+        metaFields[keyInput.value.trim()] = valueInput.value.trim();
+      }
+    });
+    return metaFields;
+  }
+  // 添加豆瓣搜索按钮
+  addDoubanSearchButton(parent, type) {
+    const searchButtonContainer = parent.createDiv({ cls: "douban-search-button-container" });
+    const searchButton = searchButtonContainer.createEl("button", {
+      cls: "douban-search-button",
+      text: "\u8C46\u74E3\u641C\u7D22"
+    });
+    searchButton.addEventListener("click", async (e) => {
+      e.preventDefault();
+      const titleInput = this.container.querySelector("#title");
+      if (!titleInput || !titleInput.value) {
+        new import_obsidian4.Notice("\u8BF7\u5148\u8F93\u5165\u6807\u9898\u8FDB\u884C\u641C\u7D22");
+        return;
+      }
+      searchButton.setText("\u641C\u7D22\u4E2D...");
+      searchButton.disabled = true;
+      try {
+        new import_obsidian4.Notice(`\u6B63\u5728\u641C\u7D22: ${titleInput.value}`);
+        const result = await DoubanAPI.search(titleInput.value, type);
+        if (result.success && result.data && result.data.length > 0) {
+          this.doubanSearchResults = result.data;
+          this.showDoubanSearchResults();
+          new import_obsidian4.Notice(`\u627E\u5230 ${result.data.length} \u4E2A\u7ED3\u679C`);
+        } else {
+          if (result.error) {
+            new import_obsidian4.Notice(`\u641C\u7D22\u5931\u8D25: ${result.error}`);
+            console.error("\u8C46\u74E3\u641C\u7D22\u9519\u8BEF:", result.error);
+          } else {
+            new import_obsidian4.Notice("\u672A\u627E\u5230\u76F8\u5173\u7ED3\u679C\uFF0C\u8BF7\u5C1D\u8BD5\u5176\u4ED6\u5173\u952E\u8BCD");
+            console.log("\u8C46\u74E3\u641C\u7D22\u672A\u8FD4\u56DE\u7ED3\u679C");
+          }
+        }
+      } catch (error) {
+        console.error("\u8C46\u74E3\u641C\u7D22\u51FA\u9519:", error);
+        new import_obsidian4.Notice(`\u641C\u7D22\u51FA\u9519: ${error.message}`);
+      } finally {
+        searchButton.setText("\u8C46\u74E3\u641C\u7D22");
+        searchButton.disabled = false;
+      }
+    });
+  }
+  // 显示豆瓣搜索结果弹窗
+  showDoubanSearchResults() {
+    if (this.doubanSearchModal) {
+      this.doubanSearchModal.remove();
+    }
+    this.doubanSearchModal = document.createElement("div");
+    this.doubanSearchModal.className = "douban-search-modal";
+    const modalHeader = this.doubanSearchModal.createDiv({ cls: "douban-modal-header" });
+    modalHeader.createEl("h3", { text: "\u8C46\u74E3\u641C\u7D22\u7ED3\u679C" });
+    const closeButton = modalHeader.createEl("button", { cls: "douban-modal-close", text: "\xD7" });
+    closeButton.addEventListener("click", () => {
+      this.doubanSearchModal?.remove();
+      this.doubanSearchModal = null;
+    });
+    const resultsList = this.doubanSearchModal.createDiv({ cls: "douban-results-list" });
+    if (this.doubanSearchResults.length === 0) {
+      resultsList.createEl("div", {
+        cls: "douban-no-results",
+        text: "\u672A\u627E\u5230\u76F8\u5173\u7ED3\u679C\uFF0C\u8BF7\u5C1D\u8BD5\u8C03\u6574\u641C\u7D22\u5173\u952E\u8BCD"
+      });
+    } else {
+      this.doubanSearchResults.forEach((result) => {
+        const resultItem = resultsList.createDiv({ cls: "douban-result-item" });
+        if (result.cover) {
+          resultItem.createEl("img", {
+            cls: "douban-result-cover",
+            attr: { src: result.cover }
+          });
+        } else {
+          const coverPlaceholder = resultItem.createDiv({ cls: "douban-result-cover-placeholder" });
+          coverPlaceholder.createSpan({ text: "\u65E0\u5C01\u9762" });
+        }
+        const resultInfo = resultItem.createDiv({ cls: "douban-result-info" });
+        const titleEl = resultInfo.createEl("h4", { text: result.title });
+        titleEl.createSpan({
+          cls: "douban-result-id",
+          text: `ID: ${result.id}`
+        });
+        const infoTexts = [];
+        if (result.year) infoTexts.push(`${result.year}\u5E74`);
+        if (result.creator) {
+          infoTexts.push(result.type === "movie" ? `\u5BFC\u6F14: ${result.creator}` : `\u4F5C\u8005: ${result.creator}`);
+        }
+        if (infoTexts.length > 0) {
+          resultInfo.createEl("div", {
+            cls: "douban-result-subinfo",
+            text: infoTexts.join(" \xB7 ")
+          });
+        }
+        if (result.url) {
+          const linkContainer = resultInfo.createDiv({ cls: "douban-result-link-container" });
+          const linkEl = linkContainer.createEl("a", {
+            cls: "douban-result-link",
+            text: "\u5728\u8C46\u74E3\u67E5\u770B",
+            attr: {
+              href: result.url,
+              target: "_blank",
+              rel: "noopener noreferrer"
+            }
+          });
+        }
+        const selectButton = resultItem.createEl("button", {
+          cls: "douban-result-select",
+          text: "\u9009\u62E9"
+        });
+        selectButton.addEventListener("click", async () => {
+          await this.fillFormWithDoubanData(result.id, result.type);
+          this.doubanSearchModal?.remove();
+          this.doubanSearchModal = null;
+        });
+      });
+    }
+    document.body.appendChild(this.doubanSearchModal);
+  }
+  // 用豆瓣数据填充表单
+  async fillFormWithDoubanData(doubanId, type) {
+    try {
+      new import_obsidian4.Notice(`\u6B63\u5728\u83B7\u53D6\u8BE6\u60C5...`);
+      console.log(`\u5F00\u59CB\u586B\u5145\u8C46\u74E3\u6570\u636E\uFF0CID: ${doubanId}, \u7C7B\u578B: ${type}`);
+      let detail = null;
+      if (type === "movie") {
+        detail = await DoubanAPI.getMovieDetail(doubanId);
+      } else if (type === "book") {
+        detail = await DoubanAPI.getBookDetail(doubanId);
+      }
+      if (!detail) {
+        const selectedResult = this.doubanSearchResults.find((r) => r.id === doubanId);
+        if (selectedResult) {
+          console.log(`\u4F7F\u7528\u641C\u7D22\u7ED3\u679C\u586B\u5145\u8868\u5355:`, selectedResult);
+          detail = {
+            title: selectedResult.title,
+            cover_url: selectedResult.cover,
+            url: selectedResult.url,
+            year: selectedResult.year,
+            director: selectedResult.creator,
+            author: type === "book" ? [selectedResult.creator] : void 0
+          };
+          new import_obsidian4.Notice("\u65E0\u6CD5\u83B7\u53D6\u5B8C\u6574\u8BE6\u60C5\uFF0C\u5C06\u4F7F\u7528\u57FA\u672C\u4FE1\u606F\u586B\u5145");
+        } else {
+          new import_obsidian4.Notice("\u83B7\u53D6\u8BE6\u60C5\u5931\u8D25");
+          return;
+        }
+      } else {
+        console.log(`\u6210\u529F\u83B7\u53D6\u8BE6\u60C5:`, detail);
+      }
+      console.log(`\u51C6\u5907\u586B\u5145\u8868\u5355\uFF0C\u8BE6\u60C5:`, detail);
+      const titleInput = this.container.querySelector("#title");
+      if (titleInput) {
+        console.log(`\u586B\u5145\u6807\u9898: ${detail.title}`);
+        titleInput.value = detail.title || "";
+      } else {
+        console.log("\u672A\u627E\u5230\u6807\u9898\u8F93\u5165\u6846");
+      }
+      if (this.type === "movie" || this.type === "tv" || this.type === "anime") {
+        const directorInput = this.container.querySelector("#director");
+        if (directorInput && detail.director) {
+          console.log(`\u586B\u5145\u5BFC\u6F14: ${detail.director}`);
+          directorInput.value = detail.director;
+        } else {
+          console.log(`\u672A\u627E\u5230\u5BFC\u6F14\u8F93\u5165\u6846\u6216\u5BFC\u6F14\u4FE1\u606F\u4E3A\u7A7A`);
+        }
+      } else if (this.type === "book") {
+        const authorInput = this.container.querySelector("#author");
+        if (authorInput && detail.author && detail.author.length > 0) {
+          const authorText = detail.author.join(", ");
+          console.log(`\u586B\u5145\u4F5C\u8005: ${authorText}`);
+          authorInput.value = authorText;
+        } else {
+          console.log(`\u672A\u627E\u5230\u4F5C\u8005\u8F93\u5165\u6846\u6216\u4F5C\u8005\u4FE1\u606F\u4E3A\u7A7A`);
+        }
+      }
+      const yearInput = this.container.querySelector("#year");
+      if (yearInput && detail.year) {
+        console.log(`\u586B\u5145\u5E74\u4EFD: ${detail.year}`);
+        yearInput.value = detail.year;
+      } else {
+        console.log(`\u672A\u627E\u5230\u5E74\u4EFD\u8F93\u5165\u6846\u6216\u5E74\u4EFD\u4FE1\u606F\u4E3A\u7A7A`);
+      }
+      const coverInput = this.container.querySelector("#cover");
+      if (coverInput && detail.cover_url) {
+        console.log(`\u586B\u5145\u5C01\u9762: ${detail.cover_url}`);
+        coverInput.value = detail.cover_url;
+      } else {
+        console.log(`\u672A\u627E\u5230\u5C01\u9762\u8F93\u5165\u6846\u6216\u5C01\u9762URL\u4E3A\u7A7A`);
+      }
+      const urlInput = this.container.querySelector("#url");
+      if (urlInput && detail.url) {
+        console.log(`\u586B\u5145\u94FE\u63A5: ${detail.url}`);
+        urlInput.value = detail.url;
+      } else {
+        console.log(`\u672A\u627E\u5230\u94FE\u63A5\u8F93\u5165\u6846\u6216\u94FE\u63A5\u4E3A\u7A7A`);
+      }
+      const ratingInput = this.container.querySelector("#rating");
+      if (ratingInput && detail.rating && detail.rating.value) {
+        console.log(`\u586B\u5145\u8BC4\u5206: ${detail.rating.value}`);
+        ratingInput.value = detail.rating.value.toString();
+      } else {
+        console.log(`\u672A\u627E\u5230\u8BC4\u5206\u8F93\u5165\u6846\u6216\u8BC4\u5206\u4FE1\u606F\u4E3A\u7A7A`);
+      }
+      const tagsInput = this.container.querySelector("#tags");
+      if (tagsInput && detail.tags && detail.tags.length > 0) {
+        const formattedTags = detail.tags.slice(0, 5).map((tag) => `#${tag}`).join(" ");
+        console.log(`\u586B\u5145\u6807\u7B7E: ${formattedTags}`);
+        tagsInput.value = formattedTags;
+      } else {
+        console.log(`\u672A\u627E\u5230\u6807\u7B7E\u8F93\u5165\u6846\u6216\u6807\u7B7E\u4E3A\u7A7A`);
+      }
+      if (detail.description) {
+        const descInput = this.container.querySelector("#description");
+        if (descInput && !descInput.value) {
+          console.log(`\u586B\u5145\u63CF\u8FF0: ${detail.description.substring(0, 50)}...`);
+          descInput.value = detail.description;
+        } else {
+          console.log(`\u672A\u627E\u5230\u63CF\u8FF0\u8F93\u5165\u6846\u6216\u63CF\u8FF0\u5DF2\u6709\u5185\u5BB9`);
+        }
+      }
+      new import_obsidian4.Notice("\u5DF2\u6210\u529F\u586B\u5145\u6570\u636E");
+    } catch (error) {
+      console.error("\u586B\u5145\u8C46\u74E3\u6570\u636E\u51FA\u9519:", error);
+      new import_obsidian4.Notice(`\u586B\u5145\u6570\u636E\u65F6\u51FA\u9519: ${error.message}`);
+    }
   }
 };
 
 // main.ts
-(0, import_obsidian4.addIcon)("layout-grid", `<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="7" height="7"></rect><rect x="14" y="3" width="7" height="7"></rect><rect x="14" y="14" width="7" height="7"></rect><rect x="3" y="14" width="7" height="7"></rect></svg>`);
-(0, import_obsidian4.addIcon)("bulb", `<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-lightbulb"><path d="M15 14c.2-1 .7-1.7 1.5-2.5 1-.9 1.5-2.2 1.5-3.5A6 6 0 0 0 6 8c0 1 .2 2.2 1.5 3.5.7.7 1.3 1.5 1.5 2.5"></path><path d="M9 18h6"></path><path d="M10 22h4"></path></svg>`);
+(0, import_obsidian5.addIcon)("layout-grid", `<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="7" height="7"></rect><rect x="14" y="3" width="7" height="7"></rect><rect x="14" y="14" width="7" height="7"></rect><rect x="3" y="14" width="7" height="7"></rect></svg>`);
+(0, import_obsidian5.addIcon)("bulb", `<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-lightbulb"><path d="M15 14c.2-1 .7-1.7 1.5-2.5 1-.9 1.5-2.2 1.5-3.5A6 6 0 0 0 6 8c0 1 .2 2.2 1.5 3.5.7.7 1.3 1.5 1.5 2.5"></path><path d="M9 18h6"></path><path d="M10 22h4"></path></svg>`);
 var DEFAULT_SETTINGS = {
   gallerySettings: {
     columnCount: 3,
@@ -7818,9 +9224,10 @@ var DEFAULT_SETTINGS = {
     director: "rgb(211, 171, 120)",
     year: "rgb(245, 216, 179)",
     meta: "rgb(245, 216, 179)"
-  }
+  },
+  doubanCookie: ""
 };
-var CIDInputModal = class extends import_obsidian4.Modal {
+var CIDInputModal = class extends import_obsidian5.Modal {
   constructor(app, onSubmit) {
     super(app);
     this.onSubmit = onSubmit;
@@ -7828,7 +9235,7 @@ var CIDInputModal = class extends import_obsidian4.Modal {
   onOpen() {
     const { contentEl } = this;
     contentEl.createEl("h3", { text: "\u8F93\u5165\u5361\u7247ID" });
-    new import_obsidian4.Setting(contentEl).setName("CID").addText(
+    new import_obsidian5.Setting(contentEl).setName("CID").addText(
       (text) => text.onChange((value) => {
         text.inputEl.onkeydown = (e) => {
           if (e.key === "Enter") {
@@ -7844,7 +9251,7 @@ var CIDInputModal = class extends import_obsidian4.Modal {
     contentEl.empty();
   }
 };
-var NewCardsSettingTab = class extends import_obsidian4.PluginSettingTab {
+var NewCardsSettingTab = class extends import_obsidian5.PluginSettingTab {
   constructor(app, plugin) {
     super(app, plugin);
     this.plugin = plugin;
@@ -7852,96 +9259,102 @@ var NewCardsSettingTab = class extends import_obsidian4.PluginSettingTab {
   display() {
     const { containerEl } = this;
     containerEl.empty();
+    containerEl.createEl("h3", { text: "\u8C46\u74E3\u8BBE\u7F6E" });
+    new import_obsidian5.Setting(containerEl).setName("\u8C46\u74E3Cookie").setDesc("\u8BBE\u7F6E\u8C46\u74E3Cookie\uFF0C\u7528\u4E8E\u83B7\u53D6\u66F4\u5B8C\u6574\u7684\u6570\u636E\u3002\u8BF7\u4ECE\u6D4F\u89C8\u5668\u4E2D\u590D\u5236\u8C46\u74E3\u7F51\u7AD9\u7684Cookie\u3002").addTextArea((text) => text.setPlaceholder("\u8BF7\u8F93\u5165\u8C46\u74E3Cookie\uFF0C\u4F8B\u5982\uFF1Abid=xxxx; dbcl2=xxxx;").setValue(this.plugin.settings.doubanCookie || "").onChange(async (value) => {
+      this.plugin.settings.doubanCookie = value;
+      DoubanAPI.setCookie(value);
+      await this.plugin.saveSettings();
+    }).inputEl.style.cssText = "height: 80px; width: 100%; min-width: 400px;");
     containerEl.createEl("h3", { text: "\u5361\u7247\u5B58\u50A8\u8DEF\u5F84\u8BBE\u7F6E" });
-    new import_obsidian4.Setting(containerEl).setName("\u97F3\u4E50\u5361\u7247\u5B58\u50A8\u8DEF\u5F84").setDesc("\u8BBE\u7F6E\u97F3\u4E50\u5361\u7247\u7684\u9ED8\u8BA4\u5B58\u50A8\u7B14\u8BB0\uFF0C\u4F8B\uFF1A\u6587\u4EF6\u5939\u540D/\u7B14\u8BB0\u540D.md").addSearch((cb) => {
+    new import_obsidian5.Setting(containerEl).setName("\u97F3\u4E50\u5361\u7247\u5B58\u50A8\u8DEF\u5F84").setDesc("\u8BBE\u7F6E\u97F3\u4E50\u5361\u7247\u7684\u9ED8\u8BA4\u5B58\u50A8\u7B14\u8BB0\uFF0C\u4F8B\uFF1A\u6587\u4EF6\u5939\u540D/\u7B14\u8BB0\u540D.md").addSearch((cb) => {
       cb.setPlaceholder("\u4F8B\uFF1A\u6587\u4EF6\u5939\u540D/\u7B14\u8BB0\u540D.md").setValue(this.plugin.settings.cardStoragePaths.musicCard).onChange(async (value) => {
         this.plugin.settings.cardStoragePaths.musicCard = value;
         await this.plugin.saveSettings();
       });
     });
-    new import_obsidian4.Setting(containerEl).setName("\u4E66\u7C4D\u5361\u7247\u5B58\u50A8\u8DEF\u5F84").setDesc("\u8BBE\u7F6E\u4E66\u7C4D\u5361\u7247\u7684\u9ED8\u8BA4\u5B58\u50A8\u7B14\u8BB0\uFF0C\u4F8B\uFF1A\u6587\u4EF6\u5939\u540D/\u7B14\u8BB0\u540D.md").addSearch((cb) => {
+    new import_obsidian5.Setting(containerEl).setName("\u4E66\u7C4D\u5361\u7247\u5B58\u50A8\u8DEF\u5F84").setDesc("\u8BBE\u7F6E\u4E66\u7C4D\u5361\u7247\u7684\u9ED8\u8BA4\u5B58\u50A8\u7B14\u8BB0\uFF0C\u4F8B\uFF1A\u6587\u4EF6\u5939\u540D/\u7B14\u8BB0\u540D.md").addSearch((cb) => {
       cb.setPlaceholder("\u4F8B\uFF1A\u6587\u4EF6\u5939\u540D/\u7B14\u8BB0\u540D.md").setValue(this.plugin.settings.cardStoragePaths.bookCard).onChange(async (value) => {
         this.plugin.settings.cardStoragePaths.bookCard = value;
         await this.plugin.saveSettings();
       });
     });
-    new import_obsidian4.Setting(containerEl).setName("\u7535\u5F71\u5361\u7247\u5B58\u50A8\u8DEF\u5F84").setDesc("\u8BBE\u7F6E\u7535\u5F71\u5361\u7247\u7684\u9ED8\u8BA4\u5B58\u50A8\u7B14\u8BB0\uFF0C\u4F8B\uFF1A\u6587\u4EF6\u5939\u540D/\u7B14\u8BB0\u540D.md").addSearch((cb) => {
+    new import_obsidian5.Setting(containerEl).setName("\u7535\u5F71\u5361\u7247\u5B58\u50A8\u8DEF\u5F84").setDesc("\u8BBE\u7F6E\u7535\u5F71\u5361\u7247\u7684\u9ED8\u8BA4\u5B58\u50A8\u7B14\u8BB0\uFF0C\u4F8B\uFF1A\u6587\u4EF6\u5939\u540D/\u7B14\u8BB0\u540D.md").addSearch((cb) => {
       cb.setPlaceholder("\u4F8B\uFF1A\u6587\u4EF6\u5939\u540D/\u7B14\u8BB0\u540D.md").setValue(this.plugin.settings.cardStoragePaths.movieCard).onChange(async (value) => {
         this.plugin.settings.cardStoragePaths.movieCard = value;
         await this.plugin.saveSettings();
       });
     });
-    new import_obsidian4.Setting(containerEl).setName("\u5267\u96C6\u5361\u7247\u5B58\u50A8\u8DEF\u5F84").setDesc("\u8BBE\u7F6E\u5267\u96C6\u5361\u7247\u7684\u9ED8\u8BA4\u5B58\u50A8\u7B14\u8BB0\uFF0C\u4F8B\uFF1A\u6587\u4EF6\u5939\u540D/\u7B14\u8BB0\u540D.md").addSearch((cb) => {
+    new import_obsidian5.Setting(containerEl).setName("\u5267\u96C6\u5361\u7247\u5B58\u50A8\u8DEF\u5F84").setDesc("\u8BBE\u7F6E\u5267\u96C6\u5361\u7247\u7684\u9ED8\u8BA4\u5B58\u50A8\u7B14\u8BB0\uFF0C\u4F8B\uFF1A\u6587\u4EF6\u5939\u540D/\u7B14\u8BB0\u540D.md").addSearch((cb) => {
       cb.setPlaceholder("\u4F8B\uFF1A\u6587\u4EF6\u5939\u540D/\u7B14\u8BB0\u540D.md").setValue(this.plugin.settings.cardStoragePaths.tvCard).onChange(async (value) => {
         this.plugin.settings.cardStoragePaths.tvCard = value;
         await this.plugin.saveSettings();
       });
     });
-    new import_obsidian4.Setting(containerEl).setName("\u756A\u5267\u5361\u7247\u5B58\u50A8\u8DEF\u5F84").setDesc("\u8BBE\u7F6E\u756A\u5267\u5361\u7247\u7684\u9ED8\u8BA4\u5B58\u50A8\u7B14\u8BB0\uFF0C\u4F8B\uFF1A\u6587\u4EF6\u5939\u540D/\u7B14\u8BB0\u540D.md").addSearch((cb) => {
+    new import_obsidian5.Setting(containerEl).setName("\u756A\u5267\u5361\u7247\u5B58\u50A8\u8DEF\u5F84").setDesc("\u8BBE\u7F6E\u756A\u5267\u5361\u7247\u7684\u9ED8\u8BA4\u5B58\u50A8\u7B14\u8BB0\uFF0C\u4F8B\uFF1A\u6587\u4EF6\u5939\u540D/\u7B14\u8BB0\u540D.md").addSearch((cb) => {
       cb.setPlaceholder("\u4F8B\uFF1A\u6587\u4EF6\u5939\u540D/\u7B14\u8BB0\u540D.md").setValue(this.plugin.settings.cardStoragePaths.animeCard).onChange(async (value) => {
         this.plugin.settings.cardStoragePaths.animeCard = value;
         await this.plugin.saveSettings();
       });
     });
-    new import_obsidian4.Setting(containerEl).setName("\u60F3\u6CD5\u5361\u7247\u5B58\u50A8\u8DEF\u5F84").setDesc("\u8BBE\u7F6E\u60F3\u6CD5\u5361\u7247\u7684\u9ED8\u8BA4\u5B58\u50A8\u7B14\u8BB0\uFF0C\u4F8B\uFF1A\u6587\u4EF6\u5939\u540D/\u7B14\u8BB0\u540D.md").addSearch((cb) => {
+    new import_obsidian5.Setting(containerEl).setName("\u60F3\u6CD5\u5361\u7247\u5B58\u50A8\u8DEF\u5F84").setDesc("\u8BBE\u7F6E\u60F3\u6CD5\u5361\u7247\u7684\u9ED8\u8BA4\u5B58\u50A8\u7B14\u8BB0\uFF0C\u4F8B\uFF1A\u6587\u4EF6\u5939\u540D/\u7B14\u8BB0\u540D.md").addSearch((cb) => {
       cb.setPlaceholder("\u4F8B\uFF1A\u6587\u4EF6\u5939\u540D/\u7B14\u8BB0\u540D.md").setValue(this.plugin.settings.cardStoragePaths.ideaCard).onChange(async (value) => {
         this.plugin.settings.cardStoragePaths.ideaCard = value;
         await this.plugin.saveSettings();
       });
     });
-    new import_obsidian4.Setting(containerEl).setName("\u6458\u5F55\u5361\u7247\u5B58\u50A8\u8DEF\u5F84").setDesc("\u8BBE\u7F6E\u6458\u5F55\u5361\u7247\u7684\u9ED8\u8BA4\u5B58\u50A8\u7B14\u8BB0\uFF0C\u4F8B\uFF1A\u6587\u4EF6\u5939\u540D/\u7B14\u8BB0\u540D.md").addSearch((cb) => {
+    new import_obsidian5.Setting(containerEl).setName("\u6458\u5F55\u5361\u7247\u5B58\u50A8\u8DEF\u5F84").setDesc("\u8BBE\u7F6E\u6458\u5F55\u5361\u7247\u7684\u9ED8\u8BA4\u5B58\u50A8\u7B14\u8BB0\uFF0C\u4F8B\uFF1A\u6587\u4EF6\u5939\u540D/\u7B14\u8BB0\u540D.md").addSearch((cb) => {
       cb.setPlaceholder("\u4F8B\uFF1A\u6587\u4EF6\u5939\u540D/\u7B14\u8BB0\u540D.md").setValue(this.plugin.settings.cardStoragePaths.quoteCard).onChange(async (value) => {
         this.plugin.settings.cardStoragePaths.quoteCard = value;
         await this.plugin.saveSettings();
       });
     });
     containerEl.createEl("h3", { text: "\u4E66\u5F71\u97F3\u5361\u7247\u6587\u5B57\u989C\u8272\u8BBE\u7F6E" });
-    new import_obsidian4.Setting(containerEl).setName("\u6807\u9898\u989C\u8272").addColorPicker((color) => color.setValue(this.plugin.settings.textColors.title).onChange(async (value) => {
+    new import_obsidian5.Setting(containerEl).setName("\u6807\u9898\u989C\u8272").addColorPicker((color) => color.setValue(this.plugin.settings.textColors.title).onChange(async (value) => {
       this.plugin.settings.textColors.title = value;
       await this.plugin.saveSettings();
     }));
-    new import_obsidian4.Setting(containerEl).setName("\u63CF\u8FF0\u6587\u5B57\u989C\u8272").addColorPicker((color) => color.setValue(this.plugin.settings.textColors.description).onChange(async (value) => {
+    new import_obsidian5.Setting(containerEl).setName("\u63CF\u8FF0\u6587\u5B57\u989C\u8272").addColorPicker((color) => color.setValue(this.plugin.settings.textColors.description).onChange(async (value) => {
       this.plugin.settings.textColors.description = value;
       await this.plugin.saveSettings();
     }));
-    new import_obsidian4.Setting(containerEl).setName("\u4F5C\u8005/\u827A\u672F\u5BB6/\u5BFC\u6F14\u989C\u8272").addColorPicker((color) => color.setValue(this.plugin.settings.textColors.author).onChange(async (value) => {
+    new import_obsidian5.Setting(containerEl).setName("\u4F5C\u8005/\u827A\u672F\u5BB6/\u5BFC\u6F14\u989C\u8272").addColorPicker((color) => color.setValue(this.plugin.settings.textColors.author).onChange(async (value) => {
       this.plugin.settings.textColors.author = value;
       this.plugin.settings.textColors.artist = value;
       this.plugin.settings.textColors.director = value;
       await this.plugin.saveSettings();
     }));
-    new import_obsidian4.Setting(containerEl).setName("\u5E74\u4EFD\u989C\u8272").addColorPicker((color) => color.setValue(this.plugin.settings.textColors.year).onChange(async (value) => {
+    new import_obsidian5.Setting(containerEl).setName("\u5E74\u4EFD\u989C\u8272").addColorPicker((color) => color.setValue(this.plugin.settings.textColors.year).onChange(async (value) => {
       this.plugin.settings.textColors.year = value;
       await this.plugin.saveSettings();
     }));
-    new import_obsidian4.Setting(containerEl).setName("\u5143\u6570\u636E\u989C\u8272").addColorPicker((color) => color.setValue(this.plugin.settings.textColors.meta).onChange(async (value) => {
+    new import_obsidian5.Setting(containerEl).setName("\u5143\u6570\u636E\u989C\u8272").addColorPicker((color) => color.setValue(this.plugin.settings.textColors.meta).onChange(async (value) => {
       this.plugin.settings.textColors.meta = value;
       await this.plugin.saveSettings();
     }));
     containerEl.createEl("h3", { text: "\u5361\u7247\u6A21\u677F\u8BBE\u7F6E" });
-    new import_obsidian4.Setting(containerEl).setName("\u97F3\u4E50\u5361\u7247\u6A21\u677F").setDesc("\u8BBE\u7F6E\u97F3\u4E50\u5361\u7247\u7684\u9ED8\u8BA4\u6A21\u677F").addTextArea((text) => text.setPlaceholder("\u8F93\u5165\u97F3\u4E50\u5361\u7247\u6A21\u677F").setValue(this.plugin.settings.cardTemplates.musicCard).onChange(async (value) => {
+    new import_obsidian5.Setting(containerEl).setName("\u97F3\u4E50\u5361\u7247\u6A21\u677F").setDesc("\u8BBE\u7F6E\u97F3\u4E50\u5361\u7247\u7684\u9ED8\u8BA4\u6A21\u677F").addTextArea((text) => text.setPlaceholder("\u8F93\u5165\u97F3\u4E50\u5361\u7247\u6A21\u677F").setValue(this.plugin.settings.cardTemplates.musicCard).onChange(async (value) => {
       this.plugin.settings.cardTemplates.musicCard = value;
       await this.plugin.saveSettings();
     }).inputEl.style.cssText = "height: 150px; width: 100%; min-width: 400px;");
-    new import_obsidian4.Setting(containerEl).setName("\u4E66\u7C4D\u5361\u7247\u6A21\u677F").setDesc("\u8BBE\u7F6E\u4E66\u7C4D\u5361\u7247\u7684\u9ED8\u8BA4\u6A21\u677F").addTextArea((text) => text.setPlaceholder("\u8F93\u5165\u4E66\u7C4D\u5361\u7247\u6A21\u677F").setValue(this.plugin.settings.cardTemplates.bookCard).onChange(async (value) => {
+    new import_obsidian5.Setting(containerEl).setName("\u4E66\u7C4D\u5361\u7247\u6A21\u677F").setDesc("\u8BBE\u7F6E\u4E66\u7C4D\u5361\u7247\u7684\u9ED8\u8BA4\u6A21\u677F").addTextArea((text) => text.setPlaceholder("\u8F93\u5165\u4E66\u7C4D\u5361\u7247\u6A21\u677F").setValue(this.plugin.settings.cardTemplates.bookCard).onChange(async (value) => {
       this.plugin.settings.cardTemplates.bookCard = value;
       await this.plugin.saveSettings();
     }).inputEl.style.cssText = "height: 150px; width: 100%; min-width: 400px;");
-    new import_obsidian4.Setting(containerEl).setName("\u7535\u5F71\u5361\u7247\u6A21\u677F").setDesc("\u8BBE\u7F6E\u7535\u5F71\u5361\u7247\u7684\u9ED8\u8BA4\u6A21\u677F").addTextArea((text) => text.setPlaceholder("\u8F93\u5165\u7535\u5F71\u5361\u7247\u6A21\u677F").setValue(this.plugin.settings.cardTemplates.movieCard).onChange(async (value) => {
+    new import_obsidian5.Setting(containerEl).setName("\u7535\u5F71\u5361\u7247\u6A21\u677F").setDesc("\u8BBE\u7F6E\u7535\u5F71\u5361\u7247\u7684\u9ED8\u8BA4\u6A21\u677F").addTextArea((text) => text.setPlaceholder("\u8F93\u5165\u7535\u5F71\u5361\u7247\u6A21\u677F").setValue(this.plugin.settings.cardTemplates.movieCard).onChange(async (value) => {
       this.plugin.settings.cardTemplates.movieCard = value;
       await this.plugin.saveSettings();
     }).inputEl.style.cssText = "height: 150px; width: 100%; min-width: 400px;");
-    new import_obsidian4.Setting(containerEl).setName("\u5267\u96C6\u5361\u7247\u6A21\u677F").setDesc("\u8BBE\u7F6E\u5267\u96C6\u5361\u7247\u7684\u9ED8\u8BA4\u6A21\u677F").addTextArea((text) => text.setPlaceholder("\u8F93\u5165\u5267\u96C6\u5361\u7247\u6A21\u677F").setValue(this.plugin.settings.cardTemplates.tvCard).onChange(async (value) => {
+    new import_obsidian5.Setting(containerEl).setName("\u5267\u96C6\u5361\u7247\u6A21\u677F").setDesc("\u8BBE\u7F6E\u5267\u96C6\u5361\u7247\u7684\u9ED8\u8BA4\u6A21\u677F").addTextArea((text) => text.setPlaceholder("\u8F93\u5165\u5267\u96C6\u5361\u7247\u6A21\u677F").setValue(this.plugin.settings.cardTemplates.tvCard).onChange(async (value) => {
       this.plugin.settings.cardTemplates.tvCard = value;
       await this.plugin.saveSettings();
     }).inputEl.style.cssText = "height: 150px; width: 100%; min-width: 400px;");
-    new import_obsidian4.Setting(containerEl).setName("\u756A\u5267\u5361\u7247\u6A21\u677F").setDesc("\u8BBE\u7F6E\u756A\u5267\u5361\u7247\u7684\u9ED8\u8BA4\u6A21\u677F").addTextArea((text) => text.setPlaceholder("\u8F93\u5165\u756A\u5267\u5361\u7247\u6A21\u677F").setValue(this.plugin.settings.cardTemplates.animeCard).onChange(async (value) => {
+    new import_obsidian5.Setting(containerEl).setName("\u756A\u5267\u5361\u7247\u6A21\u677F").setDesc("\u8BBE\u7F6E\u756A\u5267\u5361\u7247\u7684\u9ED8\u8BA4\u6A21\u677F").addTextArea((text) => text.setPlaceholder("\u8F93\u5165\u756A\u5267\u5361\u7247\u6A21\u677F").setValue(this.plugin.settings.cardTemplates.animeCard).onChange(async (value) => {
       this.plugin.settings.cardTemplates.animeCard = value;
       await this.plugin.saveSettings();
     }).inputEl.style.cssText = "height: 150px; width: 100%; min-width: 400px;");
   }
 };
-var NewCardsPlugin = class extends import_obsidian4.Plugin {
+var NewCardsPlugin = class extends import_obsidian5.Plugin {
   async activateQuickNoteView() {
     const { workspace } = this.app;
     const existing = workspace.getLeavesOfType(VIEW_TYPE_QUICK_NOTE);
@@ -7960,6 +9373,7 @@ var NewCardsPlugin = class extends import_obsidian4.Plugin {
       workspace.revealLeaf(leaf);
     }
   }
+  // 改为 public
   isInCodeBlock(editor, line) {
     const content = editor.getValue();
     return content.includes("```timeline");
@@ -7995,10 +9409,27 @@ var NewCardsPlugin = class extends import_obsidian4.Plugin {
   }
   async onload() {
     await this.loadSettings();
+    if (this.settings.doubanCookie) {
+      DoubanAPI.setCookie(this.settings.doubanCookie);
+    }
     this.registerEvent(
-      this.app.vault.on("delete", (file) => {
-        if (file instanceof import_obsidian4.TFile) {
-          CardUtils.removeCardsByPath(this.app.vault, file.path);
+      this.app.vault.on("delete", async (file) => {
+        if (file instanceof import_obsidian5.TFile && file.extension === "md") {
+          try {
+            console.log(`\u6587\u4EF6\u5DF2\u5220\u9664: ${file.path}\uFF0C\u6B63\u5728\u6E05\u7406\u76F8\u5173\u5361\u7247\u7D22\u5F15...`);
+            await CardUtils.removeCardsByPath(this.app.vault, file.path);
+            console.log(`\u5DF2\u6E05\u7406\u6587\u4EF6 ${file.path} \u7684\u5361\u7247\u7D22\u5F15`);
+            const leaves = this.app.workspace.getLeavesOfType(VIEW_TYPE_CARDS_GALLERY);
+            if (leaves.length > 0) {
+              for (const leaf of leaves) {
+                if (leaf.view instanceof CardsGalleryView) {
+                  leaf.view.renderCards();
+                }
+              }
+            }
+          } catch (error) {
+            console.error(`\u6E05\u7406\u5DF2\u5220\u9664\u6587\u4EF6 ${file.path} \u7684\u5361\u7247\u7D22\u5F15\u65F6\u51FA\u9519:`, error);
+          }
         }
       })
     );
@@ -8029,113 +9460,168 @@ var NewCardsPlugin = class extends import_obsidian4.Plugin {
     );
     this.registerEvent(
       this.app.workspace.on("file-open", async (file) => {
-        if (!(file instanceof import_obsidian4.TFile)) return;
+        if (!(file instanceof import_obsidian5.TFile)) return;
         if (file.extension !== "md" || file.path.endsWith(".canvas.md")) return;
         const excludedNames = Object.values(this.settings.cardStoragePaths).map((path) => path.split("/").pop()?.replace(".md", ""));
         const baseName = file.basename;
         if (!excludedNames.includes(baseName)) {
-          const content2 = await this.app.vault.read(file);
-          const lines2 = content2.split("\n");
-          const tagTypes = ["music-card", "book-card", "movie-card", "tv-card", "anime-card", "quote-card", "idea-card"];
-          const foundTags = /* @__PURE__ */ new Set();
-          const codeBlockRegex = /^```(music-card|book-card|movie-card|tv-card|anime-card|quote-card|idea-card)$/;
-          let inBlock = false;
-          let blockLines = [];
-          let hasCard = false;
-          for (let line of lines2) {
-            const trimmed = line.trim();
-            if (!inBlock) {
-              const match = trimmed.match(codeBlockRegex);
-              if (match) {
-                inBlock = true;
+          try {
+            const content = await this.app.vault.read(file);
+            const lines = content.split("\n");
+            const tagTypes = ["music-card", "book-card", "movie-card", "tv-card", "anime-card", "quote-card", "idea-card"];
+            const foundTags = /* @__PURE__ */ new Set();
+            const codeBlockRegex = /^```(music-card|book-card|movie-card|tv-card|anime-card|quote-card|idea-card)$/;
+            let inBlock = false;
+            let blockLines = [];
+            let hasCard = false;
+            for (let line of lines) {
+              const trimmed = line.trim();
+              if (!inBlock) {
+                const match = trimmed.match(codeBlockRegex);
+                if (match) {
+                  inBlock = true;
+                  blockLines = [];
+                  hasCard = true;
+                }
+              } else if (trimmed === "```") {
+                const tagLine = blockLines.find(
+                  (l) => l.trim().toLowerCase().startsWith("tags:") || l.trim().toLowerCase().startsWith("tag:")
+                );
+                if (tagLine) {
+                  const tagField = tagLine.split(":").slice(1).join(":").trim();
+                  const matches = tagField.match(/#[^\s#，,]+/g);
+                  matches?.forEach((tag) => foundTags.add(tag.replace(/^#/, "")));
+                }
+                inBlock = false;
                 blockLines = [];
-                hasCard = true;
+              } else {
+                blockLines.push(line);
               }
-            } else if (trimmed === "```") {
-              const tagLine = blockLines.find(
-                (l) => l.trim().toLowerCase().startsWith("tags:") || l.trim().toLowerCase().startsWith("tag:")
-              );
-              if (tagLine) {
-                const tagField = tagLine.split(":").slice(1).join(":").trim();
-                const matches = tagField.match(/#[^\s#，,]+/g);
-                matches?.forEach((tag) => foundTags.add(tag.replace(/^#/, "")));
-              }
-              inBlock = false;
-              blockLines = [];
-            } else {
-              blockLines.push(line);
             }
-          }
-          if (hasCard) {
-            const metadata = this.app.metadataCache.getFileCache(file);
-            const frontmatter = metadata?.frontmatter;
-            const hasFrontmatter = content2.startsWith("---\n");
-            const rawTags = frontmatter?.tags;
-            const existingTags = new Set(
-              (rawTags ?? []).filter((t) => typeof t === "string").map((t) => t.trim())
-            );
-            const allTags = /* @__PURE__ */ new Set([...existingTags, ...foundTags]);
-            if (!hasFrontmatter) {
-              const tagsStr = Array.from(allTags).join("\n  - ");
-              const newContent = `---
+            if (hasCard) {
+              const metadata = this.app.metadataCache.getFileCache(file);
+              const frontmatter = metadata?.frontmatter;
+              const hasFrontmatter = content.startsWith("---\n");
+              const rawTags = frontmatter?.tags;
+              const existingTags = new Set(
+                (rawTags ?? []).filter((t) => typeof t === "string").map((t) => t.trim())
+              );
+              const allTags = /* @__PURE__ */ new Set([...existingTags, ...foundTags]);
+              if (!hasFrontmatter) {
+                const tagsStr = Array.from(allTags).join("\n  - ");
+                const newContent = `---
 tags:
   - ${tagsStr}
 ---
-${content2.trimStart()}`;
-              await this.app.vault.modify(file, newContent);
-            } else {
-              await this.app.fileManager.processFrontMatter(file, (fm) => {
-                fm.tags = Array.from(allTags);
-              });
-            }
-          }
-        }
-        const content = await this.app.vault.read(file);
-        const lines = content.split("\n");
-        let currentLine = 0;
-        const blockStack = [];
-        while (currentLine < lines.length) {
-          const line = lines[currentLine].trim();
-          if (line.startsWith("```")) {
-            const cardTypes = ["music-card", "book-card", "movie-card", "tv-card", "anime-card"];
-            const isCardStart = cardTypes.some((type) => line === "```" + type);
-            if (isCardStart) {
-              const blockType = line.substring(3);
-              blockStack.push({
-                type: blockType,
-                startLine: currentLine,
-                content: []
-              });
-            } else if (line === "```") {
-              if (blockStack.length > 0) {
-                const currentBlock = blockStack.pop();
-                const fullContent = "```" + currentBlock.type + "\n" + currentBlock.content.join("\n") + "\n```";
-                const existingCID = await CardUtils.findCIDByContent(this.app.vault, fullContent);
-                const cid = existingCID || CardUtils.generateCID(fullContent);
-                const newCID = await CardUtils.updateCardIndex(this.app.vault, cid, fullContent, {
-                  path: file.path,
-                  startLine: currentBlock.startLine,
-                  endLine: currentLine
+${content.trimStart()}`;
+                await this.app.vault.modify(file, newContent);
+              } else {
+                await this.app.fileManager.processFrontMatter(file, (fm) => {
+                  fm.tags = Array.from(allTags);
                 });
-                if (newCID !== cid) {
-                  console.log(`Card content merged with existing card: ${newCID}`);
-                }
               }
             }
-          } else if (blockStack.length > 0) {
-            blockStack[blockStack.length - 1].content.push(lines[currentLine]);
+            let currentLine = 0;
+            const index = await CardUtils.loadCardIndex(this.app.vault);
+            let indexModified = false;
+            const blockStack = [];
+            const cardsToUpdate = [];
+            while (currentLine < lines.length) {
+              const line = lines[currentLine].trim();
+              if (line.startsWith("```")) {
+                const cardTypes = ["music-card", "book-card", "movie-card", "tv-card", "anime-card"];
+                const isCardStart = cardTypes.some((type) => line === "```" + type);
+                if (isCardStart) {
+                  const blockType = line.substring(3);
+                  blockStack.push({
+                    type: blockType,
+                    startLine: currentLine,
+                    content: []
+                  });
+                } else if (line === "```") {
+                  if (blockStack.length > 0) {
+                    const currentBlock = blockStack.pop();
+                    const fullContent = "```" + currentBlock.type + "\n" + currentBlock.content.join("\n") + "\n```";
+                    const existingCID = await CardUtils.findCIDByContent(this.app.vault, fullContent);
+                    const cid = existingCID || CardUtils.generateCID(fullContent);
+                    cardsToUpdate.push({
+                      cid,
+                      content: fullContent,
+                      location: {
+                        path: file.path,
+                        startLine: currentBlock.startLine,
+                        endLine: currentLine
+                      }
+                    });
+                    indexModified = true;
+                  }
+                }
+              } else if (blockStack.length > 0) {
+                blockStack[blockStack.length - 1].content.push(lines[currentLine]);
+              }
+              currentLine++;
+            }
+            while (blockStack.length > 0) {
+              const unclosedBlock = blockStack.pop();
+              const fullContent = "```" + unclosedBlock.type + "\n" + unclosedBlock.content.join("\n") + "\n```";
+              const existingCID = await CardUtils.findCIDByContent(this.app.vault, fullContent);
+              const cid = existingCID || CardUtils.generateCID(fullContent);
+              cardsToUpdate.push({
+                cid,
+                content: fullContent,
+                location: {
+                  path: file.path,
+                  startLine: unclosedBlock.startLine,
+                  endLine: lines.length - 1
+                }
+              });
+              indexModified = true;
+            }
+            if (indexModified && cardsToUpdate.length > 0) {
+              Object.keys(index).forEach((cid) => {
+                if (index[cid] && index[cid].locations) {
+                  index[cid].locations = index[cid].locations.filter((loc) => loc.path !== file.path);
+                }
+              });
+              for (const card of cardsToUpdate) {
+                const newCID = CardUtils.generateCID(card.content);
+                if (!index[card.cid] || newCID !== card.cid) {
+                  const existingWithSameContent = Object.keys(index).find(
+                    (key) => CardUtils.generateCID(index[key]?.content || "") === newCID
+                  );
+                  if (existingWithSameContent) {
+                    index[existingWithSameContent].locations.push(card.location);
+                  } else {
+                    index[newCID] = {
+                      content: card.content,
+                      locations: [card.location],
+                      lastUpdated: (/* @__PURE__ */ new Date()).toISOString()
+                    };
+                  }
+                  if (index[card.cid] && index[card.cid].locations.length === 0) {
+                    delete index[card.cid];
+                  }
+                } else {
+                  if (!index[card.cid]) {
+                    index[card.cid] = {
+                      content: card.content,
+                      locations: [],
+                      lastUpdated: (/* @__PURE__ */ new Date()).toISOString()
+                    };
+                  }
+                  index[card.cid].locations.push(card.location);
+                }
+              }
+              Object.keys(index).forEach((cid) => {
+                if (index[cid] && index[cid].locations && index[cid].locations.length === 0) {
+                  delete index[cid];
+                }
+              });
+              await CardUtils.saveCardIndex(this.app.vault, index);
+            }
+          } catch (error) {
+            console.error("\u5904\u7406\u6587\u4EF6\u6253\u5F00\u4E8B\u4EF6\u65F6\u51FA\u9519:", error);
           }
-          currentLine++;
-        }
-        while (blockStack.length > 0) {
-          const unclosedBlock = blockStack.pop();
-          const fullContent = "```" + unclosedBlock.type + "\n" + unclosedBlock.content.join("\n") + "\n```";
-          const cid = await CardUtils.findCIDByContent(this.app.vault, fullContent) || CardUtils.generateCID(fullContent);
-          await CardUtils.updateCardIndex(this.app.vault, cid, fullContent, {
-            path: file.path,
-            startLine: unclosedBlock.startLine,
-            endLine: lines.length - 1
-          });
         }
       })
     );
@@ -8163,7 +9649,7 @@ ${content2.trimStart()}`;
     });
     this.registerEvent(
       this.app.vault.on("modify", async (file) => {
-        if (file instanceof import_obsidian4.TFile) {
+        if (file instanceof import_obsidian5.TFile) {
           const content = await this.app.vault.read(file);
           const oldCards = await this.getCardsFromFile({ path: file.path, startLine: 0, endLine: 0 });
           const newCards = this.extractCardsFromContent(content);
@@ -8232,7 +9718,7 @@ ${content2.trimStart()}`;
     this.app.workspace.on("editor-menu", (menu, editor) => {
       menu.addItem((item) => {
         item.setTitle("\u63D2\u5165\u5361\u7247").setIcon("arrow-down-from-line").onClick(() => {
-          const submenu = new import_obsidian4.Menu();
+          const submenu = new import_obsidian5.Menu();
           submenu.addItem((subItem) => {
             subItem.setTitle("\u901A\u8FC7ID\u6DFB\u52A0").setIcon("search").onClick(async () => {
               const cursor = editor.getCursor("to");
@@ -8536,9 +10022,15 @@ ${content2.trimStart()}`;
     if (data.tags && data.tags.length > 0) {
       const tagsContainer = metaContainer.createDiv({ cls: "card-tags-container" });
       data.tags.forEach((tag) => {
-        tagsContainer.createEl("a", {
+        const tagEl = tagsContainer.createEl("a", {
           text: tag,
           cls: "tag"
+        });
+        tagEl.addEventListener("click", (e) => {
+          e.stopPropagation();
+          if (this.view) {
+            this.view.addTagFilter(tag);
+          }
         });
       });
     }
@@ -8590,9 +10082,15 @@ ${content2.trimStart()}`;
     if (data.tags && data.tags.length > 0) {
       const tagsContainer = metaContainer.createDiv({ cls: "card-tags-container" });
       data.tags.forEach((tag) => {
-        tagsContainer.createEl("a", {
+        const tagEl = tagsContainer.createEl("a", {
           text: tag,
           cls: "tag"
+        });
+        tagEl.addEventListener("click", (e) => {
+          e.stopPropagation();
+          if (this.view) {
+            this.view.addTagFilter(tag);
+          }
         });
       });
     }
@@ -8662,8 +10160,7 @@ ${content2.trimStart()}`;
         const ratingBadge = ratingContainer.createDiv({ cls: "rating-badge" });
         ratingBadge.createDiv({ cls: "rating-score", text: data.rating });
         ratingBadge.innerHTML += `
-         <svg t="1743841440004" class="icon" viewBox="0 0 1332 1024" version="1.1" xmlns="http://www.w3.org/2000/svg" p-id="5351" width="200" height="200"><path d="M754.999373 984.409613s-40.018391-7.918077-58.42257-18.618181c-18.618182-10.700104-120.483177-56.28255-189.39185-12.840126 0 0-28.462278 24.182236-57.35256 27.178266 0 0 36.808359 13.482132 74.900731 2.782027 0 0 32.528318-9.20209 50.932498-22.47022 0 0 40.660397-17.976176 78.538767 0.214002 37.87837 18.190178 33.170324 23.326228 64.842633 28.248276 31.672309 5.13605 35.952351-4.494044 35.952351-4.494044zM509.324974 912.076907s-16.692163-47.722466-74.472727-62.060606c0 0 9.20209 41.730408 56.068547 57.780564 0 0-93.732915 1.498015-130.11327 54.784535-0.214002 0 75.75674 29.960293 148.51745-50.504493z" fill="#B68A11" p-id="5352"></path><path d="M413.66604 896.454754s-3.638036-50.504493-55.640544-79.608777c0 0-2.140021 42.800418 38.734379 70.406688 0 0-90.950888-23.326228-139.957367 18.618181 0.214002 0 65.484639 49.006479 156.863532-9.416092z" fill="#B68A11" p-id="5353"></path><path d="M312.229049 767.411494s27.820272 47.294462-2.782027 98.440962c0 0-93.304911 28.67628-153.011494-39.590387 0 0 75.114734-24.824242 148.089446 35.096343 0.214002 0-22.042215-53.928527 7.704075-93.946918z" fill="#B68A11" p-id="5354"></path><path d="M252.308464 796.301776s-16.692163-53.28652 11.770115-84.102821c0 0 26.964263 48.792476-9.630094 91.16489 0 0-101.436991 19.902194-139.957367-49.862487 0 0.428004 61.632602-19.902194 137.817346 42.800418z" fill="#B68A11" p-id="5355"></path><path d="M202.873981 729.961129s-9.844096-47.936468 19.046186-78.966772c0 0 23.754232 43.656426-15.194148 87.954859 0 0-106.787043-2.354023-128.401254-60.990595-0.214002 0.214002 81.748798-3.852038 124.549216 52.002508z" fill="#B68A11" p-id="5356"></path><path d="M189.177847 585.081714s13.482132 52.644514-24.182236 81.106792c0 0-87.740857 2.354023-115.77513-67.410659 0 0 75.114734 2.140021 112.993103 60.990596 0 0-2.140021-51.360502 26.964263-74.686729z" fill="#B68A11" p-id="5357"></path><path d="M161.143574 519.811076s12.412121 43.442424-26.536259 73.616719c0 0-84.316823-4.494044-105.931035-70.406687 0 0 66.340648 2.782027 101.650993 64.842633 0-0.214002-2.782027-38.94838 30.816301-68.052665z" fill="#B68A11" p-id="5358"></path><path d="M151.085475 456.466458s6.206061 35.096343-33.81233 69.336677c0 0-82.176803-22.470219-92.876907-78.324765 0 0 70.192685 14.980146 91.806897 73.616719 0.214002-0.214002-2.568025-36.808359 34.88234-64.628631z" fill="#B68A11" p-id="5359"></path><path d="M147.875444 398.899896s2.354023 39.162382-40.232393 57.780564c0 0-79.394775-35.952351-76.184744-85.600836 0 0 48.15047 4.494044 76.184744 80.464786 0.214002 0 9.20209-38.306374 40.232393-52.644514z" fill="#B68A11" p-id="5360"></path><path d="M154.723511 340.049321s-6.206061 35.310345-46.010449 50.932497c0 0-66.982654-43.442424-61.632602-91.806896 0 0 54.142529 24.824242 61.846604 85.814838 0 0 7.918077-24.396238 45.796447-44.940439zM166.493626 281.198746s-4.06604 33.384326-46.224451 44.512435c0 0-55.854545-25.680251-52.644515-91.592895 0 0 48.578474 24.61024 53.286521 86.242843-0.214002 0 16.906165-37.236364 45.582445-39.162383zM185.753814 225.986207s-26.750261 2.354023-47.722466 33.170324c0 0-4.06604-65.270637-44.726437-85.386834 0 0-14.552142 49.006479 43.01442 92.876907 0.214002 0 36.594357-6.848067 49.434483-40.660397z" fill="#B68A11" p-id="5361"></path><path d="M205.442006 176.551724S189.605852 208.438036 157.71954 209.722048c0 0-47.722466-41.730408-35.310345-89.880878 0 0 36.166353 26.322257 36.594358 83.032811 0.214002 0 15.622153-24.61024 46.438453-26.322257zM230.052247 128.615256s-9.20209 28.67628-50.076489 29.532288c0 0-38.520376-47.08046-20.972205-89.880877 0 0 29.104284 23.54023 24.182236 81.9628 0-0.214002 20.330199-22.898224 46.866458-21.614211zM258.514525 85.814838s-14.980146 26.536259-47.936469 23.326228c0 0-37.664368-49.006479-15.194148-86.670847 0 0 27.392268 26.536259 17.334169 80.464786 0 0 19.688192-19.47419 45.796448-17.120167z" fill="#B68A11" p-id="5362"></path><path d="M279.914734 53.500522s-13.910136 25.894253-49.648485 21.186207c0 0-5.564054-39.804389 19.47419-52.21651 0 0 7.276071 20.544201-7.490073 41.302404-0.214002 0 11.984117-12.412121 37.664368-10.272101z" fill="#B68A11" p-id="5363"></path><path d="M291.256844 24.824242s-3.424033 24.182236-29.318286 22.042216c0 0 1.498015-20.116196 29.318286-22.042216z" fill="#B68A11" p-id="5364"></path><path d="M556.405434 984.409613s40.018391-7.918077 58.42257-18.618181 120.483177-56.28255 189.39185-12.840126c0 0 28.462278 24.182236 57.35256 27.178266 0 0-36.808359 13.482132-74.900732 2.782027 0 0-32.528318-9.20209-50.932497-22.47022 0 0-40.660397-17.976176-78.538767 0.214002-37.87837 18.190178-33.170324 23.326228-64.842633 28.248276C560.685475 994.039707 556.405434 984.409613 556.405434 984.409613zM802.079833 912.076907s16.692163-47.722466 74.472727-62.060606c0 0-9.20209 41.730408-56.068547 57.780564 0 0 93.732915 1.498015 130.11327 54.784535 0.214002 0-75.75674 29.960293-148.51745-50.504493z" fill="#B68A11" p-id="5365"></path><path d="M897.738767 896.454754s3.638036-50.504493 55.640543-79.608777c0 0 2.140021 42.800418-38.734378 70.406688 0 0 90.950888-23.326228 139.957367 18.618181-0.214002 0-65.484639 49.006479-156.863532-9.416092z" fill="#B68A11" p-id="5366"></path><path d="M999.175758 767.411494s-27.820272 47.294462 2.782027 98.440962c0 0 93.304911 28.67628 153.011494-39.590387 0 0-75.114734-24.824242-148.303448 35.096343 0 0 22.256217-53.928527-7.490073-93.946918z" fill="#B68A11" p-id="5367"></path><path d="M1059.096343 796.301776s16.692163-53.28652-11.770115-84.102821c0 0-26.964263 48.792476 9.630094 91.16489 0 0 101.436991 19.902194 139.957367-49.862487 0 0.428004-61.632602-19.902194-137.817346 42.800418z" fill="#B68A11" p-id="5368"></path><path d="M1108.530825 729.961129s9.844096-47.936468-19.046186-78.966772c0 0-23.754232 43.656426 15.194149 87.954859 0 0 106.787043-2.354023 128.401254-60.990595 0.214002 0.214002-81.748798-3.852038-124.549217 52.002508z" fill="#B68A11" p-id="5369"></path><path d="M1122.226959 585.081714s-13.482132 52.644514 24.182236 81.106792c0 0 87.740857 2.354023 115.775131-67.410659 0 0-75.114734 2.140021-112.993103 60.990596 0 0 2.140021-51.360502-26.964264-74.686729z" fill="#B68A11" p-id="5370"></path><path d="M1150.261233 519.811076s-12.412121 43.442424 26.536259 73.616719c0 0 84.316823-4.494044 105.931035-70.406687 0 0-66.340648 2.782027-101.650993 64.842633 0-0.214002 2.568025-38.94838-30.816301-68.052665z" fill="#B68A11" p-id="5371"></path><path d="M1160.105329 456.466458s-6.206061 35.096343 33.81233 69.336677c0 0 82.176803-22.470219 92.876907-78.324765 0 0-70.192685 14.980146-91.806896 73.616719 0-0.214002 2.568025-36.808359-34.882341-64.628631z" fill="#B68A11" p-id="5372"></path><path d="M1163.315361 398.899896s-2.354023 39.162382 40.232392 57.780564c0 0 79.394775-35.952351 76.184744-85.600836 0 0-48.15047 4.494044-76.184744 80.464786 0 0-9.20209-38.306374-40.232392-52.644514z" fill="#B68A11" p-id="5373"></path><path d="M1156.681296 340.049321s6.206061 35.310345 46.010449 50.932497c0 0 66.982654-43.442424 61.632602-91.806896 0 0-54.142529 24.824242-61.846604 85.814838 0 0-8.132079-24.396238-45.796447-44.940439zM1144.911181 281.198746s4.06604 33.384326 46.224451 44.512435c0 0 55.854545-25.680251 52.644514-91.592895 0 0-48.578474 24.61024-53.28652 86.242843 0.214002 0-16.906165-37.236364-45.582445-39.162383zM1125.650993 225.986207s26.750261 2.354023 47.722466 33.170324c0 0 4.06604-65.270637 44.726437-85.386834 0 0 14.552142 49.006479-43.014421 92.876907-0.214002 0-36.594357-6.848067-49.434482-40.660397z" fill="#B68A11" p-id="5374"></path><path d="M1105.9628 176.551724s15.836155 31.886311 47.722466 33.170324c0 0 47.722466-41.730408 35.310345-89.880878 0 0-36.166353 26.322257-36.594357 83.032811-0.214002 0-15.836155-24.61024-46.438454-26.322257zM1081.35256 128.615256s9.20209 28.67628 50.076489 29.532288c0 0 38.520376-47.08046 20.972205-89.880877 0 0-29.104284 23.54023-24.182236 81.9628-0.214002-0.214002-20.544201-22.898224-46.866458-21.614211zM1052.890282 85.814838s14.980146 26.536259 47.936468 23.326228c0 0 37.664368-49.006479 15.194149-86.670847 0 0-27.392268 26.536259-17.33417 80.464786 0 0-19.902194-19.47419-45.796447-17.120167z" fill="#B68A11" p-id="5375"></path><path d="M1031.490073 53.500522s13.910136 25.894253 49.862487 21.186207c0 0 5.564054-39.804389-19.47419-52.21651 0 0-7.276071 20.544201 7.490073 41.302404-0.214002 0-12.198119-12.412121-37.87837-10.272101z" fill="#B68A11" p-id="5376"></path><path d="M1019.93396 24.824242s3.424033 24.182236 29.532289 22.042216c0 0-1.712017-20.116196-29.532289-22.042216z" fill="#B68A11" p-id="5377"></path></svg>
-        `;
+         <svg t="1743841440004" class="icon" viewBox="0 0 1332 1024" version="1.1" xmlns="http://www.w3.org/2000/svg" p-id="5351" width="200" height="200"><path d="M754.999373 984.409613s-40.018391-7.918077-58.42257-18.618181c-18.618182-10.700104-120.483177-56.28255-189.39185-12.840126 0 0-28.462278 24.182236-57.35256 27.178266 0 0 36.808359 13.482132 74.900731 2.782027 0 0 32.528318-9.20209 50.932498-22.47022 0 0 40.660397-17.976176 78.538767 0.214002 37.87837 18.190178 33.170324 23.326228 64.842633 28.248276 31.672309 5.13605 35.952351-4.494044 35.952351-4.494044zM509.324974 912.076907s-16.692163-47.722466-74.472727-62.060606c0 0 9.20209 41.730408 56.068547 57.780564 0 0-93.732915 1.498015-130.11327 54.784535-0.214002 0 75.75674 29.960293 148.51745-50.504493z" fill="#B68A11" p-id="5352"></path><path d="M413.66604 896.454754s-3.638036-50.504493-55.640544-79.608777c0 0-2.140021 42.800418 38.734379 70.406688 0 0-90.950888-23.326228-139.957367 18.618181 0.214002 0 65.484639 49.006479 156.863532-9.416092z" fill="#B68A11" p-id="5353"></path><path d="M312.229049 767.411494s27.820272 47.294462-2.782027 98.440962c0 0-93.304911 28.67628-153.011494-39.590387 0 0 75.114734-24.824242 148.089446 35.096343 0.214002 0-22.042215-53.928527 7.704075-93.946918z" fill="#B68A11" p-id="5354"></path><path d="M252.308464 796.301776s-16.692163-53.28652 11.770115-84.102821c0 0 26.964263 48.792476-9.630094 91.16489 0 0-101.436991 19.902194-139.957367-49.862487 0 0.428004 61.632602-19.902194 137.817346 42.800418z" fill="#B68A11" p-id="5355"></path><path d="M202.873981 729.961129s-9.844096-47.936468 19.046186-78.966772c0 0 23.754232 43.656426-15.194148 87.954859 0 0-106.787043-2.354023-128.401254-60.990595-0.214002 0.214002 81.748798-3.852038 124.549216 52.002508z" fill="#B68A11" p-id="5356"></path><path d="M189.177847 585.081714s13.482132 52.644514-24.182236 81.106792c0 0-87.740857 2.354023-115.77513-67.410659 0 0 75.114734 2.140021 112.993103 60.990596 0 0-2.140021-51.360502 26.964263-74.686729z" fill="#B68A11" p-id="5357"></path><path d="M161.143574 519.811076s12.412121 43.442424-26.536259 73.616719c0 0-84.316823-4.494044-105.931035-70.406687 0 0 66.340648 2.782027 101.650993 64.842633 0-0.214002-2.782027-38.94838 30.816301-68.052665z" fill="#B68A11" p-id="5358"></path><path d="M151.085475 456.466458s6.206061 35.096343-33.81233 69.336677c0 0-82.176803-22.470219-92.876907-78.324765 0 0 70.192685 14.980146 91.806897 73.616719 0.214002-0.214002-2.568025-36.808359 34.88234-64.628631z" fill="#B68A11" p-id="5359"></path><path d="M147.875444 398.899896s2.354023 39.162382-40.232393 57.780564c0 0-79.394775-35.952351-76.184744-85.600836 0 0 48.15047 4.494044 76.184744 80.464786 0.214002 0 9.20209-38.306374 40.232393-52.644514z" fill="#B68A11" p-id="5360"></path><path d="M154.723511 340.049321s-6.206061 35.310345-46.010449 50.932497c0 0-66.982654-43.442424-61.632602-91.806896 0 0 54.142529 24.824242 61.846604 85.814838 0 0 7.918077-24.396238 45.796447-44.940439zM166.493626 281.198746s-4.06604 33.384326-46.224451 44.512435c0 0-55.854545-25.680251-52.644515-91.592895 0 0 48.578474 24.61024 53.286521 86.242843-0.214002 0 16.906165-37.236364 45.582445-39.162383zM185.753814 225.986207s-26.750261 2.354023-47.722466 33.170324c0 0-4.06604-65.270637-44.726437-85.386834 0 0-14.552142 49.006479 43.01442 92.876907 0.214002 0 36.594357-6.848067 49.434483-40.660397z" fill="#B68A11" p-id="5361"></path><path d="M205.442006 176.551724S189.605852 208.438036 157.71954 209.722048c0 0-47.722466-41.730408-35.310345-89.880878 0 0 36.166353 26.322257 36.594358 83.032811 0.214002 0 15.622153-24.61024 46.438453-26.322257zM230.052247 128.615256s-9.20209 28.67628-50.076489 29.532288c0 0-38.520376-47.08046-20.972205-89.880877 0 0 29.104284 23.54023 24.182236 81.9628 0-0.214002 20.330199-22.898224 46.866458-21.614211zM258.514525 85.814838s-14.980146 26.536259-47.936469 23.326228c0 0-37.664368-49.006479-15.194148-86.670847 0 0 27.392268 26.536259 17.334169 80.464786 0 0 19.688192-19.47419 45.796448-17.120167z" fill="#B68A11" p-id="5362"></path><path d="M279.914734 53.500522s-13.910136 25.894253-49.648485 21.186207c0 0-5.564054-39.804389 19.47419-52.21651 0 0 7.276071 20.544201-7.490073 41.302404-0.214002 0 11.984117-12.412121 37.664368-10.272101z" fill="#B68A11" p-id="5363"></path><path d="M291.256844 24.824242s-3.424033 24.182236-29.318286 22.042216c0 0 1.498015-20.116196 29.318286-22.042216z" fill="#B68A11" p-id="5364"></path><path d="M556.405434 984.409613s40.018391-7.918077 58.42257-18.618181 120.483177-56.28255 189.39185-12.840126c0 0 28.462278 24.182236 57.35256 27.178266 0 0-36.808359 13.482132-74.900732 2.782027 0 0-32.528318-9.20209-50.932497-22.47022 0 0-40.660397-17.976176-78.538767 0.214002-37.87837 18.190178-33.170324 23.326228-64.842633 28.248276C560.685475 994.039707 556.405434 984.409613 556.405434 984.409613zM802.079833 912.076907s16.692163-47.722466 74.472727-62.060606c0 0-9.20209 41.730408-56.068547 57.780564 0 0 93.732915 1.498015 130.11327 54.784535 0.214002 0-75.75674 29.960293-148.51745-50.504493z" fill="#B68A11" p-id="5365"></path><path d="M897.738767 896.454754s3.638036-50.504493 55.640543-79.608777c0 0 2.140021 42.800418-38.734378 70.406688 0 0 90.950888-23.326228 139.957367 18.618181-0.214002 0-65.484639 49.006479-156.863532-9.416092z" fill="#B68A11" p-id="5366"></path><path d="M999.175758 767.411494s-27.820272 47.294462 2.782027 98.440962c0 0 93.304911 28.67628 153.011494-39.590387 0 0-75.114734-24.824242-148.303448 35.096343 0 0 22.256217-53.928527-7.490073-93.946918z" fill="#B68A11" p-id="5367"></path><path d="M1059.096343 796.301776s16.692163-53.28652-11.770115-84.102821c0 0-26.964263 48.792476 9.630094 91.16489 0 0 101.436991 19.902194 139.957367-49.862487 0 0.428004-61.632602-19.902194-137.817346 42.800418z" fill="#B68A11" p-id="5368"></path><path d="M1108.530825 729.961129s9.844096-47.936468-19.046186-78.966772c0 0-23.754232 43.656426 15.194149 87.954859 0 0 106.787043-2.354023 128.401254-60.990595 0.214002 0.214002-81.748798-3.852038-124.549217 52.002508z" fill="#B68A11" p-id="5369"></path><path d="M1122.226959 585.081714s-13.482132 52.644514 24.182236 81.106792c0 0 87.740857 2.354023 115.775131-67.410659 0 0-75.114734 2.140021-112.993103 60.990596 0 0 2.140021-51.360502-26.964264-74.686729z" fill="#B68A11" p-id="5370"></path><path d="M1150.261233 519.811076s-12.412121 43.442424 26.536259 73.616719c0 0 84.316823-4.494044 105.931035-70.406687 0 0-66.340648 2.782027-101.650993 64.842633 0-0.214002 2.568025-38.94838-30.816301-68.052665z" fill="#B68A11" p-id="5371"></path><path d="M1160.105329 456.466458s-6.206061 35.096343 33.81233 69.336677c0 0 82.176803-22.470219 92.876907-78.324765 0 0-70.192685 14.980146-91.806896 73.616719 0-0.214002 2.568025-36.808359-34.882341-64.628631z" fill="#B68A11" p-id="5372"></path><path d="M1163.315361 398.899896s-2.354023 39.162382 40.232392 57.780564c0 0 79.394775-35.952351 76.184744-85.600836 0 0-48.15047 4.494044-76.184744 80.464786 0 0-9.20209-38.306374-40.232392-52.644514z" fill="#B68A11" p-id="5373"></path><path d="M1156.681296 340.049321s6.206061 35.310345 46.010449 50.932497c0 0 66.982654-43.442424 61.632602-91.806896 0 0-54.142529 24.824242-61.846604 85.814838 0 0 7.918077-24.396238 45.796447-44.940439zM1144.911181 281.198746s4.06604 33.384326 46.224451 44.512435c0 0 55.854545-25.680251 52.644514-91.592895 0 0-48.578474 24.61024-53.28652 86.242843 0.214002 0-16.906165-37.236364-45.582445-39.162383zM1125.650993 225.986207s26.750261 2.354023 47.722466 33.170324c0 0 4.06604-65.270637 44.726437-85.386834 0 0 14.552142 49.006479-43.014421 92.876907-0.214002 0-36.594357-6.848067-49.434482-40.660397z" fill="#B68A11" p-id="5374"></path><path d="M1105.9628 176.551724s15.836155 31.886311 47.722466 33.170324c0 0 47.722466-41.730408 35.310345-89.880878 0 0-36.166353 26.322257-36.594357 83.032811-0.214002 0-15.836155-24.61024-46.438454-26.322257zM1081.35256 128.615256s9.20209 28.67628 50.076489 29.532288c0 0 38.520376-47.08046 20.972205-89.880877 0 0-29.104284 23.54023-24.182236 81.9628-0.214002-0.214002-20.544201-22.898224-46.866458-21.614211zM1052.890282 85.814838s14.980146 26.536259 47.936468 23.326228c0 0 37.664368-49.006479 15.194149-86.670847 0 0-27.392268 26.536259-17.33417 80.464786 0 0-19.902194-19.47419-45.796447-17.120167z" fill="#B68A11" p-id="5375"></path><path d="M1031.490073 53.500522s13.910136 25.894253 49.862487 21.186207c0 0 5.564054-39.804389-19.47419-52.21651 0 0-7.276071 20.544201 7.490073 41.302404-0.214002 0-12.198119-12.412121-37.87837-10.272101z" fill="#B68A11" p-id="5376"></path><path d="M1019.93396 24.824242s3.424033 24.182236 29.532289 22.042216c0 0-1.712017-20.116196-29.532289-22.042216z" fill="#B68A11" p-id="5377"></path></svg>`;
       } else if (ratingScore >= 5) {
         ratingContainer.setAttribute("data-score", "good");
         const ratingBadge = ratingContainer.createDiv({ cls: "simple-badge" });
@@ -8673,9 +10170,6 @@ ${content2.trimStart()}`;
         ratingContainer.setAttribute("data-score", "poor");
         ratingContainer.createDiv({ text: data.rating });
       }
-    }
-    if (data.collection_date) {
-      const collectionDateEl = infoContainer.createDiv({ cls: "collection-date", text: data.collection_date });
     }
     if (data.meta) {
       const metaContainer = infoContainer.createDiv({ cls: "meta-container" });
@@ -8689,14 +10183,25 @@ ${content2.trimStart()}`;
     if (data.description) {
       infoContainer.createEl("div", { text: data.description, cls: "card-info-description" });
     }
-    if (data.tags && data.tags.length > 0) {
+    if (data.tags && data.tags.length > 0 || data.collection_date) {
       const tagsContainer = infoContainer.createDiv({ cls: "card-tags-container" });
-      data.tags.forEach((tag) => {
-        tagsContainer.createEl("a", {
-          text: tag,
-          cls: "tag"
+      if (data.tags) {
+        data.tags.forEach((tag) => {
+          const tagEl = tagsContainer.createEl("a", {
+            text: tag,
+            cls: "tag"
+          });
+          tagEl.addEventListener("click", (e) => {
+            e.stopPropagation();
+            if (this.view) {
+              this.view.addTagFilter(tag);
+            }
+          });
         });
-      });
+      }
+      if (data.collection_date) {
+        const collectionDateEl = tagsContainer.createDiv({ cls: "collection-date", text: data.collection_date });
+      }
     }
   }
   renderBookCard(data, el, cid) {
@@ -8760,8 +10265,7 @@ ${content2.trimStart()}`;
         const ratingBadge = ratingContainer.createDiv({ cls: "rating-badge" });
         ratingBadge.createDiv({ cls: "rating-score", text: data.rating });
         ratingBadge.innerHTML += `
-          <svg t="1743841440004" class="icon" viewBox="0 0 1332 1024" version="1.1" xmlns="http://www.w3.org/2000/svg" p-id="5351" width="200" height="200"><path d="M754.999373 984.409613s-40.018391-7.918077-58.42257-18.618181c-18.618182-10.700104-120.483177-56.28255-189.39185-12.840126 0 0-28.462278 24.182236-57.35256 27.178266 0 0 36.808359 13.482132 74.900731 2.782027 0 0 32.528318-9.20209 50.932498-22.47022 0 0 40.660397-17.976176 78.538767 0.214002 37.87837 18.190178 33.170324 23.326228 64.842633 28.248276 31.672309 5.13605 35.952351-4.494044 35.952351-4.494044zM509.324974 912.076907s-16.692163-47.722466-74.472727-62.060606c0 0 9.20209 41.730408 56.068547 57.780564 0 0-93.732915 1.498015-130.11327 54.784535-0.214002 0 75.75674 29.960293 148.51745-50.504493z" fill="#B68A11" p-id="5352"></path><path d="M413.66604 896.454754s-3.638036-50.504493-55.640544-79.608777c0 0-2.140021 42.800418 38.734379 70.406688 0 0-90.950888-23.326228-139.957367 18.618181 0.214002 0 65.484639 49.006479 156.863532-9.416092z" fill="#B68A11" p-id="5353"></path><path d="M312.229049 767.411494s27.820272 47.294462-2.782027 98.440962c0 0-93.304911 28.67628-153.011494-39.590387 0 0 75.114734-24.824242 148.089446 35.096343 0.214002 0-22.042215-53.928527 7.704075-93.946918z" fill="#B68A11" p-id="5354"></path><path d="M252.308464 796.301776s-16.692163-53.28652 11.770115-84.102821c0 0 26.964263 48.792476-9.630094 91.16489 0 0-101.436991 19.902194-139.957367-49.862487 0 0.428004 61.632602-19.902194 137.817346 42.800418z" fill="#B68A11" p-id="5355"></path><path d="M202.873981 729.961129s-9.844096-47.936468 19.046186-78.966772c0 0 23.754232 43.656426-15.194148 87.954859 0 0-106.787043-2.354023-128.401254-60.990595-0.214002 0.214002 81.748798-3.852038 124.549216 52.002508z" fill="#B68A11" p-id="5356"></path><path d="M189.177847 585.081714s13.482132 52.644514-24.182236 81.106792c0 0-87.740857 2.354023-115.77513-67.410659 0 0 75.114734 2.140021 112.993103 60.990596 0 0-2.140021-51.360502 26.964263-74.686729z" fill="#B68A11" p-id="5357"></path><path d="M161.143574 519.811076s12.412121 43.442424-26.536259 73.616719c0 0-84.316823-4.494044-105.931035-70.406687 0 0 66.340648 2.782027 101.650993 64.842633 0-0.214002-2.782027-38.94838 30.816301-68.052665z" fill="#B68A11" p-id="5358"></path><path d="M151.085475 456.466458s6.206061 35.096343-33.81233 69.336677c0 0-82.176803-22.470219-92.876907-78.324765 0 0 70.192685 14.980146 91.806897 73.616719 0.214002-0.214002-2.568025-36.808359 34.88234-64.628631z" fill="#B68A11" p-id="5359"></path><path d="M147.875444 398.899896s2.354023 39.162382-40.232393 57.780564c0 0-79.394775-35.952351-76.184744-85.600836 0 0 48.15047 4.494044 76.184744 80.464786 0.214002 0 9.20209-38.306374 40.232393-52.644514z" fill="#B68A11" p-id="5360"></path><path d="M154.723511 340.049321s-6.206061 35.310345-46.010449 50.932497c0 0-66.982654-43.442424-61.632602-91.806896 0 0 54.142529 24.824242 61.846604 85.814838 0 0 7.918077-24.396238 45.796447-44.940439zM166.493626 281.198746s-4.06604 33.384326-46.224451 44.512435c0 0-55.854545-25.680251-52.644515-91.592895 0 0 48.578474 24.61024 53.286521 86.242843-0.214002 0 16.906165-37.236364 45.582445-39.162383zM185.753814 225.986207s-26.750261 2.354023-47.722466 33.170324c0 0-4.06604-65.270637-44.726437-85.386834 0 0-14.552142 49.006479 43.01442 92.876907 0.214002 0 36.594357-6.848067 49.434483-40.660397z" fill="#B68A11" p-id="5361"></path><path d="M205.442006 176.551724S189.605852 208.438036 157.71954 209.722048c0 0-47.722466-41.730408-35.310345-89.880878 0 0 36.166353 26.322257 36.594358 83.032811 0.214002 0 15.622153-24.61024 46.438453-26.322257zM230.052247 128.615256s-9.20209 28.67628-50.076489 29.532288c0 0-38.520376-47.08046-20.972205-89.880877 0 0 29.104284 23.54023 24.182236 81.9628 0-0.214002 20.330199-22.898224 46.866458-21.614211zM258.514525 85.814838s-14.980146 26.536259-47.936469 23.326228c0 0-37.664368-49.006479-15.194148-86.670847 0 0 27.392268 26.536259 17.334169 80.464786 0 0 19.688192-19.47419 45.796448-17.120167z" fill="#B68A11" p-id="5362"></path><path d="M279.914734 53.500522s-13.910136 25.894253-49.648485 21.186207c0 0-5.564054-39.804389 19.47419-52.21651 0 0 7.276071 20.544201-7.490073 41.302404-0.214002 0 11.984117-12.412121 37.664368-10.272101z" fill="#B68A11" p-id="5363"></path><path d="M291.256844 24.824242s-3.424033 24.182236-29.318286 22.042216c0 0 1.498015-20.116196 29.318286-22.042216z" fill="#B68A11" p-id="5364"></path><path d="M556.405434 984.409613s40.018391-7.918077 58.42257-18.618181 120.483177-56.28255 189.39185-12.840126c0 0 28.462278 24.182236 57.35256 27.178266 0 0-36.808359 13.482132-74.900732 2.782027 0 0-32.528318-9.20209-50.932497-22.47022 0 0-40.660397-17.976176-78.538767 0.214002-37.87837 18.190178-33.170324 23.326228-64.842633 28.248276C560.685475 994.039707 556.405434 984.409613 556.405434 984.409613zM802.079833 912.076907s16.692163-47.722466 74.472727-62.060606c0 0-9.20209 41.730408-56.068547 57.780564 0 0 93.732915 1.498015 130.11327 54.784535 0.214002 0-75.75674 29.960293-148.51745-50.504493z" fill="#B68A11" p-id="5365"></path><path d="M897.738767 896.454754s3.638036-50.504493 55.640543-79.608777c0 0 2.140021 42.800418-38.734378 70.406688 0 0 90.950888-23.326228 139.957367 18.618181-0.214002 0-65.484639 49.006479-156.863532-9.416092z" fill="#B68A11" p-id="5366"></path><path d="M999.175758 767.411494s-27.820272 47.294462 2.782027 98.440962c0 0 93.304911 28.67628 153.011494-39.590387 0 0-75.114734-24.824242-148.303448 35.096343 0 0 22.256217-53.928527-7.490073-93.946918z" fill="#B68A11" p-id="5367"></path><path d="M1059.096343 796.301776s16.692163-53.28652-11.770115-84.102821c0 0-26.964263 48.792476 9.630094 91.16489 0 0 101.436991 19.902194 139.957367-49.862487 0 0.428004-61.632602-19.902194-137.817346 42.800418z" fill="#B68A11" p-id="5368"></path><path d="M1108.530825 729.961129s9.844096-47.936468-19.046186-78.966772c0 0-23.754232 43.656426 15.194149 87.954859 0 0 106.787043-2.354023 128.401254-60.990595 0.214002 0.214002-81.748798-3.852038-124.549217 52.002508z" fill="#B68A11" p-id="5369"></path><path d="M1122.226959 585.081714s-13.482132 52.644514 24.182236 81.106792c0 0 87.740857 2.354023 115.775131-67.410659 0 0-75.114734 2.140021-112.993103 60.990596 0 0 2.140021-51.360502-26.964264-74.686729z" fill="#B68A11" p-id="5370"></path><path d="M1150.261233 519.811076s-12.412121 43.442424 26.536259 73.616719c0 0 84.316823-4.494044 105.931035-70.406687 0 0-66.340648 2.782027-101.650993 64.842633 0-0.214002 2.568025-38.94838-30.816301-68.052665z" fill="#B68A11" p-id="5371"></path><path d="M1160.105329 456.466458s-6.206061 35.096343 33.81233 69.336677c0 0 82.176803-22.470219 92.876907-78.324765 0 0-70.192685 14.980146-91.806896 73.616719 0-0.214002 2.568025-36.808359-34.882341-64.628631z" fill="#B68A11" p-id="5372"></path><path d="M1163.315361 398.899896s-2.354023 39.162382 40.232392 57.780564c0 0 79.394775-35.952351 76.184744-85.600836 0 0-48.15047 4.494044-76.184744 80.464786 0 0-9.20209-38.306374-40.232392-52.644514z" fill="#B68A11" p-id="5373"></path><path d="M1156.681296 340.049321s6.206061 35.310345 46.010449 50.932497c0 0 66.982654-43.442424 61.632602-91.806896 0 0-54.142529 24.824242-61.846604 85.814838 0 0-8.132079-24.396238-45.796447-44.940439zM1144.911181 281.198746s4.06604 33.384326 46.224451 44.512435c0 0 55.854545-25.680251 52.644514-91.592895 0 0-48.578474 24.61024-53.28652 86.242843 0.214002 0-16.906165-37.236364-45.582445-39.162383zM1125.650993 225.986207s26.750261 2.354023 47.722466 33.170324c0 0 4.06604-65.270637 44.726437-85.386834 0 0 14.552142 49.006479-43.014421 92.876907-0.214002 0-36.594357-6.848067-49.434482-40.660397z" fill="#B68A11" p-id="5374"></path><path d="M1105.9628 176.551724s15.836155 31.886311 47.722466 33.170324c0 0 47.722466-41.730408 35.310345-89.880878 0 0-36.166353 26.322257-36.594357 83.032811-0.214002 0-15.836155-24.61024-46.438454-26.322257zM1081.35256 128.615256s9.20209 28.67628 50.076489 29.532288c0 0 38.520376-47.08046 20.972205-89.880877 0 0-29.104284 23.54023-24.182236 81.9628-0.214002-0.214002-20.544201-22.898224-46.866458-21.614211zM1052.890282 85.814838s14.980146 26.536259 47.936468 23.326228c0 0 37.664368-49.006479 15.194149-86.670847 0 0-27.392268 26.536259-17.33417 80.464786 0 0-19.902194-19.47419-45.796447-17.120167z" fill="#B68A11" p-id="5375"></path><path d="M1031.490073 53.500522s13.910136 25.894253 49.862487 21.186207c0 0 5.564054-39.804389-19.47419-52.21651 0 0-7.276071 20.544201 7.490073 41.302404-0.214002 0-12.198119-12.412121-37.87837-10.272101z" fill="#B68A11" p-id="5376"></path><path d="M1019.93396 24.824242s3.424033 24.182236 29.532289 22.042216c0 0-1.712017-20.116196-29.532289-22.042216z" fill="#B68A11" p-id="5377"></path></svg>
-        `;
+          <svg t="1743841440004" class="icon" viewBox="0 0 1332 1024" version="1.1" xmlns="http://www.w3.org/2000/svg" p-id="5351" width="200" height="200"><path d="M754.999373 984.409613s-40.018391-7.918077-58.42257-18.618181c-18.618182-10.700104-120.483177-56.28255-189.39185-12.840126 0 0-28.462278 24.182236-57.35256 27.178266 0 0 36.808359 13.482132 74.900731 2.782027 0 0 32.528318-9.20209 50.932498-22.47022 0 0 40.660397-17.976176 78.538767 0.214002 37.87837 18.190178 33.170324 23.326228 64.842633 28.248276 31.672309 5.13605 35.952351-4.494044 35.952351-4.494044zM509.324974 912.076907s-16.692163-47.722466-74.472727-62.060606c0 0 9.20209 41.730408 56.068547 57.780564 0 0-93.732915 1.498015-130.11327 54.784535-0.214002 0 75.75674 29.960293 148.51745-50.504493z" fill="#B68A11" p-id="5352"></path><path d="M413.66604 896.454754s-3.638036-50.504493-55.640544-79.608777c0 0-2.140021 42.800418 38.734379 70.406688 0 0-90.950888-23.326228-139.957367 18.618181 0.214002 0 65.484639 49.006479 156.863532-9.416092z" fill="#B68A11" p-id="5353"></path><path d="M312.229049 767.411494s27.820272 47.294462-2.782027 98.440962c0 0-93.304911 28.67628-153.011494-39.590387 0 0 75.114734-24.824242 148.089446 35.096343 0.214002 0-22.042215-53.928527 7.704075-93.946918z" fill="#B68A11" p-id="5354"></path><path d="M252.308464 796.301776s-16.692163-53.28652 11.770115-84.102821c0 0 26.964263 48.792476-9.630094 91.16489 0 0-101.436991 19.902194-139.957367-49.862487 0 0.428004 61.632602-19.902194 137.817346 42.800418z" fill="#B68A11" p-id="5355"></path><path d="M202.873981 729.961129s-9.844096-47.936468 19.046186-78.966772c0 0 23.754232 43.656426-15.194148 87.954859 0 0-106.787043-2.354023-128.401254-60.990595-0.214002 0.214002 81.748798-3.852038 124.549216 52.002508z" fill="#B68A11" p-id="5356"></path><path d="M189.177847 585.081714s13.482132 52.644514-24.182236 81.106792c0 0-87.740857 2.354023-115.77513-67.410659 0 0 75.114734 2.140021 112.993103 60.990596 0 0-2.140021-51.360502 26.964263-74.686729z" fill="#B68A11" p-id="5357"></path><path d="M161.143574 519.811076s12.412121 43.442424-26.536259 73.616719c0 0-84.316823-4.494044-105.931035-70.406687 0 0 66.340648 2.782027 101.650993 64.842633 0-0.214002-2.782027-38.94838 30.816301-68.052665z" fill="#B68A11" p-id="5358"></path><path d="M151.085475 456.466458s6.206061 35.096343-33.81233 69.336677c0 0-82.176803-22.470219-92.876907-78.324765 0 0 70.192685 14.980146 91.806897 73.616719 0.214002-0.214002-2.568025-36.808359 34.88234-64.628631z" fill="#B68A11" p-id="5359"></path><path d="M147.875444 398.899896s2.354023 39.162382-40.232393 57.780564c0 0-79.394775-35.952351-76.184744-85.600836 0 0 48.15047 4.494044 76.184744 80.464786 0.214002 0 9.20209-38.306374 40.232393-52.644514z" fill="#B68A11" p-id="5360"></path><path d="M154.723511 340.049321s-6.206061 35.310345-46.010449 50.932497c0 0-66.982654-43.442424-61.632602-91.806896 0 0 54.142529 24.824242 61.846604 85.814838 0 0 7.918077-24.396238 45.796447-44.940439zM166.493626 281.198746s-4.06604 33.384326-46.224451 44.512435c0 0-55.854545-25.680251-52.644515-91.592895 0 0 48.578474 24.61024 53.286521 86.242843-0.214002 0 16.906165-37.236364 45.582445-39.162383zM185.753814 225.986207s-26.750261 2.354023-47.722466 33.170324c0 0-4.06604-65.270637-44.726437-85.386834 0 0-14.552142 49.006479 43.01442 92.876907 0.214002 0 36.594357-6.848067 49.434483-40.660397z" fill="#B68A11" p-id="5361"></path><path d="M205.442006 176.551724S189.605852 208.438036 157.71954 209.722048c0 0-47.722466-41.730408-35.310345-89.880878 0 0 36.166353 26.322257 36.594358 83.032811 0.214002 0 15.622153-24.61024 46.438453-26.322257zM230.052247 128.615256s-9.20209 28.67628-50.076489 29.532288c0 0-38.520376-47.08046-20.972205-89.880877 0 0 29.104284 23.54023 24.182236 81.9628 0-0.214002 20.330199-22.898224 46.866458-21.614211zM258.514525 85.814838s-14.980146 26.536259-47.936469 23.326228c0 0-37.664368-49.006479-15.194148-86.670847 0 0 27.392268 26.536259 17.334169 80.464786 0 0 19.688192-19.47419 45.796448-17.120167z" fill="#B68A11" p-id="5362"></path><path d="M279.914734 53.500522s-13.910136 25.894253-49.648485 21.186207c0 0-5.564054-39.804389 19.47419-52.21651 0 0 7.276071 20.544201-7.490073 41.302404-0.214002 0 11.984117-12.412121 37.664368-10.272101z" fill="#B68A11" p-id="5363"></path><path d="M291.256844 24.824242s-3.424033 24.182236-29.318286 22.042216c0 0 1.498015-20.116196 29.318286-22.042216z" fill="#B68A11" p-id="5364"></path><path d="M556.405434 984.409613s40.018391-7.918077 58.42257-18.618181 120.483177-56.28255 189.39185-12.840126c0 0 28.462278 24.182236 57.35256 27.178266 0 0-36.808359 13.482132-74.900732 2.782027 0 0-32.528318-9.20209-50.932497-22.47022 0 0-40.660397-17.976176-78.538767 0.214002-37.87837 18.190178-33.170324 23.326228-64.842633 28.248276C560.685475 994.039707 556.405434 984.409613 556.405434 984.409613zM802.079833 912.076907s16.692163-47.722466 74.472727-62.060606c0 0-9.20209 41.730408-56.068547 57.780564 0 0 93.732915 1.498015 130.11327 54.784535 0.214002 0-75.75674 29.960293-148.51745-50.504493z" fill="#B68A11" p-id="5365"></path><path d="M897.738767 896.454754s3.638036-50.504493 55.640543-79.608777c0 0 2.140021 42.800418-38.734378 70.406688 0 0 90.950888-23.326228 139.957367 18.618181-0.214002 0-65.484639 49.006479-156.863532-9.416092z" fill="#B68A11" p-id="5366"></path><path d="M999.175758 767.411494s-27.820272 47.294462 2.782027 98.440962c0 0 93.304911 28.67628 153.011494-39.590387 0 0-75.114734-24.824242-148.303448 35.096343 0 0 22.256217-53.928527-7.490073-93.946918z" fill="#B68A11" p-id="5367"></path><path d="M1059.096343 796.301776s16.692163-53.28652-11.770115-84.102821c0 0-26.964263 48.792476 9.630094 91.16489 0 0 101.436991 19.902194 139.957367-49.862487 0 0.428004-61.632602-19.902194-137.817346 42.800418z" fill="#B68A11" p-id="5368"></path><path d="M1108.530825 729.961129s9.844096-47.936468-19.046186-78.966772c0 0-23.754232 43.656426 15.194149 87.954859 0 0 106.787043-2.354023 128.401254-60.990595 0.214002 0.214002-81.748798-3.852038-124.549217 52.002508z" fill="#B68A11" p-id="5369"></path><path d="M1122.226959 585.081714s-13.482132 52.644514 24.182236 81.106792c0 0 87.740857 2.354023 115.775131-67.410659 0 0-75.114734 2.140021-112.993103 60.990596 0 0 2.140021-51.360502-26.964264-74.686729z" fill="#B68A11" p-id="5370"></path><path d="M1150.261233 519.811076s-12.412121 43.442424 26.536259 73.616719c0 0 84.316823-4.494044 105.931035-70.406687 0 0-66.340648 2.782027-101.650993 64.842633 0-0.214002 2.568025-38.94838-30.816301-68.052665z" fill="#B68A11" p-id="5371"></path><path d="M1160.105329 456.466458s-6.206061 35.096343 33.81233 69.336677c0 0 82.176803-22.470219 92.876907-78.324765 0 0-70.192685 14.980146-91.806896 73.616719 0-0.214002 2.568025-36.808359-34.882341-64.628631z" fill="#B68A11" p-id="5372"></path><path d="M1163.315361 398.899896s-2.354023 39.162382 40.232392 57.780564c0 0 79.394775-35.952351 76.184744-85.600836 0 0-48.15047 4.494044-76.184744 80.464786 0 0-9.20209-38.306374-40.232392-52.644514z" fill="#B68A11" p-id="5373"></path><path d="M1156.681296 340.049321s6.206061 35.310345 46.010449 50.932497c0 0 66.982654-43.442424 61.632602-91.806896 0 0-54.142529 24.824242-61.846604 85.814838 0 0 7.918077-24.396238 45.796447-44.940439zM1144.911181 281.198746s4.06604 33.384326 46.224451 44.512435c0 0 55.854545-25.680251 52.644514-91.592895 0 0-48.578474 24.61024-53.28652 86.242843 0.214002 0-16.906165-37.236364-45.582445-39.162383zM1125.650993 225.986207s26.750261 2.354023 47.722466 33.170324c0 0 4.06604-65.270637 44.726437-85.386834 0 0 14.552142 49.006479-43.014421 92.876907-0.214002 0-36.594357-6.848067-49.434482-40.660397z" fill="#B68A11" p-id="5374"></path><path d="M1105.9628 176.551724s15.836155 31.886311 47.722466 33.170324c0 0 47.722466-41.730408 35.310345-89.880878 0 0-36.166353 26.322257-36.594357 83.032811-0.214002 0-15.836155-24.61024-46.438454-26.322257zM1081.35256 128.615256s9.20209 28.67628 50.076489 29.532288c0 0 38.520376-47.08046 20.972205-89.880877 0 0-29.104284 23.54023-24.182236 81.9628-0.214002-0.214002-20.544201-22.898224-46.866458-21.614211zM1052.890282 85.814838s14.980146 26.536259 47.936468 23.326228c0 0 37.664368-49.006479 15.194149-86.670847 0 0-27.392268 26.536259-17.33417 80.464786 0 0-19.902194-19.47419-45.796447-17.120167z" fill="#B68A11" p-id="5375"></path><path d="M1031.490073 53.500522s13.910136 25.894253 49.862487 21.186207c0 0 5.564054-39.804389-19.47419-52.21651 0 0-7.276071 20.544201 7.490073 41.302404-0.214002 0-12.198119-12.412121-37.87837-10.272101z" fill="#B68A11" p-id="5376"></path><path d="M1019.93396 24.824242s3.424033 24.182236 29.532289 22.042216c0 0-1.712017-20.116196-29.532289-22.042216z" fill="#B68A11" p-id="5377"></path></svg>`;
       } else if (ratingScore >= 5) {
         ratingContainer.setAttribute("data-score", "good");
         const ratingBadge = ratingContainer.createDiv({ cls: "simple-badge" });
@@ -8786,9 +10290,15 @@ ${content2.trimStart()}`;
       const tagsContainer = infoContainer.createDiv({ cls: "card-tags-container" });
       if (data.tags) {
         data.tags.forEach((tag) => {
-          tagsContainer.createEl("a", {
+          const tagEl = tagsContainer.createEl("a", {
             text: tag,
             cls: "tag"
+          });
+          tagEl.addEventListener("click", (e) => {
+            e.stopPropagation();
+            if (this.view) {
+              this.view.addTagFilter(tag);
+            }
           });
         });
       }
@@ -8864,8 +10374,7 @@ ${content2.trimStart()}`;
         const ratingBadge = ratingContainer.createDiv({ cls: "rating-badge" });
         ratingBadge.createDiv({ cls: "rating-score", text: data.rating });
         ratingBadge.innerHTML += `
-          <svg t="1743841440004" class="icon" viewBox="0 0 1332 1024" version="1.1" xmlns="http://www.w3.org/2000/svg" p-id="5351" width="200" height="200"><path d="M754.999373 984.409613s-40.018391-7.918077-58.42257-18.618181c-18.618182-10.700104-120.483177-56.28255-189.39185-12.840126 0 0-28.462278 24.182236-57.35256 27.178266 0 0 36.808359 13.482132 74.900731 2.782027 0 0 32.528318-9.20209 50.932498-22.47022 0 0 40.660397-17.976176 78.538767 0.214002 37.87837 18.190178 33.170324 23.326228 64.842633 28.248276 31.672309 5.13605 35.952351-4.494044 35.952351-4.494044zM509.324974 912.076907s-16.692163-47.722466-74.472727-62.060606c0 0 9.20209 41.730408 56.068547 57.780564 0 0-93.732915 1.498015-130.11327 54.784535-0.214002 0 75.75674 29.960293 148.51745-50.504493z" fill="#B68A11" p-id="5352"></path><path d="M413.66604 896.454754s-3.638036-50.504493-55.640544-79.608777c0 0-2.140021 42.800418 38.734379 70.406688 0 0-90.950888-23.326228-139.957367 18.618181 0.214002 0 65.484639 49.006479 156.863532-9.416092z" fill="#B68A11" p-id="5353"></path><path d="M312.229049 767.411494s27.820272 47.294462-2.782027 98.440962c0 0-93.304911 28.67628-153.011494-39.590387 0 0 75.114734-24.824242 148.089446 35.096343 0.214002 0-22.042215-53.928527 7.704075-93.946918z" fill="#B68A11" p-id="5354"></path><path d="M252.308464 796.301776s-16.692163-53.28652 11.770115-84.102821c0 0 26.964263 48.792476-9.630094 91.16489 0 0-101.436991 19.902194-139.957367-49.862487 0 0.428004 61.632602-19.902194 137.817346 42.800418z" fill="#B68A11" p-id="5355"></path><path d="M202.873981 729.961129s-9.844096-47.936468 19.046186-78.966772c0 0 23.754232 43.656426-15.194148 87.954859 0 0-106.787043-2.354023-128.401254-60.990595-0.214002 0.214002 81.748798-3.852038 124.549216 52.002508z" fill="#B68A11" p-id="5356"></path><path d="M189.177847 585.081714s13.482132 52.644514-24.182236 81.106792c0 0-87.740857 2.354023-115.77513-67.410659 0 0 75.114734 2.140021 112.993103 60.990596 0 0-2.140021-51.360502 26.964263-74.686729z" fill="#B68A11" p-id="5357"></path><path d="M161.143574 519.811076s12.412121 43.442424-26.536259 73.616719c0 0-84.316823-4.494044-105.931035-70.406687 0 0 66.340648 2.782027 101.650993 64.842633 0-0.214002-2.782027-38.94838 30.816301-68.052665z" fill="#B68A11" p-id="5358"></path><path d="M151.085475 456.466458s6.206061 35.096343-33.81233 69.336677c0 0-82.176803-22.470219-92.876907-78.324765 0 0 70.192685 14.980146 91.806897 73.616719 0.214002-0.214002-2.568025-36.808359 34.88234-64.628631z" fill="#B68A11" p-id="5359"></path><path d="M147.875444 398.899896s2.354023 39.162382-40.232393 57.780564c0 0-79.394775-35.952351-76.184744-85.600836 0 0 48.15047 4.494044 76.184744 80.464786 0.214002 0 9.20209-38.306374 40.232393-52.644514z" fill="#B68A11" p-id="5360"></path><path d="M154.723511 340.049321s-6.206061 35.310345-46.010449 50.932497c0 0-66.982654-43.442424-61.632602-91.806896 0 0 54.142529 24.824242 61.846604 85.814838 0 0 7.918077-24.396238 45.796447-44.940439zM166.493626 281.198746s-4.06604 33.384326-46.224451 44.512435c0 0-55.854545-25.680251-52.644515-91.592895 0 0 48.578474 24.61024 53.286521 86.242843-0.214002 0 16.906165-37.236364 45.582445-39.162383zM185.753814 225.986207s-26.750261 2.354023-47.722466 33.170324c0 0-4.06604-65.270637-44.726437-85.386834 0 0-14.552142 49.006479 43.01442 92.876907 0.214002 0 36.594357-6.848067 49.434483-40.660397z" fill="#B68A11" p-id="5361"></path><path d="M205.442006 176.551724S189.605852 208.438036 157.71954 209.722048c0 0-47.722466-41.730408-35.310345-89.880878 0 0 36.166353 26.322257 36.594358 83.032811 0.214002 0 15.622153-24.61024 46.438453-26.322257zM230.052247 128.615256s-9.20209 28.67628-50.076489 29.532288c0 0-38.520376-47.08046-20.972205-89.880877 0 0 29.104284 23.54023 24.182236 81.9628 0-0.214002 20.330199-22.898224 46.866458-21.614211zM258.514525 85.814838s-14.980146 26.536259-47.936469 23.326228c0 0-37.664368-49.006479-15.194148-86.670847 0 0 27.392268 26.536259 17.334169 80.464786 0 0 19.688192-19.47419 45.796448-17.120167z" fill="#B68A11" p-id="5362"></path><path d="M279.914734 53.500522s-13.910136 25.894253-49.648485 21.186207c0 0-5.564054-39.804389 19.47419-52.21651 0 0 7.276071 20.544201-7.490073 41.302404-0.214002 0 11.984117-12.412121 37.664368-10.272101z" fill="#B68A11" p-id="5363"></path><path d="M291.256844 24.824242s-3.424033 24.182236-29.318286 22.042216c0 0 1.498015-20.116196 29.318286-22.042216z" fill="#B68A11" p-id="5364"></path><path d="M556.405434 984.409613s40.018391-7.918077 58.42257-18.618181 120.483177-56.28255 189.39185-12.840126c0 0 28.462278 24.182236 57.35256 27.178266 0 0-36.808359 13.482132-74.900732 2.782027 0 0-32.528318-9.20209-50.932497-22.47022 0 0-40.660397-17.976176-78.538767 0.214002-37.87837 18.190178-33.170324 23.326228-64.842633 28.248276C560.685475 994.039707 556.405434 984.409613 556.405434 984.409613zM802.079833 912.076907s16.692163-47.722466 74.472727-62.060606c0 0-9.20209 41.730408-56.068547 57.780564 0 0 93.732915 1.498015 130.11327 54.784535 0.214002 0-75.75674 29.960293-148.51745-50.504493z" fill="#B68A11" p-id="5365"></path><path d="M897.738767 896.454754s3.638036-50.504493 55.640543-79.608777c0 0 2.140021 42.800418-38.734378 70.406688 0 0 90.950888-23.326228 139.957367 18.618181-0.214002 0-65.484639 49.006479-156.863532-9.416092z" fill="#B68A11" p-id="5366"></path><path d="M999.175758 767.411494s-27.820272 47.294462 2.782027 98.440962c0 0 93.304911 28.67628 153.011494-39.590387 0 0-75.114734-24.824242-148.303448 35.096343 0 0 22.256217-53.928527-7.490073-93.946918z" fill="#B68A11" p-id="5367"></path><path d="M1059.096343 796.301776s16.692163-53.28652-11.770115-84.102821c0 0-26.964263 48.792476 9.630094 91.16489 0 0 101.436991 19.902194 139.957367-49.862487 0 0.428004-61.632602-19.902194-137.817346 42.800418z" fill="#B68A11" p-id="5368"></path><path d="M1108.530825 729.961129s9.844096-47.936468-19.046186-78.966772c0 0-23.754232 43.656426 15.194149 87.954859 0 0 106.787043-2.354023 128.401254-60.990595 0.214002 0.214002-81.748798-3.852038-124.549217 52.002508z" fill="#B68A11" p-id="5369"></path><path d="M1122.226959 585.081714s-13.482132 52.644514 24.182236 81.106792c0 0 87.740857 2.354023 115.775131-67.410659 0 0-75.114734 2.140021-112.993103 60.990596 0 0 2.140021-51.360502-26.964264-74.686729z" fill="#B68A11" p-id="5370"></path><path d="M1150.261233 519.811076s-12.412121 43.442424 26.536259 73.616719c0 0 84.316823-4.494044 105.931035-70.406687 0 0-66.340648 2.782027-101.650993 64.842633 0-0.214002 2.568025-38.94838-30.816301-68.052665z" fill="#B68A11" p-id="5371"></path><path d="M1160.105329 456.466458s-6.206061 35.096343 33.81233 69.336677c0 0 82.176803-22.470219 92.876907-78.324765 0 0-70.192685 14.980146-91.806896 73.616719 0-0.214002 2.568025-36.808359-34.882341-64.628631z" fill="#B68A11" p-id="5372"></path><path d="M1163.315361 398.899896s-2.354023 39.162382 40.232392 57.780564c0 0 79.394775-35.952351 76.184744-85.600836 0 0-48.15047 4.494044-76.184744 80.464786 0 0-9.20209-38.306374-40.232392-52.644514z" fill="#B68A11" p-id="5373"></path><path d="M1156.681296 340.049321s6.206061 35.310345 46.010449 50.932497c0 0 66.982654-43.442424 61.632602-91.806896 0 0-54.142529 24.824242-61.846604 85.814838 0 0-8.132079-24.396238-45.796447-44.940439zM1144.911181 281.198746s4.06604 33.384326 46.224451 44.512435c0 0 55.854545-25.680251 52.644514-91.592895 0 0-48.578474 24.61024-53.28652 86.242843 0.214002 0-16.906165-37.236364-45.582445-39.162383zM1125.650993 225.986207s26.750261 2.354023 47.722466 33.170324c0 0 4.06604-65.270637 44.726437-85.386834 0 0 14.552142 49.006479-43.014421 92.876907-0.214002 0-36.594357-6.848067-49.434482-40.660397z" fill="#B68A11" p-id="5374"></path><path d="M1105.9628 176.551724s15.836155 31.886311 47.722466 33.170324c0 0 47.722466-41.730408 35.310345-89.880878 0 0-36.166353 26.322257-36.594357 83.032811-0.214002 0-15.836155-24.61024-46.438454-26.322257zM1081.35256 128.615256s9.20209 28.67628 50.076489 29.532288c0 0 38.520376-47.08046 20.972205-89.880877 0 0-29.104284 23.54023-24.182236 81.9628-0.214002-0.214002-20.544201-22.898224-46.866458-21.614211zM1052.890282 85.814838s14.980146 26.536259 47.936468 23.326228c0 0 37.664368-49.006479 15.194149-86.670847 0 0-27.392268 26.536259-17.33417 80.464786 0 0-19.902194-19.47419-45.796447-17.120167z" fill="#B68A11" p-id="5375"></path><path d="M1031.490073 53.500522s13.910136 25.894253 49.862487 21.186207c0 0 5.564054-39.804389-19.47419-52.21651 0 0-7.276071 20.544201 7.490073 41.302404-0.214002 0-12.198119-12.412121-37.87837-10.272101z" fill="#B68A11" p-id="5376"></path><path d="M1019.93396 24.824242s3.424033 24.182236 29.532289 22.042216c0 0-1.712017-20.116196-29.532289-22.042216z" fill="#B68A11" p-id="5377"></path></svg>
-        `;
+          <svg t="1743841440004" class="icon" viewBox="0 0 1332 1024" version="1.1" xmlns="http://www.w3.org/2000/svg" p-id="5351" width="200" height="200"><path d="M754.999373 984.409613s-40.018391-7.918077-58.42257-18.618181c-18.618182-10.700104-120.483177-56.28255-189.39185-12.840126 0 0-28.462278 24.182236-57.35256 27.178266 0 0 36.808359 13.482132 74.900731 2.782027 0 0 32.528318-9.20209 50.932498-22.47022 0 0 40.660397-17.976176 78.538767 0.214002 37.87837 18.190178 33.170324 23.326228 64.842633 28.248276 31.672309 5.13605 35.952351-4.494044 35.952351-4.494044zM509.324974 912.076907s-16.692163-47.722466-74.472727-62.060606c0 0 9.20209 41.730408 56.068547 57.780564 0 0-93.732915 1.498015-130.11327 54.784535-0.214002 0 75.75674 29.960293 148.51745-50.504493z" fill="#B68A11" p-id="5352"></path><path d="M413.66604 896.454754s-3.638036-50.504493-55.640544-79.608777c0 0-2.140021 42.800418 38.734379 70.406688 0 0-90.950888-23.326228-139.957367 18.618181 0.214002 0 65.484639 49.006479 156.863532-9.416092z" fill="#B68A11" p-id="5353"></path><path d="M312.229049 767.411494s27.820272 47.294462-2.782027 98.440962c0 0-93.304911 28.67628-153.011494-39.590387 0 0 75.114734-24.824242 148.089446 35.096343 0.214002 0-22.042215-53.928527 7.704075-93.946918z" fill="#B68A11" p-id="5354"></path><path d="M252.308464 796.301776s-16.692163-53.28652 11.770115-84.102821c0 0 26.964263 48.792476-9.630094 91.16489 0 0-101.436991 19.902194-139.957367-49.862487 0 0.428004 61.632602-19.902194 137.817346 42.800418z" fill="#B68A11" p-id="5355"></path><path d="M202.873981 729.961129s-9.844096-47.936468 19.046186-78.966772c0 0 23.754232 43.656426-15.194148 87.954859 0 0-106.787043-2.354023-128.401254-60.990595-0.214002 0.214002 81.748798-3.852038 124.549216 52.002508z" fill="#B68A11" p-id="5356"></path><path d="M189.177847 585.081714s13.482132 52.644514-24.182236 81.106792c0 0-87.740857 2.354023-115.77513-67.410659 0 0 75.114734 2.140021 112.993103 60.990596 0 0-2.140021-51.360502 26.964263-74.686729z" fill="#B68A11" p-id="5357"></path><path d="M161.143574 519.811076s12.412121 43.442424-26.536259 73.616719c0 0-84.316823-4.494044-105.931035-70.406687 0 0 66.340648 2.782027 101.650993 64.842633 0-0.214002-2.782027-38.94838 30.816301-68.052665z" fill="#B68A11" p-id="5358"></path><path d="M151.085475 456.466458s6.206061 35.096343-33.81233 69.336677c0 0-82.176803-22.470219-92.876907-78.324765 0 0 70.192685 14.980146 91.806897 73.616719 0.214002-0.214002-2.568025-36.808359 34.88234-64.628631z" fill="#B68A11" p-id="5359"></path><path d="M147.875444 398.899896s2.354023 39.162382-40.232393 57.780564c0 0-79.394775-35.952351-76.184744-85.600836 0 0 48.15047 4.494044 76.184744 80.464786 0.214002 0 9.20209-38.306374 40.232393-52.644514z" fill="#B68A11" p-id="5360"></path><path d="M154.723511 340.049321s-6.206061 35.310345-46.010449 50.932497c0 0-66.982654-43.442424-61.632602-91.806896 0 0 54.142529 24.824242 61.846604 85.814838 0 0 7.918077-24.396238 45.796447-44.940439zM166.493626 281.198746s-4.06604 33.384326-46.224451 44.512435c0 0-55.854545-25.680251-52.644515-91.592895 0 0 48.578474 24.61024 53.286521 86.242843-0.214002 0 16.906165-37.236364 45.582445-39.162383zM185.753814 225.986207s-26.750261 2.354023-47.722466 33.170324c0 0-4.06604-65.270637-44.726437-85.386834 0 0-14.552142 49.006479 43.01442 92.876907 0.214002 0 36.594357-6.848067 49.434483-40.660397z" fill="#B68A11" p-id="5361"></path><path d="M205.442006 176.551724S189.605852 208.438036 157.71954 209.722048c0 0-47.722466-41.730408-35.310345-89.880878 0 0 36.166353 26.322257 36.594358 83.032811 0.214002 0 15.622153-24.61024 46.438453-26.322257zM230.052247 128.615256s-9.20209 28.67628-50.076489 29.532288c0 0-38.520376-47.08046-20.972205-89.880877 0 0 29.104284 23.54023 24.182236 81.9628 0-0.214002 20.330199-22.898224 46.866458-21.614211zM258.514525 85.814838s-14.980146 26.536259-47.936469 23.326228c0 0-37.664368-49.006479-15.194148-86.670847 0 0 27.392268 26.536259 17.334169 80.464786 0 0 19.688192-19.47419 45.796448-17.120167z" fill="#B68A11" p-id="5362"></path><path d="M279.914734 53.500522s-13.910136 25.894253-49.648485 21.186207c0 0-5.564054-39.804389 19.47419-52.21651 0 0 7.276071 20.544201-7.490073 41.302404-0.214002 0 11.984117-12.412121 37.664368-10.272101z" fill="#B68A11" p-id="5363"></path><path d="M291.256844 24.824242s-3.424033 24.182236-29.318286 22.042216c0 0 1.498015-20.116196 29.318286-22.042216z" fill="#B68A11" p-id="5364"></path><path d="M556.405434 984.409613s40.018391-7.918077 58.42257-18.618181 120.483177-56.28255 189.39185-12.840126c0 0 28.462278 24.182236 57.35256 27.178266 0 0-36.808359 13.482132-74.900732 2.782027 0 0-32.528318-9.20209-50.932497-22.47022 0 0-40.660397-17.976176-78.538767 0.214002-37.87837 18.190178-33.170324 23.326228-64.842633 28.248276C560.685475 994.039707 556.405434 984.409613 556.405434 984.409613zM802.079833 912.076907s16.692163-47.722466 74.472727-62.060606c0 0-9.20209 41.730408-56.068547 57.780564 0 0 93.732915 1.498015 130.11327 54.784535 0.214002 0-75.75674 29.960293-148.51745-50.504493z" fill="#B68A11" p-id="5365"></path><path d="M897.738767 896.454754s3.638036-50.504493 55.640543-79.608777c0 0 2.140021 42.800418-38.734378 70.406688 0 0 90.950888-23.326228 139.957367 18.618181-0.214002 0-65.484639 49.006479-156.863532-9.416092z" fill="#B68A11" p-id="5366"></path><path d="M999.175758 767.411494s-27.820272 47.294462 2.782027 98.440962c0 0 93.304911 28.67628 153.011494-39.590387 0 0-75.114734-24.824242-148.303448 35.096343 0 0 22.256217-53.928527-7.490073-93.946918z" fill="#B68A11" p-id="5367"></path><path d="M1059.096343 796.301776s16.692163-53.28652-11.770115-84.102821c0 0-26.964263 48.792476 9.630094 91.16489 0 0 101.436991 19.902194 139.957367-49.862487 0 0.428004-61.632602-19.902194-137.817346 42.800418z" fill="#B68A11" p-id="5368"></path><path d="M1108.530825 729.961129s9.844096-47.936468-19.046186-78.966772c0 0-23.754232 43.656426 15.194149 87.954859 0 0 106.787043-2.354023 128.401254-60.990595 0.214002 0.214002-81.748798-3.852038-124.549217 52.002508z" fill="#B68A11" p-id="5369"></path><path d="M1122.226959 585.081714s-13.482132 52.644514 24.182236 81.106792c0 0 87.740857 2.354023 115.775131-67.410659 0 0-75.114734 2.140021-112.993103 60.990596 0 0 2.140021-51.360502-26.964264-74.686729z" fill="#B68A11" p-id="5370"></path><path d="M1150.261233 519.811076s-12.412121 43.442424 26.536259 73.616719c0 0 84.316823-4.494044 105.931035-70.406687 0 0-66.340648 2.782027-101.650993 64.842633 0-0.214002 2.568025-38.94838-30.816301-68.052665z" fill="#B68A11" p-id="5371"></path><path d="M1160.105329 456.466458s-6.206061 35.096343 33.81233 69.336677c0 0 82.176803-22.470219 92.876907-78.324765 0 0-70.192685 14.980146-91.806896 73.616719 0-0.214002 2.568025-36.808359-34.882341-64.628631z" fill="#B68A11" p-id="5372"></path><path d="M1163.315361 398.899896s-2.354023 39.162382 40.232392 57.780564c0 0 79.394775-35.952351 76.184744-85.600836 0 0-48.15047 4.494044-76.184744 80.464786 0 0-9.20209-38.306374-40.232392-52.644514z" fill="#B68A11" p-id="5373"></path><path d="M1156.681296 340.049321s6.206061 35.310345 46.010449 50.932497c0 0 66.982654-43.442424 61.632602-91.806896 0 0-54.142529 24.824242-61.846604 85.814838 0 0 7.918077-24.396238 45.796447-44.940439zM1144.911181 281.198746s4.06604 33.384326 46.224451 44.512435c0 0 55.854545-25.680251 52.644514-91.592895 0 0-48.578474 24.61024-53.28652 86.242843 0.214002 0-16.906165-37.236364-45.582445-39.162383zM1125.650993 225.986207s26.750261 2.354023 47.722466 33.170324c0 0 4.06604-65.270637 44.726437-85.386834 0 0 14.552142 49.006479-43.014421 92.876907-0.214002 0-36.594357-6.848067-49.434482-40.660397z" fill="#B68A11" p-id="5374"></path><path d="M1105.9628 176.551724s15.836155 31.886311 47.722466 33.170324c0 0 47.722466-41.730408 35.310345-89.880878 0 0-36.166353 26.322257-36.594357 83.032811-0.214002 0-15.836155-24.61024-46.438454-26.322257zM1081.35256 128.615256s9.20209 28.67628 50.076489 29.532288c0 0 38.520376-47.08046 20.972205-89.880877 0 0-29.104284 23.54023-24.182236 81.9628-0.214002-0.214002-20.544201-22.898224-46.866458-21.614211zM1052.890282 85.814838s14.980146 26.536259 47.936468 23.326228c0 0 37.664368-49.006479 15.194149-86.670847 0 0-27.392268 26.536259-17.33417 80.464786 0 0-19.902194-19.47419-45.796447-17.120167z" fill="#B68A11" p-id="5375"></path><path d="M1031.490073 53.500522s13.910136 25.894253 49.862487 21.186207c0 0 5.564054-39.804389-19.47419-52.21651 0 0-7.276071 20.544201 7.490073 41.302404-0.214002 0-12.198119-12.412121-37.87837-10.272101z" fill="#B68A11" p-id="5376"></path><path d="M1019.93396 24.824242s3.424033 24.182236 29.532289 22.042216c0 0-1.712017-20.116196-29.532289-22.042216z" fill="#B68A11" p-id="5377"></path></svg>`;
       } else if (ratingScore >= 5) {
         ratingContainer.setAttribute("data-score", "good");
         const ratingBadge = ratingContainer.createDiv({ cls: "simple-badge" });
@@ -8890,9 +10399,15 @@ ${content2.trimStart()}`;
       const tagsContainer = infoContainer.createDiv({ cls: "card-tags-container" });
       if (data.tags) {
         data.tags.forEach((tag) => {
-          tagsContainer.createEl("a", {
+          const tagEl = tagsContainer.createEl("a", {
             text: tag,
             cls: "tag"
+          });
+          tagEl.addEventListener("click", (e) => {
+            e.stopPropagation();
+            if (this.view) {
+              this.view.addTagFilter(tag);
+            }
           });
         });
       }
@@ -8968,8 +10483,7 @@ ${content2.trimStart()}`;
         const ratingBadge = ratingContainer.createDiv({ cls: "rating-badge" });
         ratingBadge.createDiv({ cls: "rating-score", text: data.rating });
         ratingBadge.innerHTML += `
-          <svg t="1743841440004" class="icon" viewBox="0 0 1332 1024" version="1.1" xmlns="http://www.w3.org/2000/svg" p-id="5351" width="200" height="200"><path d="M754.999373 984.409613s-40.018391-7.918077-58.42257-18.618181c-18.618182-10.700104-120.483177-56.28255-189.39185-12.840126 0 0-28.462278 24.182236-57.35256 27.178266 0 0 36.808359 13.482132 74.900731 2.782027 0 0 32.528318-9.20209 50.932498-22.47022 0 0 40.660397-17.976176 78.538767 0.214002 37.87837 18.190178 33.170324 23.326228 64.842633 28.248276 31.672309 5.13605 35.952351-4.494044 35.952351-4.494044zM509.324974 912.076907s-16.692163-47.722466-74.472727-62.060606c0 0 9.20209 41.730408 56.068547 57.780564 0 0-93.732915 1.498015-130.11327 54.784535-0.214002 0 75.75674 29.960293 148.51745-50.504493z" fill="#B68A11" p-id="5352"></path><path d="M413.66604 896.454754s-3.638036-50.504493-55.640544-79.608777c0 0-2.140021 42.800418 38.734379 70.406688 0 0-90.950888-23.326228-139.957367 18.618181 0.214002 0 65.484639 49.006479 156.863532-9.416092z" fill="#B68A11" p-id="5353"></path><path d="M312.229049 767.411494s27.820272 47.294462-2.782027 98.440962c0 0-93.304911 28.67628-153.011494-39.590387 0 0 75.114734-24.824242 148.089446 35.096343 0.214002 0-22.042215-53.928527 7.704075-93.946918z" fill="#B68A11" p-id="5354"></path><path d="M252.308464 796.301776s-16.692163-53.28652 11.770115-84.102821c0 0 26.964263 48.792476-9.630094 91.16489 0 0-101.436991 19.902194-139.957367-49.862487 0 0.428004 61.632602-19.902194 137.817346 42.800418z" fill="#B68A11" p-id="5355"></path><path d="M202.873981 729.961129s-9.844096-47.936468 19.046186-78.966772c0 0 23.754232 43.656426-15.194148 87.954859 0 0-106.787043-2.354023-128.401254-60.990595-0.214002 0.214002 81.748798-3.852038 124.549216 52.002508z" fill="#B68A11" p-id="5356"></path><path d="M189.177847 585.081714s13.482132 52.644514-24.182236 81.106792c0 0-87.740857 2.354023-115.77513-67.410659 0 0 75.114734 2.140021 112.993103 60.990596 0 0-2.140021-51.360502 26.964263-74.686729z" fill="#B68A11" p-id="5357"></path><path d="M161.143574 519.811076s12.412121 43.442424-26.536259 73.616719c0 0-84.316823-4.494044-105.931035-70.406687 0 0 66.340648 2.782027 101.650993 64.842633 0-0.214002-2.782027-38.94838 30.816301-68.052665z" fill="#B68A11" p-id="5358"></path><path d="M151.085475 456.466458s6.206061 35.096343-33.81233 69.336677c0 0-82.176803-22.470219-92.876907-78.324765 0 0 70.192685 14.980146 91.806897 73.616719 0.214002-0.214002-2.568025-36.808359 34.88234-64.628631z" fill="#B68A11" p-id="5359"></path><path d="M147.875444 398.899896s2.354023 39.162382-40.232393 57.780564c0 0-79.394775-35.952351-76.184744-85.600836 0 0 48.15047 4.494044 76.184744 80.464786 0.214002 0 9.20209-38.306374 40.232393-52.644514z" fill="#B68A11" p-id="5360"></path><path d="M154.723511 340.049321s-6.206061 35.310345-46.010449 50.932497c0 0-66.982654-43.442424-61.632602-91.806896 0 0 54.142529 24.824242 61.846604 85.814838 0 0 7.918077-24.396238 45.796447-44.940439zM166.493626 281.198746s-4.06604 33.384326-46.224451 44.512435c0 0-55.854545-25.680251-52.644515-91.592895 0 0 48.578474 24.61024 53.286521 86.242843-0.214002 0 16.906165-37.236364 45.582445-39.162383zM185.753814 225.986207s-26.750261 2.354023-47.722466 33.170324c0 0-4.06604-65.270637-44.726437-85.386834 0 0-14.552142 49.006479 43.01442 92.876907 0.214002 0 36.594357-6.848067 49.434483-40.660397z" fill="#B68A11" p-id="5361"></path><path d="M205.442006 176.551724S189.605852 208.438036 157.71954 209.722048c0 0-47.722466-41.730408-35.310345-89.880878 0 0 36.166353 26.322257 36.594358 83.032811 0.214002 0 15.622153-24.61024 46.438453-26.322257zM230.052247 128.615256s-9.20209 28.67628-50.076489 29.532288c0 0-38.520376-47.08046-20.972205-89.880877 0 0 29.104284 23.54023 24.182236 81.9628 0-0.214002 20.330199-22.898224 46.866458-21.614211zM258.514525 85.814838s-14.980146 26.536259-47.936469 23.326228c0 0-37.664368-49.006479-15.194148-86.670847 0 0 27.392268 26.536259 17.334169 80.464786 0 0 19.688192-19.47419 45.796448-17.120167z" fill="#B68A11" p-id="5362"></path><path d="M279.914734 53.500522s-13.910136 25.894253-49.648485 21.186207c0 0-5.564054-39.804389 19.47419-52.21651 0 0 7.276071 20.544201-7.490073 41.302404-0.214002 0 11.984117-12.412121 37.664368-10.272101z" fill="#B68A11" p-id="5363"></path><path d="M291.256844 24.824242s-3.424033 24.182236-29.318286 22.042216c0 0 1.498015-20.116196 29.318286-22.042216z" fill="#B68A11" p-id="5364"></path><path d="M556.405434 984.409613s40.018391-7.918077 58.42257-18.618181 120.483177-56.28255 189.39185-12.840126c0 0 28.462278 24.182236 57.35256 27.178266 0 0-36.808359 13.482132-74.900732 2.782027 0 0-32.528318-9.20209-50.932497-22.47022 0 0-40.660397-17.976176-78.538767 0.214002-37.87837 18.190178-33.170324 23.326228-64.842633 28.248276C560.685475 994.039707 556.405434 984.409613 556.405434 984.409613zM802.079833 912.076907s16.692163-47.722466 74.472727-62.060606c0 0-9.20209 41.730408-56.068547 57.780564 0 0 93.732915 1.498015 130.11327 54.784535 0.214002 0-75.75674 29.960293-148.51745-50.504493z" fill="#B68A11" p-id="5365"></path><path d="M897.738767 896.454754s3.638036-50.504493 55.640543-79.608777c0 0 2.140021 42.800418-38.734378 70.406688 0 0 90.950888-23.326228 139.957367 18.618181-0.214002 0-65.484639 49.006479-156.863532-9.416092z" fill="#B68A11" p-id="5366"></path><path d="M999.175758 767.411494s-27.820272 47.294462 2.782027 98.440962c0 0 93.304911 28.67628 153.011494-39.590387 0 0-75.114734-24.824242-148.303448 35.096343 0 0 22.256217-53.928527-7.490073-93.946918z" fill="#B68A11" p-id="5367"></path><path d="M1059.096343 796.301776s16.692163-53.28652-11.770115-84.102821c0 0-26.964263 48.792476 9.630094 91.16489 0 0 101.436991 19.902194 139.957367-49.862487 0 0.428004-61.632602-19.902194-137.817346 42.800418z" fill="#B68A11" p-id="5368"></path><path d="M1108.530825 729.961129s9.844096-47.936468-19.046186-78.966772c0 0-23.754232 43.656426 15.194149 87.954859 0 0 106.787043-2.354023 128.401254-60.990595 0.214002 0.214002-81.748798-3.852038-124.549217 52.002508z" fill="#B68A11" p-id="5369"></path><path d="M1122.226959 585.081714s-13.482132 52.644514 24.182236 81.106792c0 0 87.740857 2.354023 115.775131-67.410659 0 0-75.114734 2.140021-112.993103 60.990596 0 0 2.140021-51.360502-26.964264-74.686729z" fill="#B68A11" p-id="5370"></path><path d="M1150.261233 519.811076s-12.412121 43.442424 26.536259 73.616719c0 0 84.316823-4.494044 105.931035-70.406687 0 0-66.340648 2.782027-101.650993 64.842633 0-0.214002 2.568025-38.94838-30.816301-68.052665z" fill="#B68A11" p-id="5371"></path><path d="M1160.105329 456.466458s-6.206061 35.096343 33.81233 69.336677c0 0 82.176803-22.470219 92.876907-78.324765 0 0-70.192685 14.980146-91.806896 73.616719 0-0.214002 2.568025-36.808359-34.882341-64.628631z" fill="#B68A11" p-id="5372"></path><path d="M1163.315361 398.899896s-2.354023 39.162382 40.232392 57.780564c0 0 79.394775-35.952351 76.184744-85.600836 0 0-48.15047 4.494044-76.184744 80.464786 0 0-9.20209-38.306374-40.232392-52.644514z" fill="#B68A11" p-id="5373"></path><path d="M1156.681296 340.049321s6.206061 35.310345 46.010449 50.932497c0 0 66.982654-43.442424 61.632602-91.806896 0 0-54.142529 24.824242-61.846604 85.814838 0 0-8.132079-24.396238-45.796447-44.940439zM1144.911181 281.198746s4.06604 33.384326 46.224451 44.512435c0 0 55.854545-25.680251 52.644514-91.592895 0 0-48.578474 24.61024-53.28652 86.242843 0.214002 0-16.906165-37.236364-45.582445-39.162383zM1125.650993 225.986207s26.750261 2.354023 47.722466 33.170324c0 0 4.06604-65.270637 44.726437-85.386834 0 0 14.552142 49.006479-43.014421 92.876907-0.214002 0-36.594357-6.848067-49.434482-40.660397z" fill="#B68A11" p-id="5374"></path><path d="M1105.9628 176.551724s15.836155 31.886311 47.722466 33.170324c0 0 47.722466-41.730408 35.310345-89.880878 0 0-36.166353 26.322257-36.594357 83.032811-0.214002 0-15.836155-24.61024-46.438454-26.322257zM1081.35256 128.615256s9.20209 28.67628 50.076489 29.532288c0 0 38.520376-47.08046 20.972205-89.880877 0 0-29.104284 23.54023-24.182236 81.9628-0.214002-0.214002-20.544201-22.898224-46.866458-21.614211zM1052.890282 85.814838s14.980146 26.536259 47.936468 23.326228c0 0 37.664368-49.006479 15.194149-86.670847 0 0-27.392268 26.536259-17.33417 80.464786 0 0-19.902194-19.47419-45.796447-17.120167z" fill="#B68A11" p-id="5375"></path><path d="M1031.490073 53.500522s13.910136 25.894253 49.862487 21.186207c0 0 5.564054-39.804389-19.47419-52.21651 0 0-7.276071 20.544201 7.490073 41.302404-0.214002 0-12.198119-12.412121-37.87837-10.272101z" fill="#B68A11" p-id="5376"></path><path d="M1019.93396 24.824242s3.424033 24.182236 29.532289 22.042216c0 0-1.712017-20.116196-29.532289-22.042216z" fill="#B68A11" p-id="5377"></path></svg>
-        `;
+          <svg t="1743841440004" class="icon" viewBox="0 0 1332 1024" version="1.1" xmlns="http://www.w3.org/2000/svg" p-id="5351" width="200" height="200"><path d="M754.999373 984.409613s-40.018391-7.918077-58.42257-18.618181c-18.618182-10.700104-120.483177-56.28255-189.39185-12.840126 0 0-28.462278 24.182236-57.35256 27.178266 0 0 36.808359 13.482132 74.900731 2.782027 0 0 32.528318-9.20209 50.932498-22.47022 0 0 40.660397-17.976176 78.538767 0.214002 37.87837 18.190178 33.170324 23.326228 64.842633 28.248276 31.672309 5.13605 35.952351-4.494044 35.952351-4.494044zM509.324974 912.076907s-16.692163-47.722466-74.472727-62.060606c0 0 9.20209 41.730408 56.068547 57.780564 0 0-93.732915 1.498015-130.11327 54.784535-0.214002 0 75.75674 29.960293 148.51745-50.504493z" fill="#B68A11" p-id="5352"></path><path d="M413.66604 896.454754s-3.638036-50.504493-55.640544-79.608777c0 0-2.140021 42.800418 38.734379 70.406688 0 0-90.950888-23.326228-139.957367 18.618181 0.214002 0 65.484639 49.006479 156.863532-9.416092z" fill="#B68A11" p-id="5353"></path><path d="M312.229049 767.411494s27.820272 47.294462-2.782027 98.440962c0 0-93.304911 28.67628-153.011494-39.590387 0 0 75.114734-24.824242 148.089446 35.096343 0.214002 0-22.042215-53.928527 7.704075-93.946918z" fill="#B68A11" p-id="5354"></path><path d="M252.308464 796.301776s-16.692163-53.28652 11.770115-84.102821c0 0 26.964263 48.792476-9.630094 91.16489 0 0-101.436991 19.902194-139.957367-49.862487 0 0.428004 61.632602-19.902194 137.817346 42.800418z" fill="#B68A11" p-id="5355"></path><path d="M202.873981 729.961129s-9.844096-47.936468 19.046186-78.966772c0 0 23.754232 43.656426-15.194148 87.954859 0 0-106.787043-2.354023-128.401254-60.990595-0.214002 0.214002 81.748798-3.852038 124.549216 52.002508z" fill="#B68A11" p-id="5356"></path><path d="M189.177847 585.081714s13.482132 52.644514-24.182236 81.106792c0 0-87.740857 2.354023-115.77513-67.410659 0 0 75.114734 2.140021 112.993103 60.990596 0 0-2.140021-51.360502 26.964263-74.686729z" fill="#B68A11" p-id="5357"></path><path d="M161.143574 519.811076s12.412121 43.442424-26.536259 73.616719c0 0-84.316823-4.494044-105.931035-70.406687 0 0 66.340648 2.782027 101.650993 64.842633 0-0.214002-2.782027-38.94838 30.816301-68.052665z" fill="#B68A11" p-id="5358"></path><path d="M151.085475 456.466458s6.206061 35.096343-33.81233 69.336677c0 0-82.176803-22.470219-92.876907-78.324765 0 0 70.192685 14.980146 91.806897 73.616719 0.214002-0.214002-2.568025-36.808359 34.88234-64.628631z" fill="#B68A11" p-id="5359"></path><path d="M147.875444 398.899896s2.354023 39.162382-40.232393 57.780564c0 0-79.394775-35.952351-76.184744-85.600836 0 0 48.15047 4.494044 76.184744 80.464786 0.214002 0 9.20209-38.306374 40.232393-52.644514z" fill="#B68A11" p-id="5360"></path><path d="M154.723511 340.049321s-6.206061 35.310345-46.010449 50.932497c0 0-66.982654-43.442424-61.632602-91.806896 0 0 54.142529 24.824242 61.846604 85.814838 0 0 7.918077-24.396238 45.796447-44.940439zM166.493626 281.198746s-4.06604 33.384326-46.224451 44.512435c0 0-55.854545-25.680251-52.644515-91.592895 0 0 48.578474 24.61024 53.286521 86.242843-0.214002 0 16.906165-37.236364 45.582445-39.162383zM185.753814 225.986207s-26.750261 2.354023-47.722466 33.170324c0 0-4.06604-65.270637-44.726437-85.386834 0 0-14.552142 49.006479 43.01442 92.876907 0.214002 0 36.594357-6.848067 49.434483-40.660397z" fill="#B68A11" p-id="5361"></path><path d="M205.442006 176.551724S189.605852 208.438036 157.71954 209.722048c0 0-47.722466-41.730408-35.310345-89.880878 0 0 36.166353 26.322257 36.594358 83.032811 0.214002 0 15.622153-24.61024 46.438453-26.322257zM230.052247 128.615256s-9.20209 28.67628-50.076489 29.532288c0 0-38.520376-47.08046-20.972205-89.880877 0 0 29.104284 23.54023 24.182236 81.9628 0-0.214002 20.330199-22.898224 46.866458-21.614211zM258.514525 85.814838s-14.980146 26.536259-47.936469 23.326228c0 0-37.664368-49.006479-15.194148-86.670847 0 0 27.392268 26.536259 17.334169 80.464786 0 0 19.688192-19.47419 45.796448-17.120167z" fill="#B68A11" p-id="5362"></path><path d="M279.914734 53.500522s-13.910136 25.894253-49.648485 21.186207c0 0-5.564054-39.804389 19.47419-52.21651 0 0 7.276071 20.544201-7.490073 41.302404-0.214002 0 11.984117-12.412121 37.664368-10.272101z" fill="#B68A11" p-id="5363"></path><path d="M291.256844 24.824242s-3.424033 24.182236-29.318286 22.042216c0 0 1.498015-20.116196 29.318286-22.042216z" fill="#B68A11" p-id="5364"></path><path d="M556.405434 984.409613s40.018391-7.918077 58.42257-18.618181 120.483177-56.28255 189.39185-12.840126c0 0 28.462278 24.182236 57.35256 27.178266 0 0-36.808359 13.482132-74.900732 2.782027 0 0-32.528318-9.20209-50.932497-22.47022 0 0-40.660397-17.976176-78.538767 0.214002-37.87837 18.190178-33.170324 23.326228-64.842633 28.248276C560.685475 994.039707 556.405434 984.409613 556.405434 984.409613zM802.079833 912.076907s16.692163-47.722466 74.472727-62.060606c0 0-9.20209 41.730408-56.068547 57.780564 0 0 93.732915 1.498015 130.11327 54.784535 0.214002 0-75.75674 29.960293-148.51745-50.504493z" fill="#B68A11" p-id="5365"></path><path d="M897.738767 896.454754s3.638036-50.504493 55.640543-79.608777c0 0 2.140021 42.800418-38.734378 70.406688 0 0 90.950888-23.326228 139.957367 18.618181-0.214002 0-65.484639 49.006479-156.863532-9.416092z" fill="#B68A11" p-id="5366"></path><path d="M999.175758 767.411494s-27.820272 47.294462 2.782027 98.440962c0 0 93.304911 28.67628 153.011494-39.590387 0 0-75.114734-24.824242-148.303448 35.096343 0 0 22.256217-53.928527-7.490073-93.946918z" fill="#B68A11" p-id="5367"></path><path d="M1059.096343 796.301776s16.692163-53.28652-11.770115-84.102821c0 0-26.964263 48.792476 9.630094 91.16489 0 0 101.436991 19.902194 139.957367-49.862487 0 0.428004-61.632602-19.902194-137.817346 42.800418z" fill="#B68A11" p-id="5368"></path><path d="M1108.530825 729.961129s9.844096-47.936468-19.046186-78.966772c0 0-23.754232 43.656426 15.194149 87.954859 0 0 106.787043-2.354023 128.401254-60.990595 0.214002 0.214002-81.748798-3.852038-124.549217 52.002508z" fill="#B68A11" p-id="5369"></path><path d="M1122.226959 585.081714s-13.482132 52.644514 24.182236 81.106792c0 0 87.740857 2.354023 115.775131-67.410659 0 0-75.114734 2.140021-112.993103 60.990596 0 0 2.140021-51.360502-26.964264-74.686729z" fill="#B68A11" p-id="5370"></path><path d="M1150.261233 519.811076s-12.412121 43.442424 26.536259 73.616719c0 0 84.316823-4.494044 105.931035-70.406687 0 0-66.340648 2.782027-101.650993 64.842633 0-0.214002 2.568025-38.94838-30.816301-68.052665z" fill="#B68A11" p-id="5371"></path><path d="M1160.105329 456.466458s-6.206061 35.096343 33.81233 69.336677c0 0 82.176803-22.470219 92.876907-78.324765 0 0-70.192685 14.980146-91.806896 73.616719 0-0.214002 2.568025-36.808359-34.882341-64.628631z" fill="#B68A11" p-id="5372"></path><path d="M1163.315361 398.899896s-2.354023 39.162382 40.232392 57.780564c0 0 79.394775-35.952351 76.184744-85.600836 0 0-48.15047 4.494044-76.184744 80.464786 0 0-9.20209-38.306374-40.232392-52.644514z" fill="#B68A11" p-id="5373"></path><path d="M1156.681296 340.049321s6.206061 35.310345 46.010449 50.932497c0 0 66.982654-43.442424 61.632602-91.806896 0 0-54.142529 24.824242-61.846604 85.814838 0 0 7.918077-24.396238 45.796447-44.940439zM1144.911181 281.198746s4.06604 33.384326 46.224451 44.512435c0 0 55.854545-25.680251 52.644514-91.592895 0 0-48.578474 24.61024-53.28652 86.242843 0.214002 0-16.906165-37.236364-45.582445-39.162383zM1125.650993 225.986207s26.750261 2.354023 47.722466 33.170324c0 0 4.06604-65.270637 44.726437-85.386834 0 0 14.552142 49.006479-43.014421 92.876907-0.214002 0-36.594357-6.848067-49.434482-40.660397z" fill="#B68A11" p-id="5374"></path><path d="M1105.9628 176.551724s15.836155 31.886311 47.722466 33.170324c0 0 47.722466-41.730408 35.310345-89.880878 0 0-36.166353 26.322257-36.594357 83.032811-0.214002 0-15.836155-24.61024-46.438454-26.322257zM1081.35256 128.615256s9.20209 28.67628 50.076489 29.532288c0 0 38.520376-47.08046 20.972205-89.880877 0 0-29.104284 23.54023-24.182236 81.9628-0.214002-0.214002-20.544201-22.898224-46.866458-21.614211zM1052.890282 85.814838s14.980146 26.536259 47.936468 23.326228c0 0 37.664368-49.006479 15.194149-86.670847 0 0-27.392268 26.536259-17.33417 80.464786 0 0-19.902194-19.47419-45.796447-17.120167z" fill="#B68A11" p-id="5375"></path><path d="M1031.490073 53.500522s13.910136 25.894253 49.862487 21.186207c0 0 5.564054-39.804389-19.47419-52.21651 0 0-7.276071 20.544201 7.490073 41.302404-0.214002 0-12.198119-12.412121-37.87837-10.272101z" fill="#B68A11" p-id="5376"></path><path d="M1019.93396 24.824242s3.424033 24.182236 29.532289 22.042216c0 0-1.712017-20.116196-29.532289-22.042216z" fill="#B68A11" p-id="5377"></path></svg>`;
       } else if (ratingScore >= 5) {
         ratingContainer.setAttribute("data-score", "good");
         const ratingBadge = ratingContainer.createDiv({ cls: "simple-badge" });
@@ -8994,9 +10508,15 @@ ${content2.trimStart()}`;
       const tagsContainer = infoContainer.createDiv({ cls: "card-tags-container" });
       if (data.tags) {
         data.tags.forEach((tag) => {
-          tagsContainer.createEl("a", {
+          const tagEl = tagsContainer.createEl("a", {
             text: tag,
             cls: "tag"
+          });
+          tagEl.addEventListener("click", (e) => {
+            e.stopPropagation();
+            if (this.view) {
+              this.view.addTagFilter(tag);
+            }
           });
         });
       }
@@ -9072,8 +10592,7 @@ ${content2.trimStart()}`;
         const ratingBadge = ratingContainer.createDiv({ cls: "rating-badge" });
         ratingBadge.createDiv({ cls: "rating-score", text: data.rating });
         ratingBadge.innerHTML += `
-          <svg t="1743841440004" class="icon" viewBox="0 0 1332 1024" version="1.1" xmlns="http://www.w3.org/2000/svg" p-id="5351" width="200" height="200"><path d="M754.999373 984.409613s-40.018391-7.918077-58.42257-18.618181c-18.618182-10.700104-120.483177-56.28255-189.39185-12.840126 0 0-28.462278 24.182236-57.35256 27.178266 0 0 36.808359 13.482132 74.900731 2.782027 0 0 32.528318-9.20209 50.932498-22.47022 0 0 40.660397-17.976176 78.538767 0.214002 37.87837 18.190178 33.170324 23.326228 64.842633 28.248276 31.672309 5.13605 35.952351-4.494044 35.952351-4.494044zM509.324974 912.076907s-16.692163-47.722466-74.472727-62.060606c0 0 9.20209 41.730408 56.068547 57.780564 0 0-93.732915 1.498015-130.11327 54.784535-0.214002 0 75.75674 29.960293 148.51745-50.504493z" fill="#B68A11" p-id="5352"></path><path d="M413.66604 896.454754s-3.638036-50.504493-55.640544-79.608777c0 0-2.140021 42.800418 38.734379 70.406688 0 0-90.950888-23.326228-139.957367 18.618181 0.214002 0 65.484639 49.006479 156.863532-9.416092z" fill="#B68A11" p-id="5353"></path><path d="M312.229049 767.411494s27.820272 47.294462-2.782027 98.440962c0 0-93.304911 28.67628-153.011494-39.590387 0 0 75.114734-24.824242 148.089446 35.096343 0.214002 0-22.042215-53.928527 7.704075-93.946918z" fill="#B68A11" p-id="5354"></path><path d="M252.308464 796.301776s-16.692163-53.28652 11.770115-84.102821c0 0 26.964263 48.792476-9.630094 91.16489 0 0-101.436991 19.902194-139.957367-49.862487 0 0.428004 61.632602-19.902194 137.817346 42.800418z" fill="#B68A11" p-id="5355"></path><path d="M202.873981 729.961129s-9.844096-47.936468 19.046186-78.966772c0 0 23.754232 43.656426-15.194148 87.954859 0 0-106.787043-2.354023-128.401254-60.990595-0.214002 0.214002 81.748798-3.852038 124.549216 52.002508z" fill="#B68A11" p-id="5356"></path><path d="M189.177847 585.081714s13.482132 52.644514-24.182236 81.106792c0 0-87.740857 2.354023-115.77513-67.410659 0 0 75.114734 2.140021 112.993103 60.990596 0 0-2.140021-51.360502 26.964263-74.686729z" fill="#B68A11" p-id="5357"></path><path d="M161.143574 519.811076s12.412121 43.442424-26.536259 73.616719c0 0-84.316823-4.494044-105.931035-70.406687 0 0 66.340648 2.782027 101.650993 64.842633 0-0.214002-2.782027-38.94838 30.816301-68.052665z" fill="#B68A11" p-id="5358"></path><path d="M151.085475 456.466458s6.206061 35.096343-33.81233 69.336677c0 0-82.176803-22.470219-92.876907-78.324765 0 0 70.192685 14.980146 91.806897 73.616719 0.214002-0.214002-2.568025-36.808359 34.88234-64.628631z" fill="#B68A11" p-id="5359"></path><path d="M147.875444 398.899896s2.354023 39.162382-40.232393 57.780564c0 0-79.394775-35.952351-76.184744-85.600836 0 0 48.15047 4.494044 76.184744 80.464786 0.214002 0 9.20209-38.306374 40.232393-52.644514z" fill="#B68A11" p-id="5360"></path><path d="M154.723511 340.049321s-6.206061 35.310345-46.010449 50.932497c0 0-66.982654-43.442424-61.632602-91.806896 0 0 54.142529 24.824242 61.846604 85.814838 0 0 7.918077-24.396238 45.796447-44.940439zM166.493626 281.198746s-4.06604 33.384326-46.224451 44.512435c0 0-55.854545-25.680251-52.644515-91.592895 0 0 48.578474 24.61024 53.286521 86.242843-0.214002 0 16.906165-37.236364 45.582445-39.162383zM185.753814 225.986207s-26.750261 2.354023-47.722466 33.170324c0 0-4.06604-65.270637-44.726437-85.386834 0 0-14.552142 49.006479 43.01442 92.876907 0.214002 0 36.594357-6.848067 49.434483-40.660397z" fill="#B68A11" p-id="5361"></path><path d="M205.442006 176.551724S189.605852 208.438036 157.71954 209.722048c0 0-47.722466-41.730408-35.310345-89.880878 0 0 36.166353 26.322257 36.594358 83.032811 0.214002 0 15.622153-24.61024 46.438453-26.322257zM230.052247 128.615256s-9.20209 28.67628-50.076489 29.532288c0 0-38.520376-47.08046-20.972205-89.880877 0 0 29.104284 23.54023 24.182236 81.9628 0-0.214002 20.330199-22.898224 46.866458-21.614211zM258.514525 85.814838s-14.980146 26.536259-47.936469 23.326228c0 0-37.664368-49.006479-15.194148-86.670847 0 0 27.392268 26.536259 17.334169 80.464786 0 0 19.688192-19.47419 45.796448-17.120167z" fill="#B68A11" p-id="5362"></path><path d="M279.914734 53.500522s-13.910136 25.894253-49.648485 21.186207c0 0-5.564054-39.804389 19.47419-52.21651 0 0 7.276071 20.544201-7.490073 41.302404-0.214002 0 11.984117-12.412121 37.664368-10.272101z" fill="#B68A11" p-id="5363"></path><path d="M291.256844 24.824242s-3.424033 24.182236-29.318286 22.042216c0 0 1.498015-20.116196 29.318286-22.042216z" fill="#B68A11" p-id="5364"></path><path d="M556.405434 984.409613s40.018391-7.918077 58.42257-18.618181 120.483177-56.28255 189.39185-12.840126c0 0 28.462278 24.182236 57.35256 27.178266 0 0-36.808359 13.482132-74.900732 2.782027 0 0-32.528318-9.20209-50.932497-22.47022 0 0-40.660397-17.976176-78.538767 0.214002-37.87837 18.190178-33.170324 23.326228-64.842633 28.248276C560.685475 994.039707 556.405434 984.409613 556.405434 984.409613zM802.079833 912.076907s16.692163-47.722466 74.472727-62.060606c0 0-9.20209 41.730408-56.068547 57.780564 0 0 93.732915 1.498015 130.11327 54.784535 0.214002 0-75.75674 29.960293-148.51745-50.504493z" fill="#B68A11" p-id="5365"></path><path d="M897.738767 896.454754s3.638036-50.504493 55.640543-79.608777c0 0 2.140021 42.800418-38.734378 70.406688 0 0 90.950888-23.326228 139.957367 18.618181-0.214002 0-65.484639 49.006479-156.863532-9.416092z" fill="#B68A11" p-id="5366"></path><path d="M999.175758 767.411494s-27.820272 47.294462 2.782027 98.440962c0 0 93.304911 28.67628 153.011494-39.590387 0 0-75.114734-24.824242-148.303448 35.096343 0 0 22.256217-53.928527-7.490073-93.946918z" fill="#B68A11" p-id="5367"></path><path d="M1059.096343 796.301776s16.692163-53.28652-11.770115-84.102821c0 0-26.964263 48.792476 9.630094 91.16489 0 0 101.436991 19.902194 139.957367-49.862487 0 0.428004-61.632602-19.902194-137.817346 42.800418z" fill="#B68A11" p-id="5368"></path><path d="M1108.530825 729.961129s9.844096-47.936468-19.046186-78.966772c0 0-23.754232 43.656426 15.194149 87.954859 0 0 106.787043-2.354023 128.401254-60.990595 0.214002 0.214002-81.748798-3.852038-124.549217 52.002508z" fill="#B68A11" p-id="5369"></path><path d="M1122.226959 585.081714s-13.482132 52.644514 24.182236 81.106792c0 0 87.740857 2.354023 115.775131-67.410659 0 0-75.114734 2.140021-112.993103 60.990596 0 0 2.140021-51.360502-26.964264-74.686729z" fill="#B68A11" p-id="5370"></path><path d="M1150.261233 519.811076s-12.412121 43.442424 26.536259 73.616719c0 0 84.316823-4.494044 105.931035-70.406687 0 0-66.340648 2.782027-101.650993 64.842633 0-0.214002 2.568025-38.94838-30.816301-68.052665z" fill="#B68A11" p-id="5371"></path><path d="M1160.105329 456.466458s-6.206061 35.096343 33.81233 69.336677c0 0 82.176803-22.470219 92.876907-78.324765 0 0-70.192685 14.980146-91.806896 73.616719 0-0.214002 2.568025-36.808359-34.882341-64.628631z" fill="#B68A11" p-id="5372"></path><path d="M1163.315361 398.899896s-2.354023 39.162382 40.232392 57.780564c0 0 79.394775-35.952351 76.184744-85.600836 0 0-48.15047 4.494044-76.184744 80.464786 0 0-9.20209-38.306374-40.232392-52.644514z" fill="#B68A11" p-id="5373"></path><path d="M1156.681296 340.049321s6.206061 35.310345 46.010449 50.932497c0 0 66.982654-43.442424 61.632602-91.806896 0 0-54.142529 24.824242-61.846604 85.814838 0 0-8.132079-24.396238-45.796447-44.940439zM1144.911181 281.198746s4.06604 33.384326 46.224451 44.512435c0 0 55.854545-25.680251 52.644514-91.592895 0 0-48.578474 24.61024-53.28652 86.242843 0.214002 0-16.906165-37.236364-45.582445-39.162383zM1125.650993 225.986207s26.750261 2.354023 47.722466 33.170324c0 0 4.06604-65.270637 44.726437-85.386834 0 0 14.552142 49.006479-43.014421 92.876907-0.214002 0-36.594357-6.848067-49.434482-40.660397z" fill="#B68A11" p-id="5374"></path><path d="M1105.9628 176.551724s15.836155 31.886311 47.722466 33.170324c0 0 47.722466-41.730408 35.310345-89.880878 0 0-36.166353 26.322257-36.594357 83.032811-0.214002 0-15.836155-24.61024-46.438454-26.322257zM1081.35256 128.615256s9.20209 28.67628 50.076489 29.532288c0 0 38.520376-47.08046 20.972205-89.880877 0 0-29.104284 23.54023-24.182236 81.9628-0.214002-0.214002-20.544201-22.898224-46.866458-21.614211zM1052.890282 85.814838s14.980146 26.536259 47.936468 23.326228c0 0 37.664368-49.006479 15.194149-86.670847 0 0-27.392268 26.536259-17.33417 80.464786 0 0-19.902194-19.47419-45.796447-17.120167z" fill="#B68A11" p-id="5375"></path><path d="M1031.490073 53.500522s13.910136 25.894253 49.862487 21.186207c0 0 5.564054-39.804389-19.47419-52.21651 0 0-7.276071 20.544201 7.490073 41.302404-0.214002 0-12.198119-12.412121-37.87837-10.272101z" fill="#B68A11" p-id="5376"></path><path d="M1019.93396 24.824242s3.424033 24.182236 29.532289 22.042216c0 0-1.712017-20.116196-29.532289-22.042216z" fill="#B68A11" p-id="5377"></path></svg>
-        `;
+          <svg t="1743841440004" class="icon" viewBox="0 0 1332 1024" version="1.1" xmlns="http://www.w3.org/2000/svg" p-id="5351" width="200" height="200"><path d="M754.999373 984.409613s-40.018391-7.918077-58.42257-18.618181c-18.618182-10.700104-120.483177-56.28255-189.39185-12.840126 0 0-28.462278 24.182236-57.35256 27.178266 0 0 36.808359 13.482132 74.900731 2.782027 0 0 32.528318-9.20209 50.932498-22.47022 0 0 40.660397-17.976176 78.538767 0.214002 37.87837 18.190178 33.170324 23.326228 64.842633 28.248276 31.672309 5.13605 35.952351-4.494044 35.952351-4.494044zM509.324974 912.076907s-16.692163-47.722466-74.472727-62.060606c0 0 9.20209 41.730408 56.068547 57.780564 0 0-93.732915 1.498015-130.11327 54.784535-0.214002 0 75.75674 29.960293 148.51745-50.504493z" fill="#B68A11" p-id="5352"></path><path d="M413.66604 896.454754s-3.638036-50.504493-55.640544-79.608777c0 0-2.140021 42.800418 38.734379 70.406688 0 0-90.950888-23.326228-139.957367 18.618181 0.214002 0 65.484639 49.006479 156.863532-9.416092z" fill="#B68A11" p-id="5353"></path><path d="M312.229049 767.411494s27.820272 47.294462-2.782027 98.440962c0 0-93.304911 28.67628-153.011494-39.590387 0 0 75.114734-24.824242 148.089446 35.096343 0.214002 0-22.042215-53.928527 7.704075-93.946918z" fill="#B68A11" p-id="5354"></path><path d="M252.308464 796.301776s-16.692163-53.28652 11.770115-84.102821c0 0 26.964263 48.792476-9.630094 91.16489 0 0-101.436991 19.902194-139.957367-49.862487 0 0.428004 61.632602-19.902194 137.817346 42.800418z" fill="#B68A11" p-id="5355"></path><path d="M202.873981 729.961129s-9.844096-47.936468 19.046186-78.966772c0 0 23.754232 43.656426-15.194148 87.954859 0 0-106.787043-2.354023-128.401254-60.990595-0.214002 0.214002 81.748798-3.852038 124.549216 52.002508z" fill="#B68A11" p-id="5356"></path><path d="M189.177847 585.081714s13.482132 52.644514-24.182236 81.106792c0 0-87.740857 2.354023-115.77513-67.410659 0 0 75.114734 2.140021 112.993103 60.990596 0 0-2.140021-51.360502 26.964263-74.686729z" fill="#B68A11" p-id="5357"></path><path d="M161.143574 519.811076s12.412121 43.442424-26.536259 73.616719c0 0-84.316823-4.494044-105.931035-70.406687 0 0 66.340648 2.782027 101.650993 64.842633 0-0.214002-2.782027-38.94838 30.816301-68.052665z" fill="#B68A11" p-id="5358"></path><path d="M151.085475 456.466458s6.206061 35.096343-33.81233 69.336677c0 0-82.176803-22.470219-92.876907-78.324765 0 0 70.192685 14.980146 91.806897 73.616719 0.214002-0.214002-2.568025-36.808359 34.88234-64.628631z" fill="#B68A11" p-id="5359"></path><path d="M147.875444 398.899896s2.354023 39.162382-40.232393 57.780564c0 0-79.394775-35.952351-76.184744-85.600836 0 0 48.15047 4.494044 76.184744 80.464786 0.214002 0 9.20209-38.306374 40.232393-52.644514z" fill="#B68A11" p-id="5360"></path><path d="M154.723511 340.049321s-6.206061 35.310345-46.010449 50.932497c0 0-66.982654-43.442424-61.632602-91.806896 0 0 54.142529 24.824242 61.846604 85.814838 0 0 7.918077-24.396238 45.796447-44.940439zM166.493626 281.198746s-4.06604 33.384326-46.224451 44.512435c0 0-55.854545-25.680251-52.644515-91.592895 0 0 48.578474 24.61024 53.286521 86.242843-0.214002 0 16.906165-37.236364 45.582445-39.162383zM185.753814 225.986207s-26.750261 2.354023-47.722466 33.170324c0 0-4.06604-65.270637-44.726437-85.386834 0 0-14.552142 49.006479 43.01442 92.876907 0.214002 0 36.594357-6.848067 49.434483-40.660397z" fill="#B68A11" p-id="5361"></path><path d="M205.442006 176.551724S189.605852 208.438036 157.71954 209.722048c0 0-47.722466-41.730408-35.310345-89.880878 0 0 36.166353 26.322257 36.594358 83.032811 0.214002 0 15.622153-24.61024 46.438453-26.322257zM230.052247 128.615256s-9.20209 28.67628-50.076489 29.532288c0 0-38.520376-47.08046-20.972205-89.880877 0 0 29.104284 23.54023 24.182236 81.9628 0-0.214002 20.330199-22.898224 46.866458-21.614211zM258.514525 85.814838s-14.980146 26.536259-47.936469 23.326228c0 0-37.664368-49.006479-15.194148-86.670847 0 0 27.392268 26.536259 17.334169 80.464786 0 0 19.688192-19.47419 45.796448-17.120167z" fill="#B68A11" p-id="5362"></path><path d="M279.914734 53.500522s-13.910136 25.894253-49.648485 21.186207c0 0-5.564054-39.804389 19.47419-52.21651 0 0 7.276071 20.544201-7.490073 41.302404-0.214002 0 11.984117-12.412121 37.664368-10.272101z" fill="#B68A11" p-id="5363"></path><path d="M291.256844 24.824242s-3.424033 24.182236-29.318286 22.042216c0 0 1.498015-20.116196 29.318286-22.042216z" fill="#B68A11" p-id="5364"></path><path d="M556.405434 984.409613s40.018391-7.918077 58.42257-18.618181 120.483177-56.28255 189.39185-12.840126c0 0 28.462278 24.182236 57.35256 27.178266 0 0-36.808359 13.482132-74.900732 2.782027 0 0-32.528318-9.20209-50.932497-22.47022 0 0-40.660397-17.976176-78.538767 0.214002-37.87837 18.190178-33.170324 23.326228-64.842633 28.248276C560.685475 994.039707 556.405434 984.409613 556.405434 984.409613zM802.079833 912.076907s16.692163-47.722466 74.472727-62.060606c0 0-9.20209 41.730408-56.068547 57.780564 0 0 93.732915 1.498015 130.11327 54.784535 0.214002 0-75.75674 29.960293-148.51745-50.504493z" fill="#B68A11" p-id="5365"></path><path d="M897.738767 896.454754s3.638036-50.504493 55.640543-79.608777c0 0 2.140021 42.800418-38.734378 70.406688 0 0 90.950888-23.326228 139.957367 18.618181-0.214002 0-65.484639 49.006479-156.863532-9.416092z" fill="#B68A11" p-id="5366"></path><path d="M999.175758 767.411494s-27.820272 47.294462 2.782027 98.440962c0 0 93.304911 28.67628 153.011494-39.590387 0 0-75.114734-24.824242-148.303448 35.096343 0 0 22.256217-53.928527-7.490073-93.946918z" fill="#B68A11" p-id="5367"></path><path d="M1059.096343 796.301776s16.692163-53.28652-11.770115-84.102821c0 0-26.964263 48.792476 9.630094 91.16489 0 0 101.436991 19.902194 139.957367-49.862487 0 0.428004-61.632602-19.902194-137.817346 42.800418z" fill="#B68A11" p-id="5368"></path><path d="M1108.530825 729.961129s9.844096-47.936468-19.046186-78.966772c0 0-23.754232 43.656426 15.194149 87.954859 0 0 106.787043-2.354023 128.401254-60.990595 0.214002 0.214002-81.748798-3.852038-124.549217 52.002508z" fill="#B68A11" p-id="5369"></path><path d="M1122.226959 585.081714s-13.482132 52.644514 24.182236 81.106792c0 0 87.740857 2.354023 115.775131-67.410659 0 0-75.114734 2.140021-112.993103 60.990596 0 0 2.140021-51.360502-26.964264-74.686729z" fill="#B68A11" p-id="5370"></path><path d="M1150.261233 519.811076s-12.412121 43.442424 26.536259 73.616719c0 0 84.316823-4.494044 105.931035-70.406687 0 0-66.340648 2.782027-101.650993 64.842633 0-0.214002 2.568025-38.94838-30.816301-68.052665z" fill="#B68A11" p-id="5371"></path><path d="M1160.105329 456.466458s-6.206061 35.096343 33.81233 69.336677c0 0 82.176803-22.470219 92.876907-78.324765 0 0-70.192685 14.980146-91.806896 73.616719 0-0.214002 2.568025-36.808359-34.882341-64.628631z" fill="#B68A11" p-id="5372"></path><path d="M1163.315361 398.899896s-2.354023 39.162382 40.232392 57.780564c0 0 79.394775-35.952351 76.184744-85.600836 0 0-48.15047 4.494044-76.184744 80.464786 0 0-9.20209-38.306374-40.232392-52.644514z" fill="#B68A11" p-id="5373"></path><path d="M1156.681296 340.049321s6.206061 35.310345 46.010449 50.932497c0 0 66.982654-43.442424 61.632602-91.806896 0 0-54.142529 24.824242-61.846604 85.814838 0 0 7.918077-24.396238 45.796447-44.940439zM1144.911181 281.198746s4.06604 33.384326 46.224451 44.512435c0 0 55.854545-25.680251 52.644514-91.592895 0 0-48.578474 24.61024-53.28652 86.242843 0.214002 0-16.906165-37.236364-45.582445-39.162383zM1125.650993 225.986207s26.750261 2.354023 47.722466 33.170324c0 0 4.06604-65.270637 44.726437-85.386834 0 0 14.552142 49.006479-43.014421 92.876907-0.214002 0-36.594357-6.848067-49.434482-40.660397z" fill="#B68A11" p-id="5374"></path><path d="M1105.9628 176.551724s15.836155 31.886311 47.722466 33.170324c0 0 47.722466-41.730408 35.310345-89.880878 0 0-36.166353 26.322257-36.594357 83.032811-0.214002 0-15.836155-24.61024-46.438454-26.322257zM1081.35256 128.615256s9.20209 28.67628 50.076489 29.532288c0 0 38.520376-47.08046 20.972205-89.880877 0 0-29.104284 23.54023-24.182236 81.9628-0.214002-0.214002-20.544201-22.898224-46.866458-21.614211zM1052.890282 85.814838s14.980146 26.536259 47.936468 23.326228c0 0 37.664368-49.006479 15.194149-86.670847 0 0-27.392268 26.536259-17.33417 80.464786 0 0-19.902194-19.47419-45.796447-17.120167z" fill="#B68A11" p-id="5375"></path><path d="M1031.490073 53.500522s13.910136 25.894253 49.862487 21.186207c0 0 5.564054-39.804389-19.47419-52.21651 0 0-7.276071 20.544201 7.490073 41.302404-0.214002 0-12.198119-12.412121-37.87837-10.272101z" fill="#B68A11" p-id="5376"></path><path d="M1019.93396 24.824242s3.424033 24.182236 29.532289 22.042216c0 0-1.712017-20.116196-29.532289-22.042216z" fill="#B68A11" p-id="5377"></path></svg>`;
       } else if (ratingScore >= 5) {
         ratingContainer.setAttribute("data-score", "good");
         const ratingBadge = ratingContainer.createDiv({ cls: "simple-badge" });
@@ -9098,9 +10617,15 @@ ${content2.trimStart()}`;
       const tagsContainer = infoContainer.createDiv({ cls: "card-tags-container" });
       if (data.tags) {
         data.tags.forEach((tag) => {
-          tagsContainer.createEl("a", {
+          const tagEl = tagsContainer.createEl("a", {
             text: tag,
             cls: "tag"
+          });
+          tagEl.addEventListener("click", (e) => {
+            e.stopPropagation();
+            if (this.view) {
+              this.view.addTagFilter(tag);
+            }
           });
         });
       }
@@ -9142,7 +10667,7 @@ ${content2.trimStart()}`;
       let filename = internalLinkMatch[1].trim();
       const vault = this.app.vault;
       const file = vault.getAbstractFileByPath(filename) || vault.getFiles().find((f) => f.name === filename);
-      if (file && file instanceof import_obsidian4.TFile) {
+      if (file && file instanceof import_obsidian5.TFile) {
         const resourcePath = vault.getResourcePath(file);
         return resourcePath;
       }
