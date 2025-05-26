@@ -10181,7 +10181,11 @@ ${content.trimStart()}`;
       });
     }
     if (data.description) {
-      infoContainer.createEl("div", { text: data.description, cls: "card-info-description" });
+      const isSingleLine = !data.description.includes("\n") && data.description.length > 0 && data.description.length < 60;
+      const descEl = infoContainer.createEl("div", { text: data.description, cls: "card-info-description" });
+      if (isSingleLine) {
+        descEl.addClass("single-line");
+      }
     }
     if (data.tags && data.tags.length > 0 || data.collection_date) {
       const tagsContainer = infoContainer.createDiv({ cls: "card-tags-container" });
@@ -10285,7 +10289,13 @@ ${content.trimStart()}`;
         });
       });
     }
-    infoContainer.createEl("p", { text: data.description, cls: "card-info-description" });
+    if (data.description) {
+      const isSingleLine = !data.description.includes("\n") && data.description.length > 0 && data.description.length < 60;
+      const descEl = infoContainer.createEl("div", { text: data.description, cls: "card-info-description" });
+      if (isSingleLine) {
+        descEl.addClass("single-line");
+      }
+    }
     if (data.tags && data.tags.length > 0 || data.collection_date) {
       const tagsContainer = infoContainer.createDiv({ cls: "card-tags-container" });
       if (data.tags) {
@@ -10394,7 +10404,14 @@ ${content.trimStart()}`;
         });
       });
     }
-    infoContainer.createEl("p", { text: data.description, cls: "card-info-description" });
+    if (data.description) {
+      const isSingleLine = !data.description.includes("\n") && data.description.length > 0 && data.description.length < 60;
+      const descEl = infoContainer.createEl("div", { text: data.description, cls: "card-info-description" });
+      if (isSingleLine) {
+        descEl.addClass("single-line");
+      }
+    }
+    ;
     if (data.tags && data.tags.length > 0 || data.collection_date) {
       const tagsContainer = infoContainer.createDiv({ cls: "card-tags-container" });
       if (data.tags) {
@@ -10503,7 +10520,13 @@ ${content.trimStart()}`;
         });
       });
     }
-    infoContainer.createEl("p", { text: data.description, cls: "card-info-description" });
+    if (data.description) {
+      const isSingleLine = !data.description.includes("\n") && data.description.length > 0 && data.description.length < 60;
+      const descEl = infoContainer.createEl("div", { text: data.description, cls: "card-info-description" });
+      if (isSingleLine) {
+        descEl.addClass("single-line");
+      }
+    }
     if (data.tags && data.tags.length > 0 || data.collection_date) {
       const tagsContainer = infoContainer.createDiv({ cls: "card-tags-container" });
       if (data.tags) {
@@ -10612,7 +10635,13 @@ ${content.trimStart()}`;
         });
       });
     }
-    infoContainer.createEl("p", { text: data.description, cls: "card-info-description" });
+    if (data.description) {
+      const isSingleLine = !data.description.includes("\n") && data.description.length > 0 && data.description.length < 60;
+      const descEl = infoContainer.createEl("div", { text: data.description, cls: "card-info-description" });
+      if (isSingleLine) {
+        descEl.addClass("single-line");
+      }
+    }
     if (data.tags && data.tags.length > 0 || data.collection_date) {
       const tagsContainer = infoContainer.createDiv({ cls: "card-tags-container" });
       if (data.tags) {
