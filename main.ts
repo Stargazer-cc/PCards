@@ -1497,7 +1497,12 @@ export default class NewCardsPlugin extends Plugin {
 
      
     if (data.description) {
-      infoContainer.createEl('div', { text: data.description, cls: 'card-info-description' });
+      // 判断是否为单行
+      const isSingleLine = !data.description.includes('\n') && data.description.length > 0 && data.description.length < 60;
+      const descEl = infoContainer.createEl('div', { text: data.description, cls: 'card-info-description' });
+      if (isSingleLine) {
+        descEl.addClass('single-line');
+      }
     }
     
     // 添加标签和收录时间
@@ -1627,7 +1632,14 @@ export default class NewCardsPlugin extends Plugin {
       });
     }
 
-    infoContainer.createEl('p', { text: data.description, cls: 'card-info-description' });
+    if (data.description) {
+      // 判断是否为单行
+      const isSingleLine = !data.description.includes('\n') && data.description.length > 0 && data.description.length < 60;
+      const descEl = infoContainer.createEl('div', { text: data.description, cls: 'card-info-description' });
+      if (isSingleLine) {
+        descEl.addClass('single-line');
+      }
+    }
 
     // 添加标签和收录时间
     if ((data.tags && data.tags.length > 0) || data.collection_date) {
@@ -1762,7 +1774,14 @@ export default class NewCardsPlugin extends Plugin {
       });
     }
 
-    infoContainer.createEl('p', { text: data.description, cls: 'card-info-description' });
+    if (data.description) {
+      // 判断是否为单行
+      const isSingleLine = !data.description.includes('\n') && data.description.length > 0 && data.description.length < 60;
+      const descEl = infoContainer.createEl('div', { text: data.description, cls: 'card-info-description' });
+      if (isSingleLine) {
+        descEl.addClass('single-line');
+      }
+    };
 
     // 添加标签和收录时间
     if ((data.tags && data.tags.length > 0) || data.collection_date) {
@@ -1837,7 +1856,7 @@ export default class NewCardsPlugin extends Plugin {
     const coverContainer = container.createDiv({ cls: 'cover-container' });
     const infoContainer = container.createDiv({ cls: 'info-container' });
     
-    // 添加封面图片或电影图标
+    // 添加封面图片或番剧图标
     if (data.cover) {
       const coverImg = coverContainer.createEl('img', {
         attr: { src: this.getCoverImageSrc(data.cover) },
@@ -1897,7 +1916,14 @@ export default class NewCardsPlugin extends Plugin {
       });
     }
 
-    infoContainer.createEl('p', { text: data.description, cls: 'card-info-description' });
+    if (data.description) {
+      // 判断是否为单行
+      const isSingleLine = !data.description.includes('\n') && data.description.length > 0 && data.description.length < 60;
+      const descEl = infoContainer.createEl('div', { text: data.description, cls: 'card-info-description' });
+      if (isSingleLine) {
+        descEl.addClass('single-line');
+      }
+    }
 
     // 添加标签和收录时间
     if ((data.tags && data.tags.length > 0) || data.collection_date) {
@@ -1972,7 +1998,7 @@ export default class NewCardsPlugin extends Plugin {
     const coverContainer = container.createDiv({ cls: 'cover-container' });
     const infoContainer = container.createDiv({ cls: 'info-container' });
     
-    // 添加封面图片或电影图标
+    // 添加封面图片或剧集图标
     if (data.cover) {
       const coverImg = coverContainer.createEl('img', {
         attr: { src: this.getCoverImageSrc(data.cover) },
@@ -2032,7 +2058,14 @@ export default class NewCardsPlugin extends Plugin {
       });
     }
 
-    infoContainer.createEl('p', { text: data.description, cls: 'card-info-description' });
+    if (data.description) {
+      // 判断是否为单行
+      const isSingleLine = !data.description.includes('\n') && data.description.length > 0 && data.description.length < 60;
+      const descEl = infoContainer.createEl('div', { text: data.description, cls: 'card-info-description' });
+      if (isSingleLine) {
+        descEl.addClass('single-line');
+      }
+    }
 
     // 添加标签和收录时间
     if ((data.tags && data.tags.length > 0) || data.collection_date) {
