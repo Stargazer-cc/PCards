@@ -16914,17 +16914,41 @@ ${content.trimStart()}`;
   handleCardUrlClick(data, event2) {
     if (!data || !data.url) return;
     if (event2) event2.stopPropagation();
-    const url = data.url;
+    let url = data.url;
+    const match = url.match(/^\[\[(.*)\]\]$/);
+    if (match) {
+      url = match[1];
+    }
     if (url.startsWith("http://") || url.startsWith("https://")) {
       window.open(url);
     } else if (url.startsWith("obsidian://")) {
-      try {
-        const u = new URL(url);
-        const vault = decodeURIComponent(u.searchParams.get("vault") || "");
-        const file = decodeURIComponent(u.searchParams.get("file") || "");
-        this.app.workspace.openLinkText(file, vault, true);
-      } catch (e) {
-        new import_obsidian8.Notice("obsidian://\u94FE\u63A5\u89E3\u6790\u5931\u8D25");
+      if (url.startsWith("obsidian://open")) {
+        try {
+          const u = new URL(url);
+          const file = decodeURIComponent(u.searchParams.get("file") || "");
+          this.openInternalLinkSmart(file);
+        } catch (e) {
+        }
+      } else {
+        try {
+          const u = new URL(url);
+          const file = u.searchParams.get("file");
+          if (file) {
+            const decodedFile = decodeURIComponent(file);
+            const params = [];
+            u.searchParams.forEach((v, k) => {
+              if (k !== "file" && k !== "vault") {
+                params.push(`${k}=${v}`);
+              }
+            });
+            const subpath = params.length > 0 ? "#" + params.join("&") : "";
+            this.openInternalLinkSmart(decodedFile + subpath);
+          } else {
+            window.open(url);
+          }
+        } catch (e) {
+          window.open(url);
+        }
       }
     } else if (url.startsWith("file:///")) {
       try {
@@ -16954,10 +16978,33 @@ ${content.trimStart()}`;
         navigator.clipboard.writeText(url).then(() => new import_obsidian8.Notice("\u5DF2\u590D\u5236\u6587\u4EF6\u8DEF\u5F84\u5230\u526A\u8D34\u677F"));
       }
     } else {
-      const targetFile = this.app.metadataCache.getFirstLinkpathDest(url || "", "");
-      if (targetFile) {
-        this.app.workspace.getLeaf().openFile(targetFile);
+      this.openInternalLinkSmart(url);
+    }
+  }
+  /**
+   * 智能打开内部链接：优先复用已打开的叶子，避免重复打开新窗口
+   * 支持带 #page=N&selection=... 子路径的 PDF 链接
+   */
+  openInternalLinkSmart(linkText) {
+    const hashIdx = linkText.indexOf("#");
+    const filePath = hashIdx >= 0 ? linkText.substring(0, hashIdx) : linkText;
+    const resolvedFile = this.app.metadataCache.getFirstLinkpathDest(filePath, "");
+    if (resolvedFile) {
+      let existingLeaf = null;
+      this.app.workspace.iterateAllLeaves((leaf) => {
+        const viewFile = leaf.view?.file;
+        if (viewFile && viewFile.path === resolvedFile.path) {
+          existingLeaf = leaf;
+        }
+      });
+      if (existingLeaf) {
+        this.app.workspace.setActiveLeaf(existingLeaf, { focus: true });
+        this.app.workspace.openLinkText(linkText, "", false);
+      } else {
+        this.app.workspace.openLinkText(linkText, "", false);
       }
+    } else {
+      this.app.workspace.openLinkText(linkText, "", false);
     }
   }
   /**

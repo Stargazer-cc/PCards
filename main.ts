@@ -2355,17 +2355,50 @@ export default class NewCardsPlugin extends Plugin {
   public handleCardUrlClick(data: any, event?: MouseEvent) {
     if (!data || !data.url) return;
     if (event) event.stopPropagation();
-    const url = data.url;
+    
+    let url = data.url;
+    
+    // 如果URL被[[ ]]包裹，去掉括号
+    const match = url.match(/^\[\[(.*)\]\]$/);
+    if (match) {
+      url = match[1];
+    }
+    
     if (url.startsWith('http://') || url.startsWith('https://')) {
       window.open(url);
     } else if (url.startsWith('obsidian://')) {
-      try {
-        const u = new URL(url);
-        const vault = decodeURIComponent(u.searchParams.get('vault') || '');
-        const file = decodeURIComponent(u.searchParams.get('file') || '');
-        this.app.workspace.openLinkText(file, vault, true);
-      } catch (e) {
-        new Notice('obsidian://链接解析失败');
+      if (url.startsWith('obsidian://open')) {
+        try {
+          const u = new URL(url);
+          const file = decodeURIComponent(u.searchParams.get('file') || '');
+          this.openInternalLinkSmart(file);
+        } catch (e) {
+          // 解析失败，回退到默认处理
+        }
+      } else {
+        // 对于其他 obsidian:// 协议（如 obsidian://pdf-plus），尝试提取 file 参数并智能打开
+        try {
+          const u = new URL(url);
+          const file = u.searchParams.get('file');
+          if (file) {
+            // 有 file 参数，尝试用内部链接方式打开（可复用已打开的叶子）
+            const decodedFile = decodeURIComponent(file);
+            // 将其他参数（如 page, selection 等）组装为子路径
+            const params: string[] = [];
+            u.searchParams.forEach((v, k) => {
+              if (k !== 'file' && k !== 'vault') {
+                params.push(`${k}=${v}`);
+              }
+            });
+            const subpath = params.length > 0 ? '#' + params.join('&') : '';
+            this.openInternalLinkSmart(decodedFile + subpath);
+          } else {
+            // 没有 file 参数，回退到让 Obsidian 处理
+            window.open(url);
+          }
+        } catch (e) {
+          window.open(url);
+        }
       }
     } else if (url.startsWith('file:///')) {
       try {
@@ -2395,11 +2428,44 @@ export default class NewCardsPlugin extends Plugin {
         navigator.clipboard.writeText(url).then(() => new Notice('已复制文件路径到剪贴板'));
       }
     } else {
-      // 内部链接
-      const targetFile = this.app.metadataCache.getFirstLinkpathDest(url || '', '');
-      if (targetFile) {
-        this.app.workspace.getLeaf().openFile(targetFile);
+      // 内部链接（包括 .pdf#page=1&selection=...）
+      this.openInternalLinkSmart(url);
+    }
+  }
+
+  /**
+   * 智能打开内部链接：优先复用已打开的叶子，避免重复打开新窗口
+   * 支持带 #page=N&selection=... 子路径的 PDF 链接
+   */
+  private openInternalLinkSmart(linkText: string) {
+    const hashIdx = linkText.indexOf('#');
+    const filePath = hashIdx >= 0 ? linkText.substring(0, hashIdx) : linkText;
+    
+    // 解析文件路径，找到对应的 TFile
+    const resolvedFile = this.app.metadataCache.getFirstLinkpathDest(filePath, '');
+    
+    if (resolvedFile) {
+      // 查找是否已有打开此文件的叶子
+      let existingLeaf: any = null;
+      this.app.workspace.iterateAllLeaves((leaf: any) => {
+        const viewFile = leaf.view?.file;
+        if (viewFile && viewFile.path === resolvedFile.path) {
+          existingLeaf = leaf;
+        }
+      });
+      
+      if (existingLeaf) {
+        // 已有打开的叶子，激活它并导航到子路径
+        this.app.workspace.setActiveLeaf(existingLeaf, { focus: true });
+        // 用 openLinkText 在当前活跃叶子中导航到具体位置
+        this.app.workspace.openLinkText(linkText, '', false);
+      } else {
+        // 没有已打开的叶子，在新标签页中打开（不是新窗口）
+        this.app.workspace.openLinkText(linkText, '', false);
       }
+    } else {
+      // 文件未找到，尝试直接打开
+      this.app.workspace.openLinkText(linkText, '', false);
     }
   }
 
