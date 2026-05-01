@@ -1,0 +1,4406 @@
+/* 快速记录页面容器样式 */
+.quick-note-container {
+  padding: 20px;
+  height: 100%;
+  overflow-y: auto;
+  background: var(--titlebar-background-focused);
+  color: var(--text-normal);
+}
+
+
+.quick-note-content {
+  max-width: 450px;
+  margin: 0 auto;
+  padding: 24px;
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+}
+
+.quick-note-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 20px;
+  padding-bottom: 10px;
+  border-bottom: 1px solid var(--background-modifier-border);
+  color: var(--text-muted);
+}
+
+.quick-note-type-selector {
+  display: flex;
+  gap: 10px;
+  margin-bottom: 20px;
+  justify-content: center;
+}
+
+.type-button {
+  padding: 8px 16px;
+  border: 1px solid var(--background-modifier-border);
+  border-radius: 6px;
+  background: var(--background-secondary);
+  color: var(--text-muted);
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.type-button:hover {
+  background: var(--background-modifier-hover);
+  color: var(--text-normal);
+}
+
+.type-button.active {
+  background: var(--interactive-accent);
+  color: var(--text-on-accent);
+  border-color: var(--interactive-accent);
+}
+
+.quick-note-form {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.form-group {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.form-group-inline {
+  flex-direction: row;
+  align-items: center;
+  justify-content: flex-start;
+  gap: 3px;
+  /* 添加小间距 */
+}
+
+.form-group-inline label {
+  min-inline-size: fit-content;
+  margin-right: 3px;
+  /* 减少右边距 */
+}
+
+.form-group-inline .input-short {
+  width: 120px;
+}
+
+.form-group label {
+  font-size: 15px;
+}
+
+.form-group input,
+.form-group textarea {
+  padding: 10px 14px;
+  border: 1px solid var(--background-modifier-border);
+  border-radius: 6px;
+  background: var(--background-primary);
+  color: var(--text-normal);
+  font-size: 14px;
+  line-height: 1.5;
+  width: 100%;
+  box-sizing: border-box;
+}
+
+.form-group input:focus,
+.form-group textarea:focus {
+  border-color: var(--interactive-accent);
+  box-shadow: 0 0 0 1px var(--interactive-accent);
+}
+
+.form-group textarea {
+  min-height: 120px;
+  max-height: 300px;
+  resize: vertical;
+}
+
+.quick-note-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 12px;
+  margin-top: 20px;
+}
+
+.quick-note-button {
+  padding: 8px 16px;
+  border: none;
+  border-radius: 4px;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.quick-note-button.primary {
+  background: var(--interactive-accent);
+  color: var(--text-on-accent);
+}
+
+.quick-note-button.primary:hover {
+  background: var(--interactive-accent-hover);
+}
+
+.quick-note-button.secondary {
+  background: var(--background-modifier-border);
+  color: var(--text-muted);
+}
+
+.quick-note-button.secondary:hover {
+  background: var(--background-modifier-hover);
+  color: var(--text-normal);
+}
+
+/* === 小鸟按钮动画样式---按钮部分 === */
+
+.save-button-container.quick-note-button.primary {
+  padding: 0;
+  border: 2px solid #000;
+  border-radius: 22px;
+  background-color: #f4cf47;
+  color: #000;
+  width: 150px;
+  height: 35px;
+  position: relative;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  box-sizing: border-box;
+  cursor: pointer;
+}
+
+.save-button-container.quick-note-button.primary .buttonWrapper {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  box-sizing: border-box;
+  border-radius: 22px;
+  width: 100%;
+  height: 100%;
+  overflow: hidden;
+  position: relative;
+}
+
+.save-button-container.quick-note-button.primary .buttonWrapper span {
+  font-size: 15px;
+  letter-spacing: 2px;
+  color: #000;
+  z-index: 2;
+  transition: all 0.3s ease;
+}
+
+.save-button-container.quick-note-button.primary .buttonWrapper::before,
+.save-button-container.quick-note-button.primary .buttonWrapper::after {
+  content: "";
+  position: absolute;
+  bottom: 0;
+  width: 67px;
+  height: 22px;
+  background-color: #f4e19c;
+  clip-path: path("M13.77,37.35L.25,16.6c-.87-1.33,.69-2.91,2-2.02l12.67,8.59c.81,.55,1.91,.14,2.18-.81l2.62-9.33c.39-1.4,2.34-1.42,2.76-.02l3.6,11.99c.33,1.11,1.74,1.4,2.47,.52L49.38,.52c.87-1.04,2.53-.42,2.53,.95V23.7c0,1.13,1.2,1.83,2.16,1.26l12.75-7.51c.85-.5,1.94,0,2.13,.98l1.5,7.6c.2,1.03,1.37,1.51,2.22,.92l17.74-12.3c1.09-.75,2.52,.25,2.21,1.55l-2.44,10.2c-.26,1.09,.74,2.06,1.8,1.75l30.8-9.04c1.37-.4,2.42,1.26,1.49,2.36l-9.07,10.66c-.83,.98-.1,2.49,1.17,2.42l12.12-.68c1.6-.09,2.12,2.15,.65,2.8l-2.73,1.21c-.18,.08-.38,.12-.58,.12H14.97c-.48,0-.93-.25-1.2-.65Z"
+    );
+  z-index: 0;
+  transition: all 0.5s ease;
+}
+
+.save-button-container.quick-note-button.primary .buttonWrapper::before {
+  left: 0;
+}
+
+.save-button-container.quick-note-button.primary .buttonWrapper::after {
+  right: 0;
+  transform: rotateY(180deg);
+}
+
+
+.save-button-container.quick-note-button.primary:hover .buttonWrapper span {
+  letter-spacing: 3px;
+}
+
+.save-button-container.quick-note-button.primary:hover .buttonWrapper::before {
+  transform: translateX(-9px);
+}
+
+.save-button-container.quick-note-button.primary:hover .buttonWrapper::after {
+  transform: translateX(9px) rotateY(180deg);
+}
+
+.save-button-container.quick-note-button.primary:hover::before {
+  right: 10px;
+}
+
+/* 卡片画廊主容器样式 */
+.cards-gallery-container {
+  position: relative;
+  padding: 20px;
+  height: 100%;
+  overflow-y: auto;
+}
+
+/* 各类控制按钮的容器样式 */
+.gallery-type-control,
+.gallery-fields-control,
+.gallery-filter-control,
+.gallery-sort-control {
+  position: relative;
+}
+
+/* 控制按钮的通用样式 */
+.gallery-type-toggle,
+.gallery-fields-toggle,
+.gallery-filter-toggle,
+.gallery-sort-toggle,
+.gallery-column-toggle {
+  padding: 6px 12px;
+  border: 1px solid var(--background-modifier-border);
+  border-radius: 4px;
+  background: var(--background-primary);
+  color: var(--text-normal);
+  cursor: pointer;
+}
+
+/* 模态框基础样式 */
+.gallery-modal {
+  display: none;
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background: rgba(0, 0, 0, 0.5);
+  z-index: 1000;
+}
+
+/* 显示模态框时的样式 */
+.gallery-modal.show {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+}
+
+/* 模态框内容区域样式 */
+.gallery-modal-content {
+  background: var(--background-primary);
+  border-radius: 8px;
+  padding: 20px;
+  width: 80%;
+  max-width: 600px;
+  max-height: 80vh;
+  overflow-y: auto;
+}
+
+/* 刷新索引按钮样式 */
+.gallery-refresh-button {
+  position: absolute;
+  left: 20px;
+}
+
+
+/* 模态框标题栏样式 */
+.modal-title {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 20px;
+  padding-bottom: 10px;
+  border-bottom: 1px solid var(--background-modifier-border);
+}
+
+/* 条件组合容器样式 */
+.conjunction-container {
+  margin-bottom: 20px;
+}
+
+/* 条件组合标签样式 */
+.conjunction-container label {
+  margin-right: 15px;
+}
+
+/* 添加筛选和排序容器样式 */
+.add-filter-container,
+.add-sort-container {
+  display: flex;
+  gap: 10px;
+  margin-bottom: 20px;
+}
+
+/* 下拉选择框和输入框通用样式 */
+.field-select,
+.operator-select,
+.value-input,
+.sort-field-select,
+.order-select {
+  padding: 4px 8px;
+  border: 1px solid var(--background-modifier-border);
+  border-radius: 4px;
+  background: var(--background-primary);
+  color: var(--text-normal);
+}
+
+/* 值输入框样式 */
+.value-input {
+  flex: 1;
+}
+
+/* 添加筛选和排序按钮样式 */
+.add-filter-button,
+.add-sort-button {
+  padding: 4px 12px;
+  background: var(--interactive-accent);
+  color: var(--text-on-accent);
+  border: none;
+  border-radius: 4px;
+  cursor: pointer;
+}
+
+/* 活动筛选和排序标签容器样式 */
+.active-filters,
+.active-sorts {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-top: 10px;
+}
+
+/* 筛选和排序标签样式 */
+.filter-tag,
+.sort-tag {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 4px 8px;
+  background: var(--background-modifier-border);
+  border-radius: 4px;
+}
+
+/* 筛选和排序启用开关样式 */
+.filter-enable-toggle,
+.sort-enable-toggle {
+  margin: 0;
+}
+
+/* 移除筛选、排序和上移按钮样式 */
+.remove-filter,
+.remove-sort,
+.move-sort-up {
+  background: none;
+  border: none;
+  padding: 2px 6px;
+  cursor: pointer;
+  color: var(--text-muted);
+}
+
+/* 移除筛选按钮的关闭图标 */
+.remove-filter::after {
+  content: '×';
+}
+
+/* 移除排序按钮的关闭图标 */
+.remove-sort::after {
+  content: '×';
+}
+
+.gallery-controls {
+  margin-bottom: 20px;
+  display: flex;
+  justify-content: flex-end;
+  gap: 10px;
+  align-items: center;
+  margin-top: 20px;
+}
+
+.gallery-column-toggle,
+.gallery-fields-toggle,
+.gallery-type-toggle,
+.gallery-sort-toggle,
+.gallery-refresh-button {
+  padding: 6px 12px;
+  border-radius: 4px;
+  background-color: var(--interactive-accent);
+  color: var(--text-on-accent);
+  cursor: pointer;
+  border: none;
+  font-size: 14px;
+  transition: background-color 0.2s ease;
+}
+
+.gallery-fields-control,
+.gallery-type-control,
+.gallery-sort-control {
+  position: relative;
+}
+
+.gallery-fields-dropdown,
+.gallery-type-dropdown,
+.gallery-sort-dropdown {
+  display: none;
+  position: absolute;
+  top: 100%;
+  right: 0;
+  background-color: var(--background-primary);
+  border: 1px solid var(--background-modifier-border);
+  border-radius: 4px;
+  padding: 8px;
+  margin-top: 4px;
+  z-index: 100;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+  min-width: 120px;
+}
+
+.gallery-fields-dropdown.show,
+.gallery-type-dropdown.show,
+.gallery-sort-dropdown.show {
+  display: block;
+}
+
+.field-option,
+.type-option,
+.sort-option {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 4px 8px;
+  cursor: pointer;
+}
+
+.field-option:hover,
+.type-option:hover,
+.sort-option:hover {
+  background-color: var(--background-modifier-hover);
+}
+
+.field-option input[type="checkbox"] {
+  margin: 0;
+}
+
+/* 隐藏字段样式 */
+.cards-gallery-container[data-hidden-fields*="description"] .card-info-description,
+.cards-gallery-container[data-hidden-fields*="year"] .year,
+.cards-gallery-container[data-hidden-fields*="tags"] .card-tags-container,
+.cards-gallery-container[data-hidden-fields*="meta"] .meta-container,
+.cards-gallery-container[data-hidden-fields*="rating"] .rating,
+.cards-gallery-container[data-hidden-fields*="status"] .status-indicator,
+.cards-gallery-container[data-hidden-fields*="collection_date"] .collection-date {
+  display: none !important;
+}
+
+.gallery-column-toggle:hover,
+.gallery-refresh-button:hover {
+  background-color: var(--interactive-accent-hover);
+}
+
+/* 卡片网格布局容器 */
+.gallery-cards-container {
+  display: grid;
+  gap: 20px;
+  grid-template-columns: repeat(auto-fill, minmax(500px, 1fr));
+  grid-auto-flow: dense;
+  justify-content: start;
+}
+
+/* 3列布局样式 */
+.cards-gallery-container[data-columns="3"] .gallery-cards-container {
+  grid-template-columns: repeat(3, 1fr);
+}
+
+/* 4列布局样式 */
+.cards-gallery-container[data-columns="4"] .gallery-cards-container {
+  grid-template-columns: repeat(4, 1fr);
+}
+
+/* 卡片容器在网格中的适配样式 */
+.gallery-cards-container .new-cards-container {
+  width: auto;
+  margin: 0;
+  height: 100%;
+}
+
+/* 响应式布局 */
+/* 响应式布局断点设置 */
+/* 大屏幕布局（宽度小于1200px时） */
+@media screen and (max-width: 1200px) {
+  .cards-gallery-container[data-columns="4"] .gallery-cards-container {
+    grid-template-columns: repeat(3, 1fr);
+  }
+}
+
+/* 中等屏幕布局（宽度小于900px时） */
+@media screen and (max-width: 900px) {
+
+  .cards-gallery-container[data-columns="3"] .gallery-cards-container,
+  .cards-gallery-container[data-columns="4"] .gallery-cards-container {
+    grid-template-columns: repeat(2, 1fr);
+  }
+}
+
+/* 小屏幕布局（宽度小于600px时） */
+@media screen and (max-width: 600px) {
+  .gallery-cards-container {
+    grid-template-columns: 1fr !important;
+  }
+}
+
+/* 卡片基础容器样式 */
+.new-cards-container {
+  transition: all 0.3s ease;
+  cursor: default;
+  display: flex;
+  padding: 16px;
+  margin: 12px 0;
+  margin-left: 10%;
+  border: 1px solid var(--background-modifier-border);
+  border-radius: 8px;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+  background-color: var(--background-primary);
+  position: relative;
+  overflow: hidden;
+  width: 500px;
+}
+
+/* 闪念卡片样式 */
+.new-cards-container.idea-card,
+.new-cards-container.quote-card {
+  background: linear-gradient(135deg, #f9f9f9, #f0faff);
+  border-radius: 14px;
+  box-shadow: 0 3px 8px rgba(0, 0, 0, 0.06);
+  padding: 36px 48px;
+  font-family: "Segoe UI", sans-serif;
+  position: relative;
+  overflow: visible;
+  max-width: 700px;
+  min-width: 336px;
+  width: fit-content;
+  margin-top: 0;
+  margin-bottom: 30px;
+  margin-left: 0;
+  margin-right: 12px;
+  white-space: pre-wrap;
+  word-break: break-word;
+  display: flex;
+  flex-direction: column;
+  transition: all 0.3s ease;
+}
+
+.new-cards-container.quote-card {
+  background: linear-gradient(135deg, #dddada, #d9dadb);
+}
+
+.idea-meta .card-tags-container .tag,
+.quote-meta .card-tags-container .tag {
+  background: transparent !important;
+  color: #969292 !important;
+  font-weight: 500;
+  border: none;
+  box-shadow: none;
+}
+
+/* 为带有url的闪念卡片添加hover效果 */
+.new-cards-container.idea-card[data-has-url="true"],
+.new-cards-container.quote-card[data-has-url="true"] {
+  cursor: pointer;
+}
+
+.new-cards-container.idea-card[data-has-url="true"]:hover,
+.new-cards-container.quote-card[data-has-url="true"]:hover {
+  background: linear-gradient(135deg, #f0f0f0, #e8f6ff);
+  box-shadow: 0 5px 15px rgba(0, 0, 0, 0.1);
+  transform: translateY(-2px);
+}
+
+.new-cards-container.idea-card::before {
+  content: '💡';
+  position: absolute;
+  top: 0px;
+  left: 15px;
+  font-size: 45px;
+  transform: rotate(-10deg);
+}
+
+.new-cards-container.quote-card::before {
+  content: '"';
+  position: absolute;
+  top: 0px;
+  left: 25px;
+  font-size: 70px;
+  color: #e74c3c;
+  font-family: Georgia, serif;
+  font-weight: bold;
+  transform: rotate(10deg);
+}
+
+.new-cards-container.idea-card .idea-content,
+.new-cards-container.quote-card .quote-content {
+  font-size: 16px;
+  font-weight: 550;
+  line-height: 1.6;
+  color: #222;
+  padding-left: 24px;
+  padding-top: 20px;
+  white-space: pre-wrap;
+  word-break: break-word;
+}
+
+.new-cards-container.idea-card .idea-meta,
+.new-cards-container.quote-card .quote-meta {
+  content: attr(data-footer);
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  font-size: 13px;
+  color: #777;
+  margin-top: 24px;
+  padding-left: 24px;
+}
+
+.new-cards-container.idea-card .idea-source {
+  color: #1e90ff;
+  font-weight: bold;
+}
+
+.new-cards-container.quote-card .quote-source {
+  color: #e74c3c;
+  font-weight: bold;
+}
+
+.new-cards-container.idea-card .idea-source,
+.new-cards-container.idea-card .idea-date,
+.new-cards-container.quote-card .quote-source,
+.new-cards-container.quote-card .quote-date {
+  margin: 0;
+  position: relative;
+  display: flex;
+  align-items: center;
+}
+
+.new-cards-container.idea-card .idea-date,
+.new-cards-container.quote-card .quote-date {
+  font-weight: 400;
+  color: #b2b1b1;
+
+}
+
+.new-cards-container.idea-card .idea-source::after,
+.new-cards-container.idea-card .idea-date::after,
+.new-cards-container.quote-card .quote-source::after,
+.new-cards-container.quote-card .quote-date::after {
+  content: '|';
+  margin-left: 10px;
+  color: #b2b1b1;
+  top: -1.5px;
+  position: relative;
+  font-weight: 400;
+}
+
+/* 评分徽章容器样式 */
+.new-cards-container .rating {
+  position: absolute;
+  top: 8px;
+  right: 8px;
+  z-index: 3;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+/* 根据评分范围显示不同样式 */
+.rating[data-score="excellent"] .rating-badge {
+  position: relative;
+  display: flex;
+  text-shadow: 2px 2px 4px rgba(0, 0, 0, 10%);
+  align-items: center;
+  justify-content: center;
+  width: 55px;
+  height: 55px;
+  background-color: transparent;
+  border: none;
+}
+
+.poster-card-container .new-cards-container .rating .rating-badge {
+  background-color: transparent;
+}
+
+.rating[data-score="good"] .simple-badge {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  background-color: transparent;
+  padding: 4px 8px;
+  border-radius: 4px;
+  top: -18px;
+  right: -10.5px;
+  font-size: 20px;
+  position: absolute;
+}
+
+.rating[data-score="good"] .rating-badge,
+.rating[data-score="good"].poor {
+  display: none;
+}
+
+.rating[data-score="poor"] {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  background-color: transparent;
+  padding: 4px 8px;
+  border-radius: 4px;
+  color: #999;
+  top: -5.5px;
+  right: 4px;
+  font-size: 20px;
+  position: absolute;
+}
+
+.rating[data-score="poor"] .rating-badge,
+.rating[data-score="poor"] .simple-badge {
+  display: none;
+}
+
+/* 优秀级评分徽章（7.0-10分）*/
+.rating-badge {
+  top: -20px;
+  right: -9px;
+  border-radius: 4px;
+  font-weight: bold;
+  font-size: 18px;
+  font-family: Georgia, serif;
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  background-color: transparent;
+}
+
+.rating-badge .rating-score {
+  position: absolute;
+  font-size: 18px;
+  font-weight: bold;
+  color: #f1c54c;
+  z-index: 2;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 100%;
+  height: 100%;
+  transform: translateY(-3px);
+}
+
+.simple-badge .simple-score {
+  position: absolute;
+  top: 5px;
+  right: 0px;
+  font-size: 18px;
+  font-weight: bold;
+  color: #c0c0c0;
+  z-index: 2;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 100%;
+  height: 100%;
+  transform: translateY(-3px);
+
+}
+
+
+/* 中等级评分徽章（5.0-6.9分）*/
+.simple-badge {
+  width: 58px;
+  height: 36px;
+}
+
+/* 扑街级评分（<5.0分）*/
+.rating.poor {
+  font-size: 14px;
+  color: #999;
+  background: none;
+}
+
+/* 收录时间样式 */
+.collection-date {
+  font-size: 12px;
+  color: var(--text-muted);
+  opacity: 0.7;
+  padding: 2px 6px;
+  border-radius: 4px;
+  font-family: fantasy;
+  margin-left: 8px;
+  display: inline-flex;
+  align-items: center;
+  background: rgba(0, 0, 0, 0.15);
+}
+
+.new-cards-container .collection-date {
+  font-size: 0.9em;
+  color: rgb(255, 255, 255);
+  opacity: 0.7;
+  padding: 2px 8px;
+  border-radius: 4px;
+  display: inline-flex;
+  align-items: center;
+  margin-left: 8px;
+  background: rgba(0, 0, 0, 0.15);
+}
+
+/* 卡片ID样式 */
+.new-cards-container .card-id {
+  position: absolute;
+  top: -3px;
+  right: 37%;
+  font-size: 0.8em;
+  color: rgba(245, 216, 179, 0);
+  background-color: transparent;
+  padding: 4px 8px;
+  border-radius: 4px;
+  z-index: 2;
+  transition: all 0.3s ease;
+  cursor: pointer;
+}
+
+/* 阅读状态指示器样式 */
+.new-cards-container .status-indicator {
+  position: absolute;
+  top: 54px;
+  right: 23px;
+  padding: 4px 8px;
+  border-radius: 4px;
+  font-size: 12px;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  z-index: 2;
+}
+
+.new-cards-container .status-indicator.read {
+  background-color: rgba(76, 175, 80, 0.2);
+  color: #4CAF50;
+}
+
+.new-cards-container .status-indicator.read:hover {
+  background-color: rgba(76, 175, 80, 0.3);
+}
+
+.new-cards-container .status-indicator.unread {
+  background-color: rgba(255, 152, 0, 0.2);
+  color: #FF9800;
+}
+
+.new-cards-container .status-indicator.unread:hover {
+  background-color: rgba(255, 152, 0, 0.3);
+}
+
+/* 卡片总览页面反链容器样式 */
+.card-backlinks-container {
+  position: absolute;
+  bottom: 10px;
+  right: 10px;
+  z-index: 10;
+}
+
+/* 反链图标样式 */
+.card-backlinks-icon {
+  width: 24px;
+  height: 24px;
+  background-color: var(--background-secondary);
+  border-radius: 50%;
+  cursor: pointer;
+  display: flex;
+  opacity: 0;
+  transform: translateY(20px);
+  transition: all 0.3s ease;
+}
+
+.new-cards-container:hover .card-backlinks-icon {
+  opacity: 1;
+  transform: translateY(0);
+  align-items: center;
+  justify-content: center;
+}
+
+/* 反链下拉菜单样式 */
+.card-backlinks-dropdown {
+  display: none;
+  position: absolute;
+  bottom: 100%;
+  right: 0;
+  background: var(--background-primary);
+  border: 1px solid var(--background-modifier-border);
+  border-radius: 4px;
+  min-width: 150px;
+  max-height: 200px;
+  overflow-y: auto;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+}
+
+.card-backlinks-dropdown.show {
+  display: block;
+}
+
+/* 反链项目样式 */
+.backlink-item {
+  padding: 4px 12px;
+  cursor: pointer;
+  color: var(--text-normal);
+  font-size: 13px;
+}
+
+.backlink-item:hover {
+  background-color: var(--background-modifier-hover);
+}
+
+/* 反链分类标题样式 */
+.backlink-section-title {
+  padding: 4px 12px;
+  font-size: 0.85em;
+  font-weight: bold;
+  color: var(--text-muted);
+  border-bottom: 1px solid var(--background-modifier-border);
+  background: antiquewhite;
+}
+
+/* 如果不是第一个标题，添加上边距 */
+.backlink-section-title:not(:first-child) {
+  margin-top: 8px;
+  padding-top: 6px;
+}
+
+/* 鼠标悬停时显示卡片ID */
+.new-cards-container:hover .card-id {
+  color: rgba(245, 216, 179, 0.8);
+}
+
+/* 卡片背景容器样式 */
+.new-cards-container .background-container {
+  position: absolute;
+  width: 110%;
+  height: 110%;
+  top: -5%;
+  left: -5%;
+  z-index: 0;
+  opacity: 1;
+}
+
+/* 卡片背景图片样式 */
+.new-cards-container .background-container img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  filter: blur(0.8rem) brightness(0.8) saturate(0.9) contrast(0.95);
+  background-position: center;
+  background-size: cover;
+}
+
+/* 封面和信息容器的共同样式 */
+.new-cards-container .cover-container,
+.new-cards-container .info-container {
+  position: relative;
+  z-index: 1;
+}
+
+/* 封面容器样式 */
+.new-cards-container .cover-container {
+  flex: 0 0 100px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin-right: 16px;
+  max-height: 200px;
+  align-self: center;
+}
+
+.movie-card .cover-container,
+.tv-card .cover-container,
+.anime-card .cover-container,
+.book-card .cover-container {
+  aspect-ratio: 2/3;
+  max-height: none;
+  width: 133.33px;
+}
+
+.music-card .cover-container {
+  aspect-ratio: 1/1;
+  max-height: none;
+  width: 133.33px;
+}
+
+.new-cards-container .cover-container svg {
+  width: 100%;
+  height: auto;
+  color: var(--text-muted);
+}
+
+.new-cards-container .cover-container .cover-image {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  border-radius: 4px;
+}
+
+.new-cards-container .info-container {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  align-items: flex-start;
+}
+
+.new-cards-container .card-info-title {
+  margin: 0 0 7px;
+  font-size: 1.2em;
+  font-weight: 400;
+  color: var(--card-title-color);
+  line-height: 0.8;
+  letter-spacing: 0.02em;
+  text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.5);
+  max-width: 100%;
+  word-wrap: break-word;
+}
+
+.new-cards-container .artist,
+.new-cards-container .author,
+.new-cards-container .director {
+  font-size: 0.9em;
+  color: var(--card-creator-color);
+  text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.5);
+  line-height: 1.2;
+  margin-bottom: 4px;
+}
+
+.new-cards-container .year {
+  font-size: 13px;
+  color: var(--card-year-color);
+  text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.5);
+  margin-bottom: 3px;
+  font-weight: 600;
+  opacity: 0.85;
+  font-family: auto;
+}
+
+.new-cards-container .card-info-description {
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  line-height: 1.4em;
+  max-height: 2.8em;
+  word-break: break-all;
+  white-space: normal;
+  margin-block-start: 0px;
+  margin-block-end: 6px;
+  text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.5);
+  color: rgb(214, 191, 162);
+}
+
+/* 标签容器样式 */
+.new-cards-container .card-tags-container {
+  margin-top: 0;
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 6px;
+  width: fit-content;
+  background-color: transparent;
+}
+
+/* 年份容器样式 - 类似于标签容器 */
+.new-cards-container .year-container {
+  margin-top: 0;
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 6px;
+  width: fit-content;
+  background-color: transparent;
+}
+
+/* 年份容器中的专辑样式 */
+.new-cards-container .year-container .album {
+  font-size: 13px;
+  color: var(--card-year-color);
+  text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.5);
+  opacity: 0.85;
+  margin-left: 10px;
+  font-style: italic;
+}
+
+/* 单个标签样式 */
+.new-cards-container .tag {
+  font-size: var(--tag-size);
+  color: var(--tag-color);
+  text-decoration: none;
+  padding: 2px 4px;
+  border-radius: 4px;
+  background-color: rgb(240, 238, 236);
+  transition: all 0.2s ease;
+}
+
+/* 更多标签按钮样式 */
+.new-cards-container .tag.more-tags-button {
+  background-color: rgba(0, 0, 0, 0.1);
+  color: var(--text-muted);
+  font-weight: bold;
+  cursor: pointer;
+}
+
+.new-cards-container .tag.more-tags-button:hover {
+  background-color: rgba(0, 0, 0, 0.2);
+  color: var(--text-normal);
+}
+
+.new-cards-container.clickable {
+  cursor: pointer;
+}
+
+.new-cards-container.clickable:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
+  opacity: 0.95;
+}
+
+.new-cards-container .tag:hover {
+  color: var(--tag-color-hover);
+  background-color: rgb(240, 238, 236);
+  scale: 1.1;
+  transition: all 0.2s ease;
+}
+
+/* 元数据容器样式 */
+.new-cards-container .meta-container {
+
+  font-size: 0.9em;
+  color: var(--card-meta-color);
+  margin: 0 0 3px;
+  line-height: 1.4;
+  display: inline-flex;
+}
+
+.meta-container .meta-item {
+  margin-right: 20px;
+}
+
+/* 音乐卡片特定样式 */
+.music-card .cover-container svg {
+  padding: 12px;
+}
+
+/* 书籍卡片特定样式 */
+.book-card .cover-container svg {
+  padding: 8px;
+}
+
+.movie-card .cover-container svg,
+.tv-card .cover-container svg,
+.anime-card .cover-container svg {
+  padding: 6px;
+}
+
+/* === 小鸟按钮动画效果---小鸟图案部分 === */
+
+@keyframes wakeup {
+  0% {
+    height: 28px;
+    border-radius: 70px 70px 40px 40px / 48px 48px 30px 30px;
+  }
+
+  100% {
+    height: 40px;
+    border-radius: 40px 40px 40px 40px / 48px 48px 30px 30px;
+  }
+}
+
+@keyframes eye {
+  0% {
+    top: -6px;
+    width: 6px;
+    height: 6px;
+  }
+
+  30% {
+    top: -6px;
+    width: 6px;
+    height: 6px;
+  }
+
+  32% {
+    top: -4px;
+    width: 8px;
+    height: 2px;
+  }
+
+  34% {
+    top: -6px;
+    width: 6px;
+    height: 6px;
+  }
+
+  70% {
+    top: -6px;
+    width: 6px;
+    height: 6px;
+  }
+
+  72% {
+    top: -4px;
+    width: 8px;
+    height: 2px;
+  }
+
+  74% {
+    top: -6px;
+    width: 6px;
+    height: 6px;
+  }
+
+  76% {
+    top: -4px;
+    width: 8px;
+    height: 2px;
+  }
+
+  78% {
+    top: -6px;
+    width: 6px;
+    height: 6px;
+  }
+
+  100% {
+    top: -6px;
+    width: 6px;
+    height: 6px;
+  }
+}
+
+@keyframes eye2 {
+  0% {
+    top: -6px;
+    width: 6px;
+    height: 6px;
+  }
+
+  10% {
+    transform: translateX(0);
+  }
+
+  12% {
+    transform: translateX(3px);
+  }
+
+  20% {
+    top: -6px;
+    width: 6px;
+    height: 6px;
+  }
+
+  22% {
+    top: -4px;
+    width: 8px;
+    height: 2px;
+  }
+
+  24% {
+    top: -6px;
+    width: 6px;
+    height: 6px;
+  }
+
+  25% {
+    transform: translateX(3px);
+  }
+
+  27% {
+    transform: translateX(0);
+  }
+
+  74% {
+    top: -6px;
+    width: 6px;
+    height: 6px;
+    transform: translateX(0);
+  }
+
+  76% {
+    top: -4px;
+    width: 8px;
+    height: 2px;
+    transform: translateX(3px);
+  }
+
+  78% {
+    top: -6px;
+    width: 6px;
+    height: 6px;
+  }
+
+  80% {
+    top: -4px;
+    width: 8px;
+    height: 2px;
+  }
+
+  82% {
+    top: -6px;
+    width: 6px;
+    height: 6px;
+  }
+
+  85% {
+    transform: translateX(3px);
+  }
+
+  87% {
+    transform: translateX(0);
+  }
+
+  100% {
+    top: -6px;
+    width: 6px;
+    height: 6px;
+    transform: translateX(0);
+  }
+}
+
+@keyframes sleep {
+  0% {
+    height: 30px;
+    border-radius: 60px 60px 40px 40px / 48px 48px 30px 30px;
+  }
+
+  100% {
+    height: 26px;
+    border-radius: 70px 70px 40px 40px / 48px 48px 30px 30px;
+  }
+}
+
+.save-button-container.quick-note-button.primary:hover .birdBox .wakeup {
+  animation: wakeup 0.2s ease forwards;
+}
+
+.save-button-container.quick-note-button.primary:hover .birdBox .wakeup .birdFace::before,
+.save-button-container.quick-note-button.primary:hover .birdBox .wakeup .birdFace::after {
+  width: 6px;
+  height: 6px;
+  animation: eye 5s linear infinite;
+}
+
+.save-button-container.quick-note-button.primary:hover .birdBox .wakeup:nth-child(2) .birdFace::before,
+.save-button-container.quick-note-button.primary:hover .birdBox .wakeup:nth-child(2) .birdFace::after {
+  animation: eye2 5s linear infinite;
+}
+
+.save-button-container .bird {
+  animation: sleep 1s ease infinite alternate;
+}
+
+.save-button-container .bird .birdFace {
+  position: absolute;
+  top: 15px;
+  width: 12px;
+  height: 6px;
+  background-color: #ff8108;
+  border-radius: 50% 50% 50% 50% / 78% 78% 22% 22%;
+}
+
+.save-button-container .bird .birdFace::before,
+.save-button-container .bird .birdFace::after {
+  content: "";
+  position: absolute;
+  top: -4px;
+  width: 8px;
+  height: 2px;
+  border-radius: 4px;
+  background: #000;
+}
+
+.save-button-container .bird .birdFace::before {
+  left: -5px;
+}
+
+.save-button-container .bird .birdFace::after {
+  right: -5px;
+}
+
+.save-button-container .bird::before {
+  content: "";
+  position: absolute;
+  top: -12px;
+  left: 16px;
+  width: 12px;
+  height: 12px;
+  background: #ff8108;
+  clip-path: path("M10.23,3.32c-3.54,.63-5.72,2.51-7.02,4.23-.33-1.58-.34-3.54,.93-5.12,.52-.65,.41-1.59-.24-2.11C3.24-.19,2.29-.08,1.77,.57c-3.82,4.77-.31,11.11-.13,11.42,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0-.01-.02,2.49,.04,2.52,0,.1-.14,1.54-4.82,6.59-5.71,.82-.14,1.37-.92,1.22-1.74s-.94-1.36-1.75-1.21Z"
+    );
+}
+
+.save-button-container .birdBox {
+  position: absolute;
+  top: -54px;
+  left: 0;
+  right: 0;
+  margin: 0 auto;
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-end;
+  width: 136px;
+  height: 56px;
+  pointer-events: none;
+}
+
+.save-button-container .bird {
+  width: 42px;
+  height: 28px;
+  box-sizing: border-box;
+  display: flex;
+  justify-content: center;
+  border: solid 2px #000;
+  background-color: #f4cf47;
+  border-radius: 60px 60px 40px 40px / 48px 48px 30px 30px;
+  position: relative;
+  animation: sleep 1s ease infinite alternate;
+}
+
+/* 自定义元数据字段样式 */
+.meta-header-container {
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  justify-content: flex-start;
+  gap: 15px;
+  margin-top: 20px;
+  margin-bottom: 12px;
+}
+
+.meta-section-title {
+  margin: 0;
+  font-size: 1.2em;
+  color: var(--text-normal);
+}
+
+.meta-fields-container {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  margin-bottom: 15px;
+}
+
+.meta-field-group {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.meta-key-input,
+.meta-value-input {
+  padding: 8px;
+  border: 1px solid var(--background-modifier-border);
+  border-radius: 4px;
+  background-color: var(--background-primary);
+  color: var(--text-normal);
+}
+
+.meta-key-input {
+  flex: 1;
+  max-width: 150px;
+}
+
+.meta-value-input {
+  flex: 2;
+}
+
+.meta-remove-button {
+  background-color: var(--background-modifier-error);
+  color: white;
+  border: none;
+  border-radius: 50%;
+  width: 24px;
+  height: 24px;
+  font-size: 16px;
+  line-height: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  padding: 0;
+}
+
+.meta-remove-button:hover {
+  background-color: var(--text-error);
+}
+
+.meta-add-button {
+  background-color: var(--interactive-accent);
+  color: var(--text-on-accent);
+  border: none;
+  border-radius: 4px;
+  padding: 6px 12px;
+  font-size: 14px;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+}
+
+.meta-add-button::before {
+  content: "+";
+  margin-right: 5px;
+  font-size: 16px;
+  font-weight: bold;
+}
+
+.meta-add-button:hover {
+  background-color: var(--interactive-accent-hover);
+}
+
+/* 快速记录表单行样式 */
+.form-row {
+  display: flex;
+  flex-direction: row;
+  gap: 10px;
+  /* 减小字段之间的间距 */
+  width: 100%;
+}
+
+.form-row .form-group-inline {
+  flex: 1;
+  min-width: 0;
+  margin-bottom: 0;
+}
+
+.form-row label {
+  min-width: 38px;
+  display: inline-block;
+  margin-right: 3px;
+  /* 减小标签和输入框之间的距离 */
+}
+
+.form-row input,
+.form-row select {
+  width: 100%;
+}
+
+/* 优化现有表单样式 */
+.form-group-inline {
+  display: flex;
+  align-items: center;
+}
+
+/* 清除全部筛选按钮样式 */
+
+.filter-clear-all-button {
+  background-color: var(--text-error);
+  color: white;
+  border: none;
+  border-radius: 4px;
+  padding: 4px 8px;
+  margin-left: 10px;
+  font-size: 12px;
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  transition: background-color 0.2s ease;
+}
+
+.filter-clear-all-button:hover {
+  background-color: var(--text-error-hover);
+}
+
+.filter-clear-all-button::before {
+  content: "×";
+  margin-right: 3px;
+  font-size: 14px;
+  font-weight: bold;
+}
+
+/* 元数据筛选样式 */
+.meta-filter-container {
+  margin-top: 20px;
+  padding-top: 15px;
+  padding-bottom: 5px;
+  border-top: 1px dashed var(--background-modifier-border);
+  opacity: 0.9;
+}
+
+.meta-filter-title {
+  font-size: 14px;
+  margin: 0 0 10px 0;
+  color: var(--text-muted);
+  font-weight: normal;
+}
+
+.meta-field-container {
+  display: flex;
+  gap: 8px;
+  margin-bottom: 15px;
+  align-items: center;
+}
+
+.meta-field-select,
+.meta-operator-select {
+  padding: 4px 8px;
+  border: 1px solid var(--background-modifier-border);
+  border-radius: 4px;
+  background: var(--background-secondary);
+  color: var(--text-normal);
+  flex: 1;
+  font-size: 13px;
+}
+
+.meta-field-select {
+  max-width: 150px;
+}
+
+.meta-operator-select {
+  max-width: 100px;
+}
+
+.meta-value-input {
+  padding: 4px 8px;
+  border: 1px solid var(--background-modifier-border);
+  border-radius: 4px;
+  background: var(--background-secondary);
+  color: var(--text-normal);
+  flex: 2;
+  font-size: 13px;
+}
+
+.add-meta-filter-button {
+  padding: 4px 8px;
+  background-color: var(--background-modifier-border);
+  color: var(--text-normal);
+  border: none;
+  border-radius: 4px;
+  cursor: pointer;
+  transition: background-color 0.2s ease;
+  font-size: 13px;
+}
+
+.add-meta-filter-button:hover {
+  background-color: var(--background-modifier-hover);
+}
+
+/* 自定义元数据标签样式 */
+.filter-tag span:has(+ .remove-filter):contains("元数据:") {
+  color: var(--text-muted);
+  font-style: italic;
+}
+
+/* 豆瓣搜索按钮样式 */
+.douban-search-button-container {
+  margin-left: 10px;
+  display: flex;
+  align-items: center;
+}
+
+.douban-search-button {
+  background-color: #00b51d;
+  color: white;
+  border: none;
+  border-radius: 4px;
+  padding: 6px 12px;
+  cursor: pointer;
+  font-size: 12px;
+  transition: background-color 0.3s;
+}
+
+.douban-search-button:hover {
+  background-color: #00a01a;
+}
+
+.douban-search-button:disabled {
+  background-color: #cccccc;
+  cursor: not-allowed;
+}
+
+/* TMDB搜索按钮样式 */
+.tmdb-search-button-container {
+  margin-left: 10px;
+  display: flex;
+  align-items: center;
+}
+
+.tmdb-search-button {
+  background-color: #01b4e4;
+  color: white;
+  border: none;
+  border-radius: 4px;
+  padding: 6px 12px;
+  cursor: pointer;
+  font-size: 12px;
+  transition: background-color 0.3s;
+}
+
+.tmdb-search-button:hover {
+  background-color: #0088ad;
+}
+
+.tmdb-search-button:disabled {
+  background-color: #cccccc;
+  cursor: not-allowed;
+}
+
+/* TMDB 海报选择弹窗样式 */
+.tmdb-poster-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(120px, 1fr));
+  gap: 10px;
+  margin-top: 20px;
+  padding: 10px;
+  max-height: 400px;
+  overflow-y: auto;
+}
+
+.tmdb-poster-item {
+  cursor: pointer;
+  border: 2px solid transparent;
+  border-radius: 4px;
+  overflow: hidden;
+  transition: transform 0.2s, border-color 0.2s;
+}
+
+.tmdb-poster-item:hover {
+  transform: scale(1.05);
+  border-color: var(--interactive-accent);
+}
+
+.tmdb-poster-item img {
+  width: 100%;
+  height: auto;
+  display: block;
+}
+
+/* 豆瓣搜索结果弹窗样式 */
+.douban-search-modal {
+  position: fixed;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  width: 80%;
+  max-width: 600px;
+  max-height: 80vh;
+  background-color: var(--background-primary);
+  border-radius: 8px;
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.15);
+  z-index: 1000;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+}
+
+.douban-modal-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 12px 16px;
+  border-bottom: 1px solid var(--background-modifier-border);
+  background-color: var(--background-secondary);
+}
+
+.douban-modal-header h3 {
+  margin: 0;
+  font-size: 16px;
+  font-weight: 600;
+}
+
+.douban-modal-close {
+  background: none;
+  border: none;
+  font-size: 20px;
+  cursor: pointer;
+  color: var(--text-muted);
+  padding: 0 4px;
+}
+
+.douban-modal-close:hover {
+  color: var(--text-normal);
+}
+
+.douban-results-list {
+  overflow-y: auto;
+  padding: 12px;
+  max-height: calc(80vh - 50px);
+}
+
+.douban-result-item {
+  display: flex;
+  padding: 12px;
+  border-bottom: 1px solid var(--background-modifier-border);
+  align-items: center;
+  transition: background-color 0.2s;
+}
+
+.douban-result-item:last-child {
+  border-bottom: none;
+}
+
+.douban-result-item:hover {
+  background-color: var(--background-modifier-hover);
+}
+
+.douban-result-cover {
+  width: 60px;
+  height: 84px;
+  object-fit: cover;
+  border-radius: 4px;
+  margin-right: 16px;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+}
+
+.douban-result-cover-placeholder {
+  width: 60px;
+  height: 84px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background-color: var(--background-secondary);
+  border-radius: 4px;
+  margin-right: 16px;
+  color: var(--text-muted);
+  font-size: 12px;
+  text-align: center;
+}
+
+.douban-result-info {
+  flex: 1;
+}
+
+.douban-result-info h4 {
+  margin: 0 0 8px 0;
+  font-size: 16px;
+  font-weight: 500;
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+}
+
+.douban-result-id {
+  font-size: 12px;
+  font-weight: normal;
+  color: var(--text-muted);
+  background-color: var(--background-secondary);
+  padding: 2px 6px;
+  border-radius: 4px;
+  margin-left: 8px;
+}
+
+.douban-result-subinfo {
+  font-size: 13px;
+  color: var(--text-muted);
+  margin-bottom: 8px;
+}
+
+.douban-result-link-container {
+  margin-top: 8px;
+}
+
+.douban-result-link {
+  font-size: 12px;
+  color: var(--text-accent);
+  text-decoration: none;
+}
+
+.douban-result-link:hover {
+  text-decoration: underline;
+}
+
+.douban-no-results {
+  padding: 20px;
+  text-align: center;
+  color: var(--text-muted);
+  font-style: italic;
+}
+
+.douban-result-select {
+  background-color: var(--interactive-accent);
+  color: var(--text-on-accent);
+  border: none;
+  border-radius: 4px;
+  padding: 6px 12px;
+  cursor: pointer;
+  font-size: 12px;
+  margin-left: 12px;
+  transition: background-color 0.3s;
+  white-space: nowrap;
+}
+
+.douban-result-select:hover {
+  background-color: var(--interactive-accent-hover);
+}
+
+/* 表单行样式 
+.form-row {
+    display: flex;
+    margin-bottom: 10px;
+    align-items: flex-start;
+}
+
+.form-group-inline {
+    flex: 1;
+    margin-right: 10px;
+    display: flex;
+    flex-direction: column;
+}
+
+.form-group-inline:last-child {
+    margin-right: 0;
+}
+    */
+
+
+
+
+/* 显示模式切换按钮样式 */
+.gallery-display-mode-toggle {
+  padding: 6px 12px;
+  border-radius: 4px;
+  background-color: var(--interactive-accent);
+  color: var(--text-on-accent);
+  cursor: pointer;
+  border: none;
+  font-size: 14px;
+  transition: background-color 0.2s ease;
+}
+
+.gallery-display-mode-toggle:hover {
+  background-color: var(--interactive-accent-hover);
+}
+
+/* 海报墙模式样式 */
+.gallery-cards-container.poster-mode {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(180px, 1fr));
+  gap: 15px;
+  justify-content: center;
+}
+
+/* 卡片显示模式样式 */
+.cards-gallery-container[data-display-mode="card"] .gallery-cards-container {
+  grid-template-columns: repeat(auto-fill, minmax(500px, 1fr));
+}
+
+/* 海报墙模式 - 3列 */
+.cards-gallery-container[data-display-mode="poster"][data-columns="3"] .gallery-cards-container {
+  grid-template-columns: repeat(3, 1fr);
+}
+
+/* 海报墙模式 - 4列 */
+.cards-gallery-container[data-display-mode="poster"][data-columns="4"] .gallery-cards-container {
+  grid-template-columns: repeat(4, 1fr);
+}
+
+/* 海报墙模式下的卡片样式 - 默认用于影视卡片 */
+.poster-card-container {
+  height: 100%;
+  overflow: hidden;
+  position: relative;
+  border-radius: 8px;
+  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.15);
+  transition: transform 0.3s ease, box-shadow 0.3s ease;
+  margin: 0;
+  /* 设置海报比例 */
+  aspect-ratio: 2/3;
+}
+
+/* 音乐卡片的特殊海报墙样式 - 使用1:1正方形比例 */
+.poster-card-container.music-card {
+  aspect-ratio: 1/1 !important;
+  width: auto;
+  max-width: none;
+  min-width: 0;
+  height: auto;
+  max-height: none;
+  min-height: 0;
+}
+
+/* 隐藏海报墙样式下音乐卡片上的卡片ID */
+.poster-card-container.music-card .new-cards-container .card-id {
+  display: none;
+}
+
+
+.poster-card-container:hover {
+  transform: translateY(-5px);
+  box-shadow: 0 8px 16px rgba(0, 0, 0, 0.2);
+}
+
+/* 海报墙模式下卡片内容样式调整 */
+.poster-card-container .new-cards-container {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+  width: 100%;
+  margin: 0;
+  padding: 0;
+  border: none;
+  border-radius: 8px;
+  overflow: hidden;
+  box-shadow: none;
+  position: relative;
+}
+
+/* 海报墙模式下的封面容器样式 */
+.poster-card-container .new-cards-container .cover-container {
+  width: 100%;
+  height: 100%;
+  min-width: unset;
+  max-width: unset;
+  margin: 0;
+  border-radius: 8px;
+  position: absolute;
+  top: 0;
+  left: 0;
+}
+
+/* 确保音乐卡片内部的封面容器保持正方形 */
+.poster-card-container.music-card .new-cards-container .cover-container {
+  width: 100%;
+  height: 100%;
+  border-radius: 8px;
+}
+
+.poster-card-container .new-cards-container .cover-container .cover-image {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  border-radius: 8px;
+}
+
+/* 音乐墙内的大封面卡片样式 */
+.gallery-cards-container.music-wall .poster-card-container {
+  width: var(--album-size);
+  height: var(--album-size);
+  aspect-ratio: 1/1 !important;
+  margin: 0 auto;
+}
+
+/* 海报墙模式下的信息容器样式 - 覆盖在海报上 */
+.poster-card-container .new-cards-container .info-container {
+  padding: 10px;
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  background: linear-gradient(transparent, rgba(0, 0, 0, 0.8));
+  color: white;
+  z-index: 2;
+  display: flex;
+  flex-direction: column;
+  border-radius: 0 0 8px 8px;
+}
+
+/* 音乐卡片底部信息条 */
+.poster-card-container.music-card .new-cards-container .info-container {
+  background: linear-gradient(transparent, rgba(0, 0, 0, 0.85));
+  padding: 25px 8px 8px 8px;
+}
+
+/* 海报墙模式下隐藏描述文本 */
+.poster-card-container .new-cards-container .card-info-description {
+  display: none;
+}
+
+/* 海报墙模式下标题样式 */
+.poster-card-container .new-cards-container .card-info-title {
+  font-size: 14px;
+  margin-bottom: 5px;
+  max-height: 2.8em;
+  text-overflow: ellipsis;
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  color: white;
+  text-shadow: 1px 1px 2px rgba(0, 0, 0, 0.8);
+}
+
+/* 音乐卡片特殊的标题样式 */
+.poster-card-container.music-card .new-cards-container .card-info-title {
+  font-size: 13px;
+  max-height: 2.4em;
+  line-height: 1.2;
+}
+
+/* 海报墙模式下评分和年份样式 */
+.poster-card-container .new-cards-container .year {
+  font-size: 12px;
+  opacity: 0.9;
+  color: rgba(255, 255, 255, 0.9);
+  text-shadow: 1px 1px 2px rgba(0, 0, 0, 0.8);
+  margin-bottom: 0;
+}
+
+.poster-card-container .new-cards-container .card-id {
+  position: absolute;
+  right: 28.5%;
+  top: 1%;
+}
+
+/* 海报墙模式下的评分样式 */
+.poster-card-container .new-cards-container .rating {
+  position: absolute;
+  top: 10px;
+  right: 10px;
+  background-color: transparent;
+  padding: 3px 8px;
+  border-radius: 4px;
+  font-size: 14px;
+  font-weight: bold;
+  color: white;
+  z-index: 10;
+  text-shadow: 1px 1px 3px rgba(0, 0, 0, 0.8);
+  opacity: 1;
+  transform: none;
+}
+
+/* 海报墙模式下的完成状态样式 */
+.poster-card-container .new-cards-container .status-indicator {
+  position: absolute;
+  top: 10px;
+  bottom: auto;
+  right: auto;
+  left: 10px;
+  padding: 3px 6px;
+  border-radius: 4px;
+  font-size: 12px;
+  font-weight: 600;
+  z-index: 5;
+  background-color: rgba(0, 0, 0, 0.4);
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.3);
+}
+
+/* 海报墙模式下的作者/导演/艺术家样式 */
+.poster-card-container .new-cards-container .artist,
+.poster-card-container .new-cards-container .author,
+.poster-card-container .new-cards-container .director {
+  font-size: 12px;
+  opacity: 0.9;
+  color: rgba(255, 255, 255, 0.9);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  text-shadow: 1px 1px 2px rgba(0, 0, 0, 0.8);
+}
+
+/* 音乐卡片艺术家名称样式 */
+.poster-card-container.music-card .new-cards-container .artist {
+  font-size: 11px;
+}
+
+/* 海报墙模式下的标签样式 */
+.poster-card-container .new-cards-container .card-tags-container {
+  display: none;
+  /* 隐藏标签以简化界面 */
+}
+
+/* 响应式布局调整 */
+@media screen and (max-width: 1200px) {
+  .cards-gallery-container[data-display-mode="poster"][data-columns="4"] .gallery-cards-container {
+    grid-template-columns: repeat(3, 1fr);
+  }
+}
+
+@media screen and (max-width: 900px) {
+
+  .cards-gallery-container[data-display-mode="poster"][data-columns="3"] .gallery-cards-container,
+  .cards-gallery-container[data-display-mode="poster"][data-columns="4"] .gallery-cards-container {
+    grid-template-columns: repeat(2, 1fr);
+  }
+}
+
+@media screen and (max-width: 600px) {
+  .cards-gallery-container[data-display-mode="poster"] .gallery-cards-container {
+    grid-template-columns: repeat(2, 1fr) !important;
+  }
+}
+
+/* 海报墙模式下没有封面时的占位符样式 */
+.poster-card-container .new-cards-container .cover-container:not(:has(img)) {
+  background: linear-gradient(135deg, var(--background-secondary), var(--background-primary));
+  display: flex;
+  justify-content: center;
+  align-items: center;
+}
+
+.poster-card-container .new-cards-container .cover-container:not(:has(img)) svg {
+  width: 40%;
+  height: 40%;
+  opacity: 0.7;
+  color: var(--text-muted);
+}
+
+/* 为不同类型的卡片添加不同的背景色 */
+.poster-card-container .music-card .cover-container:not(:has(img)) {
+  background: linear-gradient(135deg, #3498db, #2c3e50);
+}
+
+.poster-card-container .book-card .cover-container:not(:has(img)) {
+  background: linear-gradient(135deg, #e74c3c, #c0392b);
+}
+
+.poster-card-container .movie-card .cover-container:not(:has(img)),
+.poster-card-container .tv-card .cover-container:not(:has(img)),
+.poster-card-container .anime-card .cover-container:not(:has(img)) {
+  background: linear-gradient(135deg, #9b59b6, #8e44ad);
+}
+
+/* 调整完成状态标签的样式 */
+.poster-card-container .new-cards-container .status-indicator.read {
+  background-color: rgba(39, 174, 96, 0.8);
+  color: white;
+}
+
+.poster-card-container .new-cards-container .status-indicator.unread {
+  background-color: rgba(41, 128, 185, 0.8);
+  color: white;
+}
+
+/* 添加海报悬停效果 - 显示更多信息 */
+.poster-card-container .new-cards-container::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: linear-gradient(transparent 60%, rgba(0, 0, 0, 0.4));
+  opacity: 0;
+  transition: opacity 0.3s ease;
+  z-index: 1;
+  border-radius: 8px;
+}
+
+.poster-card-container:hover .new-cards-container::before {
+  opacity: 1;
+}
+
+/* 悬停时显示信息 */
+.poster-card-container .new-cards-container .info-container {
+  transform: translateY(100%);
+  transition: transform 0.3s ease;
+  padding-top: 30px;
+}
+
+.poster-card-container:hover .new-cards-container .info-container {
+  transform: translateY(0);
+}
+
+
+
+/* ----- 音乐专辑墙特殊样式 ----- */
+/* 音乐专辑墙容器 */
+.cards-gallery-container[data-display-mode="poster"] .gallery-cards-container.music-wall {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
+  gap: 10px;
+  --album-size: min(150px, 20vw);
+}
+
+/* 三列布局下的音乐墙 */
+.cards-gallery-container[data-display-mode="poster"][data-columns="3"] .gallery-cards-container.music-wall {
+  grid-template-columns: repeat(6, 1fr);
+}
+
+/* 四列布局下的音乐墙 */
+.cards-gallery-container[data-display-mode="poster"][data-columns="4"] .gallery-cards-container.music-wall {
+  grid-template-columns: repeat(8, 1fr);
+}
+
+/* 音乐专辑卡片在音乐墙中的样式 */
+.gallery-cards-container.music-wall .poster-card-container {
+  width: var(--album-size);
+  height: var(--album-size);
+  aspect-ratio: 1/1 !important;
+  margin: 0 auto;
+}
+
+/* 大封面音乐卡片的样式 */
+.gallery-cards-container.music-wall .poster-card-container.music-card.large-cover {
+  width: calc(var(--album-size) * 2 + 10px);
+  height: calc(var(--album-size) * 2 + 10px);
+  grid-column: span 2;
+  grid-row: span 2;
+  z-index: 1;
+}
+
+/* 音乐墙响应式布局 */
+@media screen and (max-width: 1200px) {
+  .cards-gallery-container[data-display-mode="poster"][data-columns="4"] .gallery-cards-container.music-wall {
+    grid-template-columns: repeat(6, 1fr);
+  }
+}
+
+@media screen and (max-width: 900px) {
+
+  .cards-gallery-container[data-display-mode="poster"][data-columns="3"] .gallery-cards-container.music-wall,
+  .cards-gallery-container[data-display-mode="poster"][data-columns="4"] .gallery-cards-container.music-wall {
+    grid-template-columns: repeat(4, 1fr);
+  }
+}
+
+@media screen and (max-width: 600px) {
+  .cards-gallery-container[data-display-mode="poster"] .gallery-cards-container.music-wall {
+    grid-template-columns: repeat(3, 1fr) !important;
+  }
+}
+
+/* 修复音乐墙中卡片溢出的问题 */
+.gallery-cards-container.music-wall {
+  grid-auto-rows: min-content;
+}
+
+/* 网易云音乐搜索按钮 */
+.neteasemusic-search-button-container {
+  display: flex;
+  align-items: flex-end;
+  margin-left: 8px;
+  gap: 8px;
+}
+
+.neteasemusic-search-button {
+  background-color: #c20c0c;
+  color: white;
+  border: none;
+  border-radius: 4px;
+  padding: 4px 8px;
+  font-size: 12px;
+  cursor: pointer;
+  transition: background-color 0.3s;
+}
+
+.neteasemusic-search-button:hover {
+  background-color: #a70909;
+}
+
+/* 数据源选择下拉菜单样式 */
+.music-source-select {
+  padding: 4px 8px;
+  border: 1px solid var(--background-modifier-border);
+  border-radius: 4px;
+  background-color: var(--background-primary);
+  color: var(--text-normal);
+  font-size: 12px;
+  cursor: pointer;
+  outline: none;
+}
+
+.music-source-select:focus {
+  border-color: var(--interactive-accent);
+}
+
+/* 网易云音乐搜索结果模态框 */
+.neteasemusic-search-modal {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background-color: rgba(0, 0, 0, 0.5);
+  z-index: 1000;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+}
+
+.neteasemusic-modal-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 12px 16px;
+  border-bottom: 1px solid var(--background-modifier-border);
+}
+
+.neteasemusic-modal-header h3 {
+  margin: 0;
+  font-size: 16px;
+  font-weight: 600;
+}
+
+.neteasemusic-modal-close {
+  background: none;
+  border: none;
+  font-size: 20px;
+  cursor: pointer;
+  color: var(--text-muted);
+  padding: 0;
+  width: 24px;
+  height: 24px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 4px;
+}
+
+.neteasemusic-modal-close:hover {
+  background-color: var(--background-modifier-hover);
+}
+
+.neteasemusic-search-modal>div {
+  background-color: var(--background-primary);
+  border-radius: 8px;
+  width: 90%;
+  max-width: 600px;
+  max-height: 80vh;
+  overflow: hidden;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+}
+
+.neteasemusic-results-list {
+  overflow-y: auto;
+  max-height: calc(80vh - 50px);
+  padding: 0;
+}
+
+.neteasemusic-result-item {
+  display: flex;
+  padding: 12px 16px;
+  border-bottom: 1px solid var(--background-modifier-border);
+  align-items: center;
+}
+
+.neteasemusic-result-item:last-child {
+  border-bottom: none;
+}
+
+.neteasemusic-result-item:hover {
+  background-color: var(--background-modifier-hover);
+}
+
+.neteasemusic-result-cover {
+  width: 60px;
+  height: 60px;
+  object-fit: cover;
+  border-radius: 4px;
+  margin-right: 16px;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+}
+
+.neteasemusic-result-cover-placeholder {
+  width: 60px;
+  height: 60px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background-color: var(--background-secondary);
+  border-radius: 4px;
+  margin-right: 16px;
+  color: var(--text-muted);
+  font-size: 12px;
+  text-align: center;
+}
+
+.neteasemusic-result-info {
+  flex: 1;
+}
+
+.neteasemusic-result-info h4 {
+  margin: 0 0 8px 0;
+  font-size: 16px;
+  font-weight: 500;
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+
+.neteasemusic-result-id {
+  font-size: 12px;
+  font-weight: normal;
+  color: var(--text-muted);
+  background-color: var(--background-secondary);
+  padding: 2px 6px;
+  border-radius: 4px;
+}
+
+/* 数据源标签样式 */
+.neteasemusic-result-source {
+  font-size: 12px;
+  font-weight: normal;
+  color: white;
+  background-color: #c20c0c;
+  padding: 2px 6px;
+  border-radius: 4px;
+}
+
+/* 不同数据源的标签颜色 */
+.neteasemusic-result-source:contains("网易云音乐") {
+  background-color: #c20c0c;
+}
+
+.neteasemusic-result-source:contains("酷狗音乐") {
+  background-color: #00a0e9;
+}
+
+.neteasemusic-result-source:contains("酷我音乐") {
+  background-color: #ff8400;
+}
+
+.neteasemusic-result-source:contains("QQ音乐") {
+  background-color: #31c27c;
+}
+
+.neteasemusic-result-source:contains("咪咕音乐") {
+  background-color: #ff4500;
+}
+
+.neteasemusic-result-subinfo {
+  font-size: 13px;
+  color: var(--text-muted);
+  margin-bottom: 8px;
+}
+
+.neteasemusic-result-link-container {
+  margin-top: 8px;
+}
+
+.neteasemusic-result-link {
+  font-size: 12px;
+  color: #c20c0c;
+  text-decoration: none;
+}
+
+.neteasemusic-result-link:hover {
+  text-decoration: underline;
+}
+
+.neteasemusic-no-results {
+  padding: 20px;
+  text-align: center;
+  color: var(--text-muted);
+  font-style: italic;
+}
+
+.neteasemusic-result-select {
+  background-color: #c20c0c;
+  color: white;
+  border: none;
+  border-radius: 4px;
+  padding: 6px 12px;
+  cursor: pointer;
+  font-size: 12px;
+  margin-left: 12px;
+  transition: background-color 0.3s;
+  white-space: nowrap;
+}
+
+.neteasemusic-result-select:hover {
+  background-color: #a70909;
+}
+
+.new-cards-container .album {
+  font-size: 13px;
+  color: var(--card-year-color);
+  text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.5);
+  margin-bottom: 3px;
+  font-weight: 400;
+  opacity: 0.85;
+  font-family: auto;
+}
+
+/* 海报墙模式下专辑样式 */
+.poster-card-container .new-cards-container .album {
+  font-size: 12px;
+  opacity: 0.9;
+  color: rgba(255, 255, 255, 0.9);
+  text-shadow: 1px 1px 2px rgba(0, 0, 0, 0.8);
+  font-family: var(--font-interface);
+  font-style: normal;
+  margin-left: 0;
+}
+
+/* 在隐藏字段样式中添加album */
+.cards-gallery-container[data-hidden-fields*="album"] .album {
+  display: none !important;
+}
+
+/* 本地文件路径格式化按钮样式 */
+.local-file-button {
+  background-color: #4a6bdf;
+  color: white;
+  border: none;
+  border-radius: 4px;
+  padding: 4px 8px;
+  font-size: 12px;
+  cursor: pointer;
+  margin-left: 10px;
+  transition: background-color 0.3s;
+}
+
+.local-file-button:hover {
+  background-color: #3a5bdf;
+}
+
+/* Bangumi搜索按钮 */
+.bangumi-search-button-container {
+  margin-left: 10px;
+  display: flex;
+  align-items: center;
+}
+
+.bangumi-search-button {
+  background-color: #39ac6b;
+  color: #fff;
+  border: none;
+  padding: 5px 10px;
+  border-radius: 3px;
+  cursor: pointer;
+  font-size: 12px;
+  transition: background-color 0.2s;
+}
+
+.bangumi-search-button:hover {
+  background-color: #2c8f56;
+}
+
+.bangumi-search-button:disabled {
+  background-color: #7fd6a1;
+  cursor: not-allowed;
+}
+
+/* Bangumi搜索结果弹窗 */
+.bangumi-search-modal {
+  position: fixed;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  width: 80%;
+  max-width: 800px;
+  max-height: 80vh;
+  background-color: var(--background-primary);
+  border-radius: 5px;
+  box-shadow: 0 0 20px rgba(0, 0, 0, 0.3);
+  z-index: 1000;
+  display: flex;
+  flex-direction: column;
+}
+
+.bangumi-modal-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 15px 20px;
+  border-bottom: 1px solid var(--background-modifier-border);
+}
+
+.bangumi-modal-header h3 {
+  margin: 0;
+  color: #39ac6b;
+  font-size: 1.3em;
+}
+
+.bangumi-modal-close {
+  background: none;
+  border: none;
+  font-size: 24px;
+  cursor: pointer;
+  color: var(--text-muted);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
+  transition: background-color 0.2s;
+}
+
+.bangumi-modal-close:hover {
+  background-color: var(--background-modifier-hover);
+}
+
+.bangumi-results-list {
+  padding: 10px;
+  overflow-y: auto;
+  max-height: calc(80vh - 60px);
+}
+
+.bangumi-result-item {
+  display: flex;
+  padding: 15px;
+  border-bottom: 1px solid var(--background-modifier-border);
+  transition: background-color 0.2s;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.bangumi-result-item:last-child {
+  border-bottom: none;
+}
+
+.bangumi-result-item:hover {
+  background-color: var(--background-secondary);
+}
+
+.bangumi-result-cover {
+  width: 80px;
+  height: 120px;
+  margin-right: 15px;
+  overflow: hidden;
+  flex-shrink: 0;
+  border-radius: 4px;
+  background-color: var(--background-secondary);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.bangumi-result-cover-placeholder {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 100%;
+  height: 100%;
+  background-color: var(--background-modifier-cover);
+  color: var(--text-muted);
+  font-size: 12px;
+  text-align: center;
+}
+
+.bangumi-result-info {
+  flex: 1;
+  min-width: 0;
+}
+
+.bangumi-result-info h4 {
+  margin: 0 0 8px;
+  font-size: 16px;
+  font-weight: 600;
+  color: var(--text-normal);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.bangumi-result-id {
+  color: var(--text-muted);
+  font-size: 12px;
+  margin-top: 8px;
+  opacity: 0.7;
+}
+
+.bangumi-result-subinfo {
+  font-size: 13px;
+  color: var(--text-muted);
+  margin: 4px 0;
+}
+
+.bangumi-result-link-container {
+  margin-top: 12px;
+}
+
+.bangumi-result-link {
+  color: #39ac6b;
+  text-decoration: none;
+  font-size: 13px;
+  transition: color 0.2s;
+}
+
+.bangumi-result-link:hover {
+  color: #2c8f56;
+  text-decoration: underline;
+}
+
+.bangumi-no-results {
+  text-align: center;
+  padding: 30px;
+  color: var(--text-muted);
+  font-size: 16px;
+}
+
+.bangumi-result-select {
+  margin-top: 0;
+  padding: 6px 12px;
+  background-color: #39ac6b;
+  color: white;
+  border: none;
+  border-radius: 3px;
+  cursor: pointer;
+  font-size: 13px;
+  transition: background-color 0.2s;
+  white-space: nowrap;
+  flex-shrink: 0;
+}
+
+.bangumi-result-select:hover {
+  background-color: #2c8f56;
+}
+
+/* 番剧表单特殊处理 - 确保所有字段都使用内联布局 */
+.quick-note-container[data-card-type="anime"] .form-group:not(:has(#description)) {
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  gap: 10px;
+}
+
+.quick-note-container[data-card-type="anime"] .form-group:not(:has(#description)) label {
+  min-width: 40px;
+  margin-right: 10px;
+}
+
+.quick-note-container[data-card-type="anime"] .form-group:not(:has(#description)) input,
+.quick-note-container[data-card-type="anime"] .form-group:not(:has(#description)) select {
+  flex: 1;
+}
+
+/* 如果希望设置字段宽度限制，可以取消下面的注释 */
+/*
+.quick-note-container[data-card-type="anime"] .form-group:has(#rating) input {
+  max-width: 100px;
+}
+
+.quick-note-container[data-card-type="anime"] .form-group:has(#year) input {
+  max-width: 100px;
+}
+
+.quick-note-container[data-card-type="anime"] .form-group:has(#collection_date) input {
+  max-width: 120px;
+}
+*/
+
+/* 表单内联布局 - 适用于所有卡片类型 */
+.quick-note-container .form-group:not(:has(#description)):not(:has(#content)) {
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  gap: 4px;
+  /* 减小间距 */
+}
+
+.quick-note-container .form-group:not(:has(#description)):not(:has(#content)) label {
+  min-width: 40px;
+  margin-right: 3px;
+  /* 减小右边距 */
+}
+
+.quick-note-container .form-group:not(:has(#description)):not(:has(#content)) input,
+.quick-note-container .form-group:not(:has(#description)):not(:has(#content)) select {
+  flex: 1;
+}
+
+/* 优化表单标签和输入框的间距 */
+.quick-note-form .form-group input,
+.quick-note-form .form-group select,
+.quick-note-form .form-group textarea {
+  margin-left: 0;
+  width: 100%;
+}
+
+.bangumi-result-content {
+  flex: 1;
+  margin-right: 15px;
+  overflow: hidden;
+}
+
+/* 轮播容器样式 */
+.swiper-container {
+  width: 100%;
+  height: 320px;
+  margin: 0 auto 20px auto;
+  max-width: 800px;
+}
+
+/* 垂直轮播样式 */
+.vertical-swiper {
+  height: 400px;
+}
+
+.idea-quote-swiper {
+  height: auto;
+  min-height: 400px;
+  width: 90%;
+  margin: 0 auto 25px auto;
+  position: relative;
+  overflow: visible;
+}
+
+/* 提升箭头图标的可见度 */
+.idea-quote-swiper .swiper-button-next:after,
+.idea-quote-swiper .swiper-button-prev:after {
+  font-size: 20px;
+  font-weight: bold;
+  color: var(--text-accent);
+}
+
+/* 当鼠标悬停在轮播区域时显示按钮 */
+.idea-quote-swiper .swiper-button-next,
+.idea-quote-swiper .swiper-button-prev {
+  color: var(--text-accent);
+  background-color: rgba(255, 255, 255, 0.8);
+  width: 40px;
+  height: 40px;
+  border-radius: 50%;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  transition: all 0.3s ease;
+  position: absolute;
+  top: 50%;
+  transform: translateY(-50%);
+  z-index: 20;
+  /* 提高z-index确保在顶层 */
+  box-shadow: 0 2px 5px rgba(0, 0, 0, 0.2);
+  cursor: pointer;
+  /* 确保鼠标样式为指针 */
+}
+
+.swiper-section:hover .swiper-button-next,
+.swiper-section:hover .swiper-button-prev {
+  opacity: 1;
+}
+
+.idea-quote-swiper .swiper-button-next:hover,
+.idea-quote-swiper .swiper-button-prev:hover {
+  background-color: rgba(255, 255, 255, 0.95);
+  transform: translateY(-50%) scale(1.1);
+}
+
+/* 美化展示台样式 */
+.swiper-section::before {
+  content: "";
+  position: absolute;
+  top: 0;
+  left: 70px;
+  right: 70px;
+  bottom: 0;
+  background-color: var(--background-secondary);
+  border-radius: 10px;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+  z-index: -1;
+}
+
+/* 添加更明显的展示台边框 */
+.swiper-section::after {
+  content: "";
+  position: absolute;
+  top: 15px;
+  left: 85px;
+  right: 85px;
+  bottom: 15px;
+  border: 2px solid rgba(0, 0, 0, 0.05);
+  border-radius: 8px;
+  pointer-events: none;
+  z-index: -1;
+}
+
+/* 调整轮播容器内边距，确保展示台效果 */
+.swiper-section {
+  padding: 30px 80px;
+}
+
+.idea-quote-swiper .swiper-slide {
+  height: auto;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  padding: 15px;
+}
+
+/* 轮播内卡片样式调整 */
+.idea-quote-swiper .swiper-slide .new-cards-container.idea-card,
+.idea-quote-swiper .swiper-slide .new-cards-container.quote-card {
+  margin: 0 auto;
+  max-width: 700px;
+  width: 100%;
+  height: auto;
+  box-shadow: 0 8px 16px rgba(0, 0, 0, 0.15);
+  transform: none;
+  transition: transform 0.3s ease, box-shadow 0.3s ease;
+  padding: 36px 48px;
+  /* 与原始卡片保持一致的内边距 */
+}
+
+/* 当鼠标悬停在可点击的幻灯片上时 */
+.idea-quote-swiper .swiper-slide.clickable:hover .new-cards-container.idea-card,
+.idea-quote-swiper .swiper-slide.clickable:hover .new-cards-container.quote-card {
+  transform: translateY(-5px);
+  box-shadow: 0 12px 20px rgba(0, 0, 0, 0.2);
+}
+
+/* 轮播导航按钮位置调整 */
+.idea-quote-swiper .swiper-button-next,
+.idea-quote-swiper .swiper-button-prev {
+  color: var(--text-accent);
+  background-color: rgba(255, 255, 255, 0.8);
+  width: 40px;
+  height: 40px;
+  border-radius: 50%;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  transition: all 0.3s ease;
+  position: absolute;
+  top: 50%;
+  transform: translateY(-50%);
+  z-index: 10;
+  box-shadow: 0 2px 5px rgba(0, 0, 0, 0.2);
+}
+
+.idea-quote-swiper .swiper-button-next {
+  right: -50px;
+}
+
+.idea-quote-swiper .swiper-button-prev {
+  left: -50px;
+}
+
+/* 轮播展示台样式调整 */
+.swiper-section {
+  margin: 30px auto;
+  position: relative;
+  max-width: 900px;
+  /* 再加宽一些，确保按钮有足够空间 */
+  padding: 20px 60px;
+  /* 添加左右内边距给按钮腾出空间 */
+  box-shadow: none;
+  background-color: transparent;
+}
+
+/* 创建展示台背景效果 */
+.swiper-section::before {
+  content: "";
+  position: absolute;
+  top: 0;
+  left: 70px;
+  right: 70px;
+  bottom: 0;
+  background-color: var(--background-secondary);
+  border-radius: 10px;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+  z-index: -1;
+}
+
+/* 轮播内卡片样式调整 */
+.idea-quote-swiper .swiper-slide .new-cards-container.idea-card,
+.idea-quote-swiper .swiper-slide .new-cards-container.quote-card {
+  margin: 0 auto;
+  max-width: 700px;
+  width: 100%;
+  height: auto;
+  box-shadow: 0 8px 16px rgba(0, 0, 0, 0.15);
+  transform: none;
+  transition: transform 0.3s ease, box-shadow 0.3s ease;
+  padding: 36px 48px;
+  /* 与原始卡片保持一致的内边距 */
+}
+
+/* 轮播导航按钮位置调整 */
+.idea-quote-swiper .swiper-button-next,
+.idea-quote-swiper .swiper-button-prev {
+  color: var(--text-accent);
+  background-color: rgba(255, 255, 255, 0.8);
+  width: 40px;
+  height: 40px;
+  border-radius: 50%;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  transition: all 0.3s ease;
+  position: absolute;
+  top: 50%;
+  transform: translateY(-50%);
+  z-index: 10;
+  box-shadow: 0 2px 5px rgba(0, 0, 0, 0.2);
+}
+
+.idea-quote-swiper .swiper-button-next {
+  right: -50px;
+}
+
+.idea-quote-swiper .swiper-button-prev {
+  left: -50px;
+}
+
+/* 将轮播分页器移到底部 */
+.idea-quote-swiper .swiper-pagination {
+  bottom: 5px;
+  width: 100%;
+  text-align: center;
+}
+
+.idea-quote-swiper .swiper-pagination-bullet {
+  width: 10px;
+  height: 10px;
+  background-color: var(--text-muted);
+  opacity: 0.5;
+  margin: 0 5px;
+  transition: all 0.3s ease;
+}
+
+.idea-quote-swiper .swiper-pagination-bullet-active {
+  background-color: var(--text-accent);
+  opacity: 1;
+  width: 12px;
+  height: 12px;
+}
+
+.idea-quote-swiper .swiper-button-next,
+.idea-quote-swiper .swiper-button-prev {
+  color: var(--text-accent);
+  background-color: rgba(255, 255, 255, 0.5);
+  width: 40px;
+  height: 40px;
+  border-radius: 50%;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  transition: all 0.3s ease;
+}
+
+.idea-quote-swiper .swiper-button-next:hover,
+.idea-quote-swiper .swiper-button-prev:hover {
+  background-color: rgba(255, 255, 255, 0.8);
+  transform: scale(1.1);
+}
+
+.idea-quote-swiper .swiper-button-next:after,
+.idea-quote-swiper .swiper-button-prev:after {
+  font-size: 20px;
+}
+
+/* 使整个轮播部分更加突出 */
+.swiper-section {
+  margin: 30px auto;
+  position: relative;
+  max-width: 800px;
+  background-color: var(--background-secondary);
+  border-radius: 10px;
+  padding: 20px;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+}
+
+/* 分类标题 */
+.carousel-section-title {
+  font-size: 1.6em;
+  margin: 40px auto 10px auto;
+  color: var(--text-normal);
+  font-weight: 600;
+  display: block;
+  /* 改为块级元素 */
+  text-align: center;
+  position: relative;
+  max-width: 800px;
+  padding-left: 20px;
+  /* 为左侧装饰留出空间 */
+}
+
+
+
+/* 确保轮播区域的布局 */
+.swiper-section {
+  margin: 10px auto 40px auto;
+  /* 调整上下边距 */
+  position: relative;
+  max-width: 900px;
+  padding: 30px 80px;
+  box-shadow: none;
+  background-color: transparent;
+  overflow: hidden;
+  display: block;
+  /* 确保是块级元素 */
+}
+
+/* 适应不同屏幕尺寸的响应式设计 */
+@media (max-width: 768px) {
+  .carousel-section-title {
+    font-size: 1.4em;
+    margin: 30px auto 10px auto;
+  }
+
+  .swiper-section {
+    padding: 20px 60px;
+  }
+
+  .idea-quote-swiper .swiper-button-next,
+  .idea-quote-swiper .swiper-button-prev {
+    width: 40px;
+    height: 40px;
+  }
+}
+
+@media (max-width: 480px) {
+  .carousel-section-title {
+    font-size: 1.2em;
+  }
+
+  .swiper-section {
+    padding: 15px 40px;
+  }
+
+  .idea-quote-swiper .swiper-button-next,
+  .idea-quote-swiper .swiper-button-prev {
+    width: 30px;
+    height: 30px;
+  }
+
+  .idea-quote-swiper .swiper-button-next:after,
+  .idea-quote-swiper .swiper-button-prev:after {
+    font-size: 18px;
+  }
+}
+
+/* 闪念和摘录卡片在轮播中的样式 */
+.idea-card-carousel,
+.quote-card-carousel {
+  background-color: var(--background-secondary);
+  border-radius: 6px;
+  padding: 15px;
+  box-shadow: 0 1px 4px rgba(0, 0, 0, 0.1);
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+}
+
+.idea-card-carousel .card-header,
+.quote-card-carousel .card-header {
+  display: flex;
+  justify-content: space-between;
+  margin-bottom: 8px;
+}
+
+.idea-card-carousel .card-title,
+.quote-card-carousel .card-title {
+  font-weight: 600;
+  color: var(--text-accent);
+  font-size: 0.9em;
+}
+
+.idea-card-carousel .card-date,
+.quote-card-carousel .card-date {
+  font-size: 0.75em;
+  color: var(--text-muted);
+}
+
+.idea-card-carousel .card-content,
+.quote-card-carousel .card-content {
+  flex-grow: 1;
+  overflow-y: auto;
+  font-size: 0.95em;
+  line-height: 1.5;
+  margin-bottom: 8px;
+}
+
+.idea-card-carousel .card-footer,
+.quote-card-carousel .card-footer {
+  display: flex;
+  justify-content: space-between;
+  font-size: 0.8em;
+  color: var(--text-muted);
+}
+
+.idea-card-carousel .card-source,
+.quote-card-carousel .card-source {
+  font-style: italic;
+}
+
+.idea-card-carousel .card-tags,
+.quote-card-carousel .card-tags {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px;
+}
+
+.idea-card-carousel .card-tag,
+.quote-card-carousel .card-tag {
+  background-color: var(--background-modifier-border);
+  color: var(--text-muted);
+  padding: 1px 6px;
+  border-radius: 4px;
+  font-size: 0.8em;
+}
+
+/* 添加轮播分页器的外部容器样式 */
+.swiper-section {
+  position: relative;
+  margin-bottom: 30px;
+}
+
+/* 修改轮播的箭头按钮位置，使其垂直居中 */
+.idea-quote-swiper .swiper-button-next,
+.idea-quote-swiper .swiper-button-prev {
+  top: 50%;
+  transform: translateY(-50%);
+}
+
+/* 闪念和摘录卡片单独显示时的轮播样式 */
+.cards-gallery-container[data-card-type="idea-card"] .idea-quote-swiper,
+.cards-gallery-container[data-card-type="quote-card"] .idea-quote-swiper {
+  height: 350px;
+  margin-top: 20px;
+  max-width: 800px;
+  margin-left: auto;
+  margin-right: auto;
+}
+
+.cards-gallery-container[data-card-type="idea-card"] .carousel-section-title,
+.cards-gallery-container[data-card-type="quote-card"] .carousel-section-title {
+  max-width: 800px;
+  margin-left: auto;
+  margin-right: auto;
+}
+
+.cards-gallery-container[data-card-type="idea-card"] .idea-card-carousel,
+.cards-gallery-container[data-card-type="quote-card"] .quote-card-carousel {
+  background-color: var(--background-primary);
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+  border: 1px solid var(--background-modifier-border);
+}
+
+/* 增加单独显示模式下的内容区域高度 */
+.cards-gallery-container[data-card-type="idea-card"] .card-content,
+.cards-gallery-container[data-card-type="quote-card"] .card-content {
+  max-height: 250px;
+}
+
+/* 可点击卡片的悬停效果 */
+.idea-quote-swiper .swiper-slide.clickable {
+  cursor: pointer;
+  transition: transform 0.2s ease, box-shadow 0.2s ease;
+}
+
+.idea-quote-swiper .swiper-slide.clickable:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+}
+
+.idea-quote-swiper .swiper-slide.clickable:hover .idea-card-carousel,
+.idea-quote-swiper .swiper-slide.clickable:hover .quote-card-carousel {
+  background-color: var(--background-secondary-alt);
+}
+
+/* 闪念和摘录卡片在海报墙模式下的样式 */
+.cards-gallery-container[data-display-mode="poster"] .poster-card-container.idea-card,
+.cards-gallery-container[data-display-mode="poster"] .poster-card-container.quote-card {
+  background: var(--background-primary);
+  border-radius: 8px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+  height: auto;
+  min-height: 150px;
+  aspect-ratio: unset !important;
+}
+
+.cards-gallery-container[data-display-mode="poster"] .poster-card-container.idea-card .new-cards-container,
+.cards-gallery-container[data-display-mode="poster"] .poster-card-container.quote-card .new-cards-container {
+  padding: 15px;
+  height: 100%;
+}
+
+.cards-gallery-container[data-display-mode="poster"] .poster-card-container.idea-card .idea-content,
+.cards-gallery-container[data-display-mode="poster"] .poster-card-container.quote-card .quote-content {
+  max-height: 100px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  display: -webkit-box;
+  -webkit-line-clamp: 4;
+  -webkit-box-orient: vertical;
+  font-size: 14px;
+}
+
+/* 当选择了闪念或摘录卡片类型时，调整海报墙布局 */
+.cards-gallery-container[data-card-type="idea-card"][data-display-mode="poster"] .gallery-cards-container,
+.cards-gallery-container[data-card-type="quote-card"][data-display-mode="poster"] .gallery-cards-container {
+  grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+}
+
+/* 隐藏海报墙模式下的闪念和摘录卡片 */
+.cards-gallery-container[data-display-mode="poster"] .poster-card-container.idea-card,
+.cards-gallery-container[data-display-mode="poster"] .poster-card-container.quote-card {
+  /* display: none !important; */
+  /* 使用新的样式替代强制隐藏 */
+  width: 300px;
+  height: auto;
+  min-height: 150px;
+  aspect-ratio: unset !important;
+  background: var(--background-primary);
+  border-radius: 8px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+}
+
+/* 强化导航按钮样式 */
+.idea-quote-swiper .swiper-button-next,
+.idea-quote-swiper .swiper-button-prev {
+  color: var(--text-accent);
+  background-color: rgba(255, 255, 255, 0.9);
+  width: 50px;
+  height: 50px;
+  border-radius: 50%;
+  display: flex !important;
+  /* 强制显示 */
+  justify-content: center;
+  align-items: center;
+  position: absolute;
+  top: 50%;
+  transform: translateY(-50%);
+  z-index: 100 !important;
+  /* 最高层级 */
+  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
+  cursor: pointer !important;
+  /* 强制指针样式 */
+  opacity: 0.9;
+  transition: all 0.3s ease;
+  border: 2px solid transparent;
+}
+
+.idea-quote-swiper .swiper-button-next:hover,
+.idea-quote-swiper .swiper-button-prev:hover {
+  background-color: var(--text-accent);
+  color: white;
+  opacity: 1;
+  transform: translateY(-50%) scale(1.1);
+  border: 2px solid white;
+}
+
+/* 更明显的箭头图标 */
+.idea-quote-swiper .swiper-button-next:after,
+.idea-quote-swiper .swiper-button-prev:after {
+  font-size: 24px;
+  font-weight: bold;
+}
+
+/* 位置调整 */
+.idea-quote-swiper .swiper-button-next {
+  right: 10px;
+}
+
+.idea-quote-swiper .swiper-button-prev {
+  left: 10px;
+}
+
+/* 为轮播区域添加额外的交互提示 */
+.swiper-section:before {
+  content: "";
+  position: absolute;
+  top: 0;
+  left: 70px;
+  right: 70px;
+  bottom: 0;
+  background-color: var(--background-secondary);
+  border-radius: 10px;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+  z-index: -1;
+}
+
+/* 鼠标悬停时添加微妙的边框，暗示可交互 */
+.swiper-section:hover:before {
+  box-shadow: 0 6px 16px rgba(0, 0, 0, 0.15);
+}
+
+/* 确保轮播幻灯片正确显示 */
+.idea-quote-swiper .swiper-wrapper {
+  display: flex;
+  transition-property: transform;
+  box-sizing: content-box;
+  height: 100%;
+  /* 确保高度匹配父容器 */
+}
+
+.idea-quote-swiper .swiper-slide {
+  height: auto;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  padding: 15px;
+  flex-shrink: 0;
+  /* 防止幻灯片被压缩 */
+  width: 85%;
+  /* 设置宽度为小于100%，以便显示下一张卡片的一部分 */
+  position: relative;
+  transition-property: transform;
+  transition: opacity 0.4s ease, transform 0.4s ease;
+}
+
+/* 确保轮播中的卡片居中 */
+.idea-quote-swiper .swiper-slide .new-cards-container {
+  margin: 0 auto;
+  max-width: 700px;
+  width: 100%;
+  box-shadow: 0 8px 20px rgba(0, 0, 0, 0.1);
+  transition: all 0.3s ease;
+}
+
+/* 适当增加卡片之间的间距 */
+.idea-quote-swiper .swiper-slide {
+  padding: 20px 10px;
+}
+
+/* 确保整个轮播容器能正确显示水平滑动效果 */
+.swiper-section {
+  margin: 30px auto;
+  position: relative;
+  max-width: 900px;
+  padding: 30px 80px;
+  box-shadow: none;
+  background-color: transparent;
+  overflow: hidden;
+  /* 确保滑动内容不溢出 */
+}
+
+/* 美化轮播过渡动画 */
+.idea-quote-swiper .swiper-slide {
+  transition: transform 0.4s ease, opacity 0.4s ease;
+  opacity: 0.6;
+  transform: scale(0.9);
+}
+
+.idea-quote-swiper .swiper-slide-active {
+  opacity: 1;
+  transform: scale(1);
+}
+
+.idea-quote-swiper .swiper-slide-prev,
+.idea-quote-swiper .swiper-slide-next {
+  opacity: 0.8;
+  transform: scale(0.95);
+}
+
+/* 卡片内容过渡效果 */
+.idea-quote-swiper .swiper-slide .new-cards-container {
+  transition: all 0.3s ease;
+  box-shadow: 0 8px 20px rgba(0, 0, 0, 0.1);
+}
+
+.idea-quote-swiper .swiper-slide-active .new-cards-container {
+  box-shadow: 0 12px 25px rgba(0, 0, 0, 0.15);
+}
+
+/* 设置滑块过渡时的变换原点 */
+.idea-quote-swiper .swiper-wrapper {
+  transition-timing-function: ease-out;
+}
+
+/* 轮播容器内的幻灯片溢出处理 */
+.swiper-container-horizontal>.swiper-wrapper {
+  display: flex;
+}
+
+/* 增强轮播外观 */
+.swiper-section {
+  margin: 40px auto;
+  border-radius: 12px;
+}
+
+/* 更新分页器样式 */
+.idea-quote-swiper .swiper-pagination {
+  bottom: 0;
+  width: 100%;
+  text-align: center;
+}
+
+.idea-quote-swiper .swiper-pagination-bullet {
+  width: 10px;
+  height: 10px;
+  background-color: var(--text-muted);
+  opacity: 0.5;
+  margin: 0 5px;
+  transition: all 0.3s ease;
+}
+
+.idea-quote-swiper .swiper-pagination-bullet-active {
+  background-color: var(--text-accent);
+  opacity: 1;
+  width: 12px;
+  height: 12px;
+}
+
+/* 轮播区域容器 - 确保内容垂直排列 */
+.gallery-cards-container {
+  display: grid;
+  gap: 20px;
+  grid-template-columns: repeat(auto-fill, minmax(500px, 1fr));
+  grid-auto-flow: dense;
+  justify-content: start;
+}
+
+/* 创建轮播区域特殊布局 */
+.gallery-cards-container .carousel-section-title,
+.gallery-cards-container .swiper-section {
+  grid-column: 1 / -1;
+  /* 跨越所有列 */
+  width: 100%;
+}
+
+/* 轮播标题样式 - 确保始终在上方 */
+.carousel-section-title {
+  font-size: 1.6em;
+  margin: 40px auto 10px auto;
+  color: var(--text-normal);
+  font-weight: 600;
+  display: block;
+  /* 改为块级元素 */
+  text-align: center;
+  position: relative;
+  max-width: 800px;
+  padding-left: 20px;
+  /* 为左侧装饰留出空间 */
+}
+
+/* 确保轮播区域的布局 */
+.swiper-section {
+  margin: 10px auto 40px auto;
+  /* 调整上下边距 */
+  position: relative;
+  max-width: 900px;
+  padding: 30px 80px;
+  box-shadow: none;
+  background-color: transparent;
+  overflow: hidden;
+  display: block;
+  /* 确保是块级元素 */
+}
+
+/* 在大屏幕上仍然保持垂直布局 */
+@media (min-width: 1200px) {
+
+  .carousel-section-title,
+  .swiper-section {
+    grid-column: 1 / -1;
+    /* 即使在大屏幕上也保持跨越所有列 */
+  }
+}
+
+/* 强化导航按钮样式 */
+.idea-quote-swiper .swiper-button-next,
+.idea-quote-swiper .swiper-button-prev {
+  color: var(--text-accent);
+  background-color: rgba(255, 255, 255, 0.9);
+  width: 50px;
+  height: 50px;
+  border-radius: 50%;
+  display: flex !important;
+  /* 强制显示 */
+  justify-content: center;
+  align-items: center;
+  position: absolute;
+  top: 50%;
+  transform: translateY(-50%);
+  z-index: 100 !important;
+  /* 最高层级 */
+  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
+  cursor: pointer !important;
+  /* 强制指针样式 */
+  opacity: 0.9;
+  transition: all 0.3s ease;
+  border: 2px solid transparent;
+}
+
+/* 调整按钮位置，确保总是可见 */
+.idea-quote-swiper .swiper-button-next {
+  right: -30px;
+}
+
+.idea-quote-swiper .swiper-button-prev {
+  left: -30px;
+}
+
+/* 美化轮播背景，使其更加突出 */
+.swiper-section::before {
+  content: "";
+  position: absolute;
+  top: 0;
+  left: 50px;
+  right: 50px;
+  bottom: 0;
+  background-color: var(--background-secondary);
+  border-radius: 10px;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+  z-index: -1;
+}
+
+/* 添加轮播提示样式 */
+.swiper-section::after {
+  content: "";
+  position: absolute;
+  top: 50%;
+  left: 10px;
+  right: 10px;
+  height: 1px;
+  background: linear-gradient(to right, transparent, rgba(0, 0, 0, 0.1), transparent);
+  z-index: -1;
+}
+
+/* 调整轮播区域的内边距，确保卡片有足够的空间 */
+.swiper-section {
+  padding: 30px 50px;
+  overflow: visible;
+  /* 允许内容溢出，以便显示下一张卡片的部分 */
+}
+
+/* 确保轮播滑动区域足够宽 */
+.swiper-section {
+  width: 100%;
+  max-width: 1000px;
+  padding: 30px 40px;
+  margin: 10px auto 40px auto;
+  position: relative;
+  overflow: visible;
+}
+
+/* 幻灯片样式 - 调整宽度和间距 */
+.idea-quote-swiper .swiper-slide {
+  width: 75%;
+  max-width: 700px;
+  /* 保持用户修改的宽度 */
+  opacity: 0.4;
+  /* 降低默认透明度 */
+  transform: scale(0.85);
+  transition: all 0.4s ease;
+  padding: 10px;
+  height: auto;
+  filter: grayscale(20%);
+  /* 添加轻微灰度效果 */
+}
+
+/* 活动幻灯片样式 */
+.idea-quote-swiper .swiper-slide-active {
+  opacity: 1;
+  /* 活动幻灯片保持完全不透明 */
+  transform: scale(1);
+  z-index: 10;
+  filter: grayscale(0%);
+  /* 移除灰度效果 */
+}
+
+/* 相邻幻灯片样式 - 保持用户修改的透明度 */
+.idea-quote-swiper .swiper-slide-prev,
+.idea-quote-swiper .swiper-slide-next {
+  opacity: 0.5;
+  /* 保持用户修改的透明度 */
+  transform: scale(0.9);
+  filter: grayscale(10%);
+  /* 轻微灰度效果 */
+}
+
+/* 导航按钮位置和样式 */
+.idea-quote-swiper .swiper-button-next,
+.idea-quote-swiper .swiper-button-prev {
+  color: var(--text-accent);
+  background-color: rgba(255, 255, 255, 0.9);
+  width: 45px;
+  height: 45px;
+  border-radius: 50%;
+  display: flex !important;
+  justify-content: center;
+  align-items: center;
+  position: absolute;
+  top: 50%;
+  transform: translateY(-50%);
+  z-index: 100 !important;
+  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.15);
+  cursor: pointer !important;
+  opacity: 0.9;
+  transition: all 0.3s ease;
+  border: 2px solid transparent;
+}
+
+.idea-quote-swiper .swiper-button-next {
+  right: -15px;
+}
+
+.idea-quote-swiper .swiper-button-prev {
+  left: -15px;
+}
+
+.idea-quote-swiper .swiper-button-next:hover,
+.idea-quote-swiper .swiper-button-prev:hover {
+  background-color: var(--text-accent);
+  color: white;
+  opacity: 1;
+  transform: translateY(-50%) scale(1.1);
+  border: 2px solid white;
+}
+
+/* 添加展示台边框样式 */
+.swiper-section::before {
+  border: 1px solid rgba(0, 0, 0, 0.03);
+}
+
+/* 调整分页器样式和位置 */
+.idea-quote-swiper .swiper-pagination {
+  bottom: -25px;
+}
+
+.idea-quote-swiper .swiper-pagination-bullet {
+  width: 8px;
+  height: 8px;
+  background-color: var(--text-muted);
+  opacity: 0.5;
+  margin: 0 4px;
+  transition: all 0.3s ease;
+}
+
+.idea-quote-swiper .swiper-pagination-bullet-active {
+  background-color: var(--text-accent);
+  opacity: 1;
+  width: 10px;
+  height: 10px;
+}
+
+/* 美化轮播背景，恢复展示台样式 */
+.swiper-section::before {
+  content: "";
+  position: absolute;
+  top: 0;
+  left: 40px;
+  right: 40px;
+  bottom: 0;
+  background-color: var(--background-secondary);
+  border-radius: 10px;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+  z-index: -1;
+  opacity: 1;
+  /* 确保展示台可见 */
+  border: 1px solid rgba(0, 0, 0, 0.03);
+}
+
+/* 添加轮播展示台底部的光影效果 */
+.swiper-section::after {
+  content: "";
+  position: absolute;
+  bottom: -5px;
+  left: 60px;
+  right: 60px;
+  height: 10px;
+  background: rgba(0, 0, 0, 0.06);
+  filter: blur(4px);
+  border-radius: 50%;
+  z-index: -2;
+}
+
+/* 轮播容器样式保持当前宽度 */
+.idea-quote-swiper {
+  height: auto;
+  min-height: 400px;
+  width: 85%;
+  margin: 0 auto 25px auto;
+  position: relative;
+  overflow: visible;
+}
+
+/* 确保轮播滑动区域有适当的内边距 */
+.swiper-section {
+  width: 100%;
+  max-width: 900px;
+  padding: 30px 50px 40px 50px;
+  /* 增加底部内边距 */
+  margin: 10px auto 40px auto;
+  position: relative;
+  overflow: visible;
+}
+
+/* 微调轮播展示台样式，使其更加突出 */
+.swiper-section::before {
+  content: "";
+  position: absolute;
+  top: 0;
+  left: 40px;
+  right: 40px;
+  bottom: 0;
+  background-color: var(--background-secondary);
+  border-radius: 12px;
+  box-shadow: 0 4px 15px rgba(0, 0, 0, 0.08);
+  z-index: -1;
+  opacity: 1;
+  border: 1px solid rgba(0, 0, 0, 0.04);
+}
+
+/* 调整轮播容器大小 */
+.swiper-section {
+  padding: 25px 50px 35px 50px;
+  margin: 10px auto 45px auto;
+  max-width: 850px;
+}
+
+/* 调整轮播幻灯片大小 */
+.idea-quote-swiper .swiper-slide {
+  width: 75%;
+  max-width: 700px;
+}
+
+/* 使轮播导航按钮更加贴近卡片边缘 */
+.idea-quote-swiper .swiper-button-next {
+  right: -20px;
+}
+
+.idea-quote-swiper .swiper-button-prev {
+  left: -20px;
+}
+
+/* 相邻幻灯片样式 */
+.idea-quote-swiper .swiper-slide-prev,
+.idea-quote-swiper .swiper-slide-next {
+  opacity: 0.5;
+  transform: scale(0.9);
+}
+
+/* 调整分页器位置 */
+.idea-quote-swiper .swiper-pagination {
+  bottom: -20px;
+}
+
+/* 确保轮播内卡片样式与原始卡片一致 */
+.idea-quote-swiper .swiper-slide .new-cards-container.idea-card,
+.idea-quote-swiper .swiper-slide .new-cards-container.quote-card {
+  margin: 0 auto;
+  max-width: 700px;
+  /* 与原始卡片保持一致 */
+  width: 100%;
+  height: auto;
+  box-shadow: 0 8px 16px rgba(0, 0, 0, 0.15);
+  transform: none;
+  transition: transform 0.3s ease, box-shadow 0.3s ease;
+  padding: 36px 48px;
+  /* 与原始卡片保持一致的内边距 */
+}
+
+/* 确保轮播中的卡片内容样式与原始卡片一致 */
+.idea-quote-swiper .swiper-slide .new-cards-container.idea-card .idea-content,
+.idea-quote-swiper .swiper-slide .new-cards-container.quote-card .quote-content {
+  font-size: 16px;
+  font-weight: 550;
+  line-height: 1.6;
+  color: #222;
+  padding-left: 24px;
+  padding-top: 20px;
+  white-space: pre-wrap;
+  word-break: break-word;
+  max-height: none;
+  /* 移除最大高度限制 */
+  overflow: visible;
+  /* 允许内容完全展示 */
+}
+
+/* 调整导航按钮位置，确保可见且不会被内容遮挡 */
+.idea-quote-swiper .swiper-button-next {
+  right: 10px;
+}
+
+.idea-quote-swiper .swiper-button-prev {
+  left: 10px;
+}
+
+/* 调整轮播容器样式，确保足够宽度显示卡片 */
+.idea-quote-swiper {
+  height: auto;
+  min-height: 400px;
+  width: 90%;
+  /* 增加宽度以适应完整卡片 */
+  margin: 0 auto 35px auto;
+  position: relative;
+  overflow: visible;
+}
+
+/* 调整轮播区域的内边距，确保卡片和导航按钮都能正确显示 */
+.swiper-section {
+  padding: 25px 60px 35px 60px;
+  /* 增加左右内边距 */
+  margin: 10px auto 45px auto;
+  max-width: 900px;
+  /* 增加最大宽度 */
+  overflow: visible;
+}
+
+/* 修改展示台背景样式，适应更宽的内容 */
+.swiper-section::before {
+  content: "";
+  position: absolute;
+  top: 0;
+  left: 40px;
+  right: 40px;
+  bottom: 0;
+  background-color: var(--background-secondary);
+  border-radius: 12px;
+  box-shadow: 0 4px 15px rgba(0, 0, 0, 0.08);
+  z-index: -1;
+  opacity: 1;
+  border: 1px solid rgba(0, 0, 0, 0.04);
+}
+
+/* 下拉菜单容器 */
+.gallery-mode-control {
+  position: relative;
+  display: inline-block;
+}
+
+/* 下拉按钮 */
+.gallery-mode-toggle {
+  background: var(--interactive-accent);
+  color: var(--text-on-accent);
+  border: none;
+  border-radius: 4px;
+  padding: 6px 12px;
+  font-size: 14px;
+  cursor: pointer;
+  transition: background-color 0.2s ease;
+  text-align: center;
+  min-width: 100px;
+}
+
+.gallery-mode-toggle:hover {
+  background-color: var(--interactive-accent-hover);
+}
+
+.gallery-mode-toggle:focus {
+  outline: none;
+  box-shadow: 0 0 0 2px rgba(var(--interactive-accent-rgb), 0.4);
+}
+
+/* 下拉菜单 */
+.gallery-mode-dropdown {
+  display: none;
+  position: absolute;
+  left: 0;
+  top: 110%;
+  min-width: 120px;
+  background: var(--background-primary);
+  border-radius: 4px;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+  z-index: 100;
+  padding: 4px 0;
+  border: 1px solid var(--background-modifier-border);
+}
+
+.gallery-mode-dropdown.show {
+  display: block;
+}
+
+/* 菜单项 */
+.mode-option {
+  padding: 6px 12px;
+  font-size: 14px;
+  color: var(--text-normal);
+  cursor: pointer;
+  transition: background 0.18s, color 0.18s;
+  border: none;
+  background: none;
+  text-align: left;
+  width: 100%;
+  display: block;
+}
+
+.mode-option:hover,
+.mode-option.active {
+  background: var(--background-modifier-hover);
+  color: var(--text-accent);
+  font-weight: bold;
+}
+
+.mode-option.active {
+  background: var(--background-modifier-hover);
+  color: var(--interactive-accent);
+}
+
+/* 确保所有控制按钮样式一致 */
+.gallery-column-toggle,
+.gallery-fields-toggle,
+.gallery-type-toggle,
+.gallery-sort-toggle,
+.gallery-refresh-button,
+.gallery-mode-toggle {
+  padding: 6px 12px;
+  border-radius: 4px;
+  background-color: var(--interactive-accent);
+  color: var(--text-on-accent);
+  cursor: pointer;
+  border: none;
+  font-size: 14px;
+  transition: background-color 0.2s ease;
+  min-width: 80px;
+  text-align: center;
+}
+
+.gallery-cards-container .timeline-mode {
+  display: block !important;
+}
+
+/* 时间轴主容器 */
+.timeline-main {
+  position: relative;
+  max-width: 900px;
+  margin: 0 auto;
+  padding: 60px 0 60px 0;
+  background: inherit;
+  min-height: 600px;
+}
+
+.timeline-line {
+  position: absolute;
+  left: 50%;
+  top: 0;
+  width: 6px;
+  height: 100%;
+  background: #3290B1;
+  border-radius: 3px;
+  transform: translateX(-50%);
+  z-index: 1;
+}
+
+.timeline-node {
+  position: relative;
+  width: 50%;
+  padding: 0 40px 40px 40px;
+  box-sizing: border-box;
+  display: flex;
+}
+
+.timeline-node-left {
+  left: 0;
+  justify-content: flex-end;
+  /* 让卡片靠右（主线） */
+}
+
+.timeline-node-right {
+  left: 50%;
+  justify-content: flex-start;
+  /* 让卡片靠左（主线） */
+}
+
+.timeline-dot {
+  position: absolute;
+  top: 30px;
+  left: 100%;
+  transform: translate(-50%, -50%);
+  width: 32px;
+  height: 32px;
+  background: #EEEEEE;
+  border: 6px solid #3290B1;
+  border-radius: 50%;
+  z-index: 2;
+  box-shadow: 0 2px 8px rgba(50, 144, 177, 0.12);
+}
+
+.timeline-node-right .timeline-dot {
+  left: 0;
+  transform: translate(-50%, -50%);
+}
+
+.timeline-card-box {
+  background: #EEEEEE;
+  border-radius: 8px;
+  box-shadow: 5px 5px 0px 0px rgba(0, 0, 0, 0.12);
+  padding: 24px 32px;
+  min-width: 400px;
+  max-width: 700px;
+  position: relative;
+  transition: box-shadow 0.3s, background 0.3s, transform 0.3s;
+  margin: 0;
+  /* 关键：去掉多余的margin */
+}
+
+.timeline-card-box:hover {
+  background: #fff;
+  box-shadow: 10px 10px 0px 0px rgba(50, 144, 177, 0.18);
+  transform: translateY(-4px) scale(1.03);
+}
+
+.timeline-date {
+  position: absolute;
+  top: 17px;
+  font-size: 1em;
+  color: #3290B1;
+  font-weight: bold;
+  background: #fff;
+  padding: 2px 12px;
+  border-radius: 6px;
+  box-shadow: 0 1px 4px rgba(50, 144, 177, 0.08);
+  z-index: 3;
+}
+
+.timeline-node-left .timeline-date {
+  right: -25%;
+}
+
+.timeline-node-right .timeline-date {
+  left: -25%;
+}
+
+/* 响应式：移动端单列 */
+@media (max-width: 700px) {
+  .timeline-main {
+    padding: 20px 0;
+  }
+
+  .timeline-node,
+  .timeline-node-left,
+  .timeline-node-right {
+    width: 100%;
+    left: 0;
+    text-align: left;
+    padding: 0 10px 40px 60px;
+  }
+
+  .timeline-dot {
+    left: 0 !important;
+    transform: translate(-50%, -50%);
+  }
+
+  .timeline-date {
+    left: 50px !important;
+    right: auto !important;
+    top: 30px;
+  }
+}
+
+.gallery-cards-container.timeline-mode {
+  display: block;
+}
+
+/* 更多标签按钮容器样式 */
+.new-cards-container .tag.more-tags-button {
+  background-color: rgba(0, 0, 0, 0.1);
+  color: var(--text-muted);
+  font-weight: bold;
+  cursor: pointer;
+}
+
+.new-cards-container .tag.more-tags-button:hover {
+  background-color: rgba(0, 0, 0, 0.2);
+  color: var(--text-normal);
+}
+
+/* 隐藏标签悬浮窗样式 */
+.hidden-tags-tooltip {
+  position: absolute;
+  z-index: 100;
+  background-color: var(--background-primary);
+  border: 1px solid var(--background-modifier-border);
+  border-radius: 6px;
+  padding: 8px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  max-width: 300px;
+  left: 0;
+  /* 从按钮左侧开始 */
+  top: 100%;
+  /* 在按钮下方显示 */
+  margin-top: 5px;
+  /* 与按钮保持一定距离 */
+  transform: none;
+  /* 移除垂直居中 */
+  white-space: normal;
+  /* 确保文本正常换行 */
+}
+
+/* 确保悬浮窗内的标签样式与普通标签一致 */
+.hidden-tags-tooltip .tag {
+  margin: 0;
+}
+
+/* 更多标签按钮容器样式 */
+.more-tags-container {
+  position: relative;
+  display: inline-block;
+  vertical-align: middle;
+  z-index: 10;
+  /* 确保悬浮窗在其他元素之上 */
+}
+
+/* 更多标签按钮样式 */
+.new-cards-container .tag.more-tags-button {
+  background-color: rgba(0, 0, 0, 0.1);
+  color: var(--text-muted);
+  font-weight: bold;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.new-cards-container .tag.more-tags-button:hover {
+  background-color: rgba(0, 0, 0, 0.2);
+  color: var(--text-normal);
+}
+
+/* 隐藏标签悬浮窗样式 */
+.hidden-tags-tooltip {
+  position: absolute;
+  z-index: 100;
+  background-color: var(--background-primary);
+  border: 1px solid var(--background-modifier-border);
+  border-radius: 6px;
+  padding: 8px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  max-width: 250px;
+  /* 减小宽度，避免超出边界 */
+  min-width: 150px;
+  /* 设置最小宽度 */
+  left: 0;
+  /* 从按钮左侧开始 */
+  top: 100%;
+  /* 在按钮下方显示 */
+  margin-top: 5px;
+  /* 与按钮保持一定距离 */
+  transform: none;
+  /* 移除垂直居中 */
+  white-space: normal;
+  /* 确保文本正常换行 */
+  opacity: 0;
+  visibility: hidden;
+  transition: opacity 0.2s ease, visibility 0.2s ease;
+}
+
+/* 显示时的样式 */
+.hidden-tags-tooltip[style*="display: flex"] {
+  opacity: 1;
+  visibility: visible;
+}
+
+/* 确保悬浮窗内的标签样式与普通标签一致 */
+.hidden-tags-tooltip .tag {
+  font-size: var(--tag-size);
+  color: var(--tag-color);
+  text-decoration: none;
+  padding: 2px 4px;
+  border-radius: 4px;
+  background-color: rgb(240, 238, 236);
+  transition: all 0.2s ease;
+  margin: 0;
+}
+
+/* 悬浮窗内标签的悬停效果 */
+.hidden-tags-tooltip .tag:hover {
+  color: var(--tag-color-hover);
+  background-color: rgb(240, 238, 236);
+  scale: 1.1;
+  transition: all 0.2s ease;
+}
+
+/* 确保悬浮窗在卡片边界内 */
+.new-cards-container {
+  overflow: hidden !important;
+  /* 恢复原来的overflow设置 */
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.12), 0 1px 2px rgba(0, 0, 0, 0.24) !important;
+  /* 恢复卡片阴影 */
+  border-radius: 8px !important;
+  /* 确保边界圆角 */
+}
+
+/* 确保在时间轴和海报模式下也能正常显示 */
+.timeline-card-box .more-tags-container,
+.poster-card-container .more-tags-container {
+  position: relative;
+  z-index: 20;
+}
+
+/* 在海报模式下调整悬浮窗位置 */
+.poster-card-container .hidden-tags-tooltip {
+  bottom: 100%;
+  top: auto;
+  margin-bottom: 5px;
+  margin-top: 0;
+}
+
+/* 闪念卡片中的悬浮窗标签样式 */
+.idea-meta .hidden-tags-tooltip .tag,
+.quote-meta .hidden-tags-tooltip .tag {
+  background: transparent !important;
+  color: #969292 !important;
+  font-weight: 500;
+  border: none;
+  box-shadow: none;
+}
+
+/* 隐藏海报墙模式下的闪念和摘录卡片 */
+.cards-gallery-container[data-display-mode="poster"] .poster-card-container.idea-card,
+.cards-gallery-container[data-display-mode="poster"] .poster-card-container.quote-card {
+  /* 移除强制隐藏，改为特殊样式 */
+  width: 300px;
+  height: auto;
+  min-height: 150px;
+  aspect-ratio: unset !important;
+  background: var(--background-primary);
+  border-radius: 8px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+}
